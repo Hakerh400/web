@@ -2226,12 +2226,12 @@ const O = {
     URL functions
   */
 
-  href(){
+  get href(){
     return window.location.href;
   },
 
   urlParam(param, defaultVal=null){
-    var url = O.href();
+    var url = O.href;
     var match = url.match(new RegExp(`[\\?\\&]${param}=([^\\&]*)`));
 
     if(match === null){

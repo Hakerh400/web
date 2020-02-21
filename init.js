@@ -22,7 +22,7 @@
 
         noscript.remove();
 
-        O.rf('/omikron.js', function(status, script){
+        O.rf('omikron.js', function(status, script){
           if(status != 200) return O.fatalError('Cannot load framework script. Try disabling extensions.');
           new Function(script)();
         });
