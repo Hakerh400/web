@@ -1,0 +1,12 @@
+.draggable-canvas{
+  position: absolute;
+  transition: opacity 1s;
+}
+
+.draggable-canvas.visible{
+  opacity: 1;
+}
+
+.draggable-canvas.hidden{
+  opacity: 0;
+}

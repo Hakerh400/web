@@ -1,0 +1,43 @@
+{
+  "menu": {
+    "titles": {
+      "intro": "Dots & Boxes",
+      "player1": "First Player",
+      "player2": "Second Player",
+      "strength": "AI Strength",
+      "depth": "AI Search Depth",
+      "createGame": "Create Game",
+      "gridWidth": "Grid Width",
+      "gridHeight": "Grid Height",
+      "aiStrength": "AI Strength",
+      "simulationMode": "Simulation Mode",
+      "for": "for the"
+    },
+    "buttons": {
+      "play": "Play",
+      "info": "About the game",
+      "human": "Human",
+      "computer": "Computer",
+      "newGame": "New game",
+      "loadGame": "Load game",
+      "beginner": "Beginner",
+      "advanced": "Advanced",
+      "pro": "Pro",
+      "stepByStep": "Step by step",
+      "batchOfMoves": "Batch of moves",
+      "increment": "Increment",
+      "decrement": "Decrement",
+      "ok": "OK"
+    }
+  },
+  "errors": {
+    "missingGridSize": "Missing grid size",
+    "invalidSize": "Invalid grid size",
+    "errAtLine": "Error at line",
+    "expectedTwoChars": "Expected exactly two characters",
+    "invalidMove": "Invalid move",
+    "outsideGrid": "The coordinates provided are outside the grid region",
+    "duplicateLine": "Duplicate lines are not allowed"
+  },
+  "error": "Error"
+}

@@ -2,7 +2,6 @@
   'use strict';
 
   var CHROME_ONLY = 1;
-  var OMIKRON_URL = 'https://raw.githubusercontent.com/Hakerh400/omikron/master/src/omikron/omikron.js';
 
   window.addEventListener('load', function(){
     var O = {
@@ -23,7 +22,7 @@
 
         noscript.remove();
 
-        O.rf(OMIKRON_URL, function(status, script){
+        O.rf('/omikron.js', function(status, script){
           if(status != 200) return O.fatalError('Cannot load framework script. Try disabling extensions.');
           new Function(script)();
         });
