@@ -1821,6 +1821,15 @@ class Serializable{
 }
 
 class Stringifiable{
+  static tabSize = 2;
+  static #inc = Symbol('inc');
+  static #dec = Symbol('dec');
+
+  tabSize = Stringifiable.tabSize;
+
+  get inc(){ return Stringifiable.#inc; }
+  get dec(){ return Stringifiable.#dec; }
+
   toStr(){ O.virtual('toStr'); }
 
   join(stack, arr, sep){
@@ -1832,22 +1841,50 @@ class Stringifiable{
     return stack;
   }
 
+  toJSON(){
+    return this.toString();
+  }
+
   toString(){
+    const {tabSize, inc, dec} = this;
+
     const stack = [this];
     let str = '';
+    let tab = 0;
+
+    const append = s => {
+      if(tab !== 0){
+        const tabStr = ' '.repeat(tab);
+        s = s.replace(/\r\n|\r|\n/g, a => `${a}${tabStr}`);
+      }
+
+      str += s;
+    };
 
     while(stack.length !== 0){
       const elem = stack.pop();
 
+      if(elem === inc){
+        tab += tabSize;
+        continue;
+      }
+
+      if(elem === dec){
+        if(tab === 0)
+          throw new TypeError('Indentation cannot be negative');
+        tab -= tabSize;
+        continue;
+      }
+
       if(typeof elem === 'string'){
-        str += elem;
+        append(elem);
         continue;
       }
 
       const val = elem.toStr();
 
       if(typeof val === 'string'){
-        str += val;
+        append(val);
         continue;
       }
 
