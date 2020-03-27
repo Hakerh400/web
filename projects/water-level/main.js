@@ -113,8 +113,6 @@ const updateVerts = (x1, y1, x2, y2) => {
   const vs = verts[vertsIndex];
   const dx = x2 - x1 + 1;
 
-  debugger;
-
   for(let i = 0; i !== dx; i++){
     const k = i / dx;
     const k1 = 1 - k;
