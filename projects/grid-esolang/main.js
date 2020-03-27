@@ -295,7 +295,7 @@ function addEventListeners(){
             const bool = type <= 3 ? gdir(x, y, -type & 3, 1) :
               type <= 5 ? d.circ === type - 3 :
               type === 6 ? d.wall :
-              type === 7 ? d.void : O.rand(2)/*io.read()*/;
+              type === 7 ? d.void : io.read();
 
             if(stat === 0){
               const newBlock = bool ? inst[3] : inst[4];

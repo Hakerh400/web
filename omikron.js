@@ -3,12 +3,7 @@
 class Set2D{
   static #sym = Symbol();
   #d = Set2D.obj();
-
-  constructor(iterable=null){
-    if(iterable !== null)
-      for(const [x, y] of iterable)
-        this.add(x, y);
-  }
+  #size = 0;
 
   static obj(){
     const obj = O.obj();
@@ -16,17 +11,27 @@ class Set2D{
     return obj;
   }
 
+  constructor(iterable=null){
+    if(iterable !== null)
+      for(const [x, y] of iterable)
+        this.add(x, y);
+  }
+
+  get size(){ return this.#size; }
+
   add(x, y){
     const d = this.#d;
     
     if(y in d){
       if(x in d[y]) return this;
-      d[y][Set2D.#sym]++;
     }else{
       d[y] = Set2D.obj();
     }
     
     d[y][x] = 1;
+    d[y][Set2D.#sym]++;
+    this.#size++;
+    
     return this;
   }
 
@@ -44,6 +49,7 @@ class Set2D{
     if(--d[y][this.#sym] === 0) delete d[y];
     else delete d[y][x];
 
+    this.#size--;
     return 1;
   }
 
@@ -1820,12 +1826,76 @@ class Serializable{
   reser(){ return this.deser(new O.Serializer(this.ser().getOutput())); }
 }
 
-class Stringifiable{
+class Iterable{
+  topDown(func){
+    const stack = [this];
+
+    while(stack.length !== 0){
+      const elem = stack.pop();
+
+      func(elem);
+
+      const arr = elem.iter();
+
+      if(arr === null)
+        continue;
+
+      if(!Array.isArray(arr)){
+        stack.push(arr);
+        continue;
+      }
+
+      for(let i = arr.length - 1; i !== -1; i--)
+        stack.push(arr[i]);
+    }
+  }
+
+  bottomUp(func){
+    const stack = [this];
+    const flags = [0];
+
+    while(stack.length !== 0){
+      const elem = O.last(stack);
+
+      if(O.last(flags)){
+        stack.pop();
+        flags.pop();
+        func(elem);
+        continue;
+      }
+
+      O.setLast(flags, 1);
+
+      const arr = elem.iter();
+
+      if(arr === null)
+        continue;
+
+      if(!Array.isArray(arr)){
+        stack.push(arr);
+        flags.push(0);
+        continue;
+      }
+
+      for(let i = arr.length - 1; i !== -1; i--){
+        stack.push(arr[i]);
+        flags.push(0);
+      }
+    }
+  }
+
+  iter(){ O.virtual('iter'); }
+}
+
+class Stringifiable extends Iterable{
   static tabSize = 2;
   static #inc = Symbol('inc');
   static #dec = Symbol('dec');
 
-  tabSize = Stringifiable.tabSize;
+  #tabSize = Stringifiable.tabSize;
+
+  get tabSize(){ return this.#tabSize; }
+  set tabSize(tabSize){ this.#tabSize = tabSize; }
 
   get inc(){ return Stringifiable.#inc; }
   get dec(){ return Stringifiable.#dec; }
@@ -2013,6 +2083,7 @@ const O = {
   IO,
   Serializer,
   Serializable,
+  Iterable,
   Stringifiable,
   Semaphore,
 
@@ -2040,7 +2111,12 @@ const O = {
         O.sst = window.sessionStorage;
       }
 
-      O.baseURL = O.href.match(/^[^\?]+/)[0];
+      let baseURL = O.href.match(/^[^\?]+/)[0];
+
+      if(baseURL.endsWith('/'))
+        baseURL = baseURL.slice(0, baseURL.length - 1);
+
+      O.baseURL = baseURL;
     }
 
     if(isNode || isElectron){

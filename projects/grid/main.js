@@ -82,7 +82,8 @@ function addEventListeners(){
 
     switch(evt.code){
       case 'Enter': applyAlgorithms(); break;
-      case 'Space': test(); break;
+      case 'Space': test1(); break;
+      case 'KeyE': test2(); break;
 
       case 'KeyR': resetGrid(); break;
       case 'KeyC': closeGrid(); break;
@@ -315,14 +316,33 @@ function addEventListeners(){
     return [x, y, dir];
   }
 
-  function test(){
-    var str = exportGrid();
+  function test1(){
+    let str = exportGrid();
 
     str = O.sanl(str).join('');
     str = str.substring(64);
 
     importGrid(str, 1);
     applyAlgorithms();
+  }
+
+  function test2(){
+    const f = () => {
+      let str = exportGrid();
+
+      str = O.rev(str);
+
+      importGrid(str, 1);
+
+      let s = exportGrid();
+
+      do{
+        applyAlgorithms();
+      }while(s !== (s = exportGrid()));
+    };
+
+    f();
+    f();
   }
 
   function ael(type, func){
