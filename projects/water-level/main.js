@@ -2,7 +2,7 @@
 
 const {min, max, abs, round} = Math;
 
-const UPDATE_RADIUS = 2;
+const UPDATE_RADIUS = 3;
 
 const cols = {
   bg: '#fff',
@@ -42,9 +42,6 @@ const aels = () => {
 const render = () => {
   if(clicked) updateVerts(cx, cy, cx, cy);
 
-  const vs1 = verts[vertsIndex];
-  const vs2 = verts[vertsIndex ^= 1];
-
   g.fillStyle = cols.bg;
   g.fillRect(0, 0, w, h);
 
@@ -52,28 +49,35 @@ const render = () => {
   const diam = rad * 2 + 1;
   const xx = w + rad;
 
-  let sum = 0;
-  let num = 0;
-
   g.fillStyle = cols.fluid;
 
-  for(let x = 0; x !== xx; x++){
-    if(x >= diam){
-      sum -= vs1[x - diam];
-      num--;
-    }
+  for(let i = 0; i !== 10; i++){
+    const vs1 = verts[vertsIndex ^ (i & 1)];
+    const vs2 = verts[vertsIndex ^ (~i & 1)];
 
-    if(x <= w1){
-      const y = vs1[x];
-      g.fillRect(x, h1 - y, 1, y);
-      sum += y;
-      num++;
-    }
+    let sum = 0;
+    let num = 0;
 
-    if(x >= rad){
-      vs2[x - rad] = sum / num;
+    for(let x = 0; x !== xx; x++){
+      if(x >= diam){
+        sum -= vs1[x - diam];
+        num--;
+      }
+
+      if(x <= w1){
+        const y = vs1[x];
+        if(i !== 0) g.fillRect(x, h1 - y, 1, y);
+        sum += y;
+        num++;
+      }
+
+      if(x >= rad){
+        vs2[x - rad] = sum / num;
+      }
     }
   }
+
+  vertsIndex ^= 1;
 
   O.raf(render);
 };
