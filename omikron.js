@@ -1827,30 +1827,40 @@ class Serializable{
 }
 
 class Iterable{
-  topDown(func){
-    const stack = [this];
+  static #kCont = Symbol('continue');
+  static #kBreak = Symbol('break');
 
+  get kCont(){ return Iterable.#kCont; }
+  get kBreak(){ return Iterable.#kBreak; }
+
+  get chNum(){ O.virtual('chNum'); }
+  getCh(index){ O.virtual('getCh'); }
+  setCh(index, val){ O.virtual('getCh'); }
+
+  get chArr(){ return [...this]; }
+
+  topDown(func){
+    const {kCont, kBreak} = this;
+    const stack = [this];
+  
     while(stack.length !== 0){
       const elem = stack.pop();
-
-      func(elem);
-
-      const arr = elem.iter();
-
-      if(arr === null)
-        continue;
-
-      if(!Array.isArray(arr)){
-        stack.push(arr);
-        continue;
-      }
-
-      for(let i = arr.length - 1; i !== -1; i--)
-        stack.push(arr[i]);
+  
+      const result = func(elem);
+      if(result === kCont) continue;
+      if(result === kBreak) return 1;
+  
+      const {chNum} = elem;
+  
+      for(let i = chNum - 1; i !== -1; i--)
+        stack.push(elem.getCh(i));
     }
+  
+    return 0;
   }
 
   bottomUp(func){
+    const {kBreak} = this;
     const stack = [this];
     const flags = [0];
 
@@ -1860,31 +1870,32 @@ class Iterable{
       if(O.last(flags)){
         stack.pop();
         flags.pop();
-        func(elem);
+
+        const result = func(elem);
+        if(result === kBreak) return 1;
+
         continue;
       }
 
       O.setLast(flags, 1);
 
-      const arr = elem.iter();
+      const {chNum} = elem;
 
-      if(arr === null)
-        continue;
-
-      if(!Array.isArray(arr)){
-        stack.push(arr);
-        flags.push(0);
-        continue;
-      }
-
-      for(let i = arr.length - 1; i !== -1; i--){
-        stack.push(arr[i]);
+      for(let i = chNum - 1; i !== -1; i--){
+        stack.push(elem.getCh(i));
         flags.push(0);
       }
     }
+
+    return 0;
   }
 
-  iter(){ O.virtual('iter'); }
+  *[Symbol.iterator](){
+    const {chNum} = this;
+
+    for(let i = 0; i !== chNum; i++)
+      yield this.getCh(i);
+  }
 }
 
 class Stringifiable extends Iterable{
@@ -2196,11 +2207,19 @@ const O = {
   },
 
   overrideConsole(){
-    const {global} = O;
-    const nodeOrElectron = O.isNode || O.isElectron;
+    const {global, isNode, isElectron} = O;
+    const nodeOrElectron = isNode || isElectron;
 
-    const console = global.console;
-    const logOrig = console.log;
+    let logOrig;
+
+    if(O.isNode){
+      const fs = require('fs');
+      const fdOut = process.stdout.fd;
+
+      logOrig = str => fs.writeSync(fdOut, `${str}\n`);
+    }else{
+      logOrig = console.log;
+    }
 
     let indent = 0;
 
