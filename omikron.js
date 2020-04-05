@@ -1508,6 +1508,76 @@ class Buffer extends Uint8Array{
   }
 }
 
+class PriorityQueue{
+  static Element = class{
+    leq(elem){ O.virtual('leq'); }
+  };
+
+  #arr = [null];
+
+  get len(){ return this.#arr.length - 1; }
+  get isEmpty(){ return this.#arr.length === 0; }
+
+  add(elem){
+    const arr = this.#arr;
+    let i = arr.length;
+
+    arr.push(elem);
+
+    while(i !== 1){
+      const j = i >> 1;
+
+      if(arr[j].leq(arr[i])) break;
+
+      const t = arr[i];
+      arr[i] = arr[j];
+      arr[j] = t;
+
+      i = j;
+    }
+
+    return this;
+  }
+
+  pop(){
+    const arr = this.#arr;
+    const first = this.top();
+    const last = arr.pop();
+    const len = arr.length;
+
+    if(len !== 1){
+      let i = 1;
+
+      arr[1] = last;
+
+      while(1){
+        let j = i << 1;
+
+        if(j >= len) break;
+        if(j + 1 !== len && !arr[j].leq(arr[j + 1])) j++;
+        if(arr[i].leq(arr[j])) break;
+
+        const t = arr[i];
+        arr[i] = arr[j];
+        arr[j] = t;
+
+        i = j;
+      }
+    }
+
+    return first;
+  }
+
+  top(){
+    const arr = this.#arr;
+
+    if(arr.length === 1)
+      throw new TypeError('The queue is empty');
+
+    return arr[1];
+  }
+}
+
 class IO{
   constructor(input='', checksum=0, pad=0){
     let buf = O.Buffer.from(input);
@@ -2091,6 +2161,7 @@ const O = {
   MultidimensionalMap,
   EnhancedRenderingContext,
   Buffer,
+  PriorityQueue,
   IO,
   Serializer,
   Serializable,
@@ -3081,7 +3152,7 @@ const O = {
     return O.random() * a;
   },
 
-  randInt(start, prob){
+  randInt(start=0, prob=.5){
     let num = start;
     while(O.randf() < prob) num++;
     return num;
