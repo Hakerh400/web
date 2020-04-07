@@ -1508,15 +1508,15 @@ class Buffer extends Uint8Array{
   }
 }
 
-class PriorityQueue{
-  static Element = class{
-    leq(elem){ O.virtual('leq'); }
-  };
+class Comparable{
+  cmp(obj){ O.virtual('cmp'); }
+}
 
+class PriorityQueue{
   #arr = [null];
 
   get len(){ return this.#arr.length - 1; }
-  get isEmpty(){ return this.#arr.length === 0; }
+  get isEmpty(){ return this.#arr.length === 1; }
 
   add(elem){
     const arr = this.#arr;
@@ -1527,7 +1527,7 @@ class PriorityQueue{
     while(i !== 1){
       const j = i >> 1;
 
-      if(arr[j].leq(arr[i])) break;
+      if(arr[i].cmp(arr[j]) >= 0) break;
 
       const t = arr[i];
       arr[i] = arr[j];
@@ -1554,8 +1554,8 @@ class PriorityQueue{
         let j = i << 1;
 
         if(j >= len) break;
-        if(j + 1 !== len && !arr[j].leq(arr[j + 1])) j++;
-        if(arr[i].leq(arr[j])) break;
+        if(j + 1 !== len && arr[j].cmp(arr[j + 1]) > 0) j++;
+        if(arr[j].cmp(arr[i]) >= 0) break;
 
         const t = arr[i];
         arr[i] = arr[j];
@@ -1972,14 +1972,19 @@ class Stringifiable extends Iterable{
   static tabSize = 2;
   static #inc = Symbol('inc');
   static #dec = Symbol('dec');
+  static #prefixPush = Symbol('prefixPush');
+  static #prefixPop = Symbol('prefixPop');
 
   #tabSize = Stringifiable.tabSize;
+  #prefixes = [];
 
   get tabSize(){ return this.#tabSize; }
   set tabSize(tabSize){ this.#tabSize = tabSize; }
 
   get inc(){ return Stringifiable.#inc; }
   get dec(){ return Stringifiable.#dec; }
+  get prefixPush(){ return Stringifiable.#prefixPush; }
+  get prefixPop(){ return Stringifiable.#prefixPop; }
 
   toStr(){ O.virtual('toStr'); }
 
@@ -1997,17 +2002,34 @@ class Stringifiable extends Iterable{
   }
 
   toString(){
-    const {tabSize, inc, dec} = this;
+    const {tabSize, inc, dec, prefixPush, prefixPop} = this;
+    const prefixes = this.#prefixes;
 
     const stack = [this];
     let str = '';
     let tab = 0;
 
-    const append = s => {
-      if(tab !== 0){
-        const tabStr = ' '.repeat(tab);
-        s = s.replace(/\r\n|\r|\n/g, a => `${a}${tabStr}`);
+    const push = (context, index, val) => {
+      check: {
+        if(typeof val === 'string') break check;
+        if(typeof val === 'symbol') break check;
+        if(val instanceof Stringifiable) break check;
+
+        throw new TypeError(`${
+          context.constructor.name}: Invalid value pushed to the stack${
+          index !== null ? ` (index ${
+          index})` : ''}`);
       }
+
+      stack.push(val);
+    };
+
+    const append = s => {
+      const prefix = `${prefixes.join('')}${' '.repeat(tab)}`;
+
+      s = s.replace(/\r\n|\r|\n/g, a => {
+        return `${a}${prefix}`;
+      });
 
       str += s;
     };
@@ -2023,7 +2045,23 @@ class Stringifiable extends Iterable{
       if(elem === dec){
         if(tab === 0)
           throw new TypeError('Indentation cannot be negative');
+
         tab -= tabSize;
+        continue;
+      }
+
+      if(elem === prefixPush){
+        const str = stack.pop();
+
+        if(typeof str !== 'string')
+          throw new TypeError('Prefix must be a string');
+
+        prefixes.push(str);
+        continue;
+      }
+
+      if(elem === prefixPop){
+        prefixes.pop();
         continue;
       }
 
@@ -2035,12 +2073,12 @@ class Stringifiable extends Iterable{
       const val = elem.toStr();
 
       if(!Array.isArray(val)){
-        stack.push(val);
+        push(elem, null, val);
         continue;
       }
 
       for(let i = val.length - 1; i !== -1; i--)
-        stack.push(val[i]);
+        push(elem, i, val[i]);
     }
 
     if(tab !== 0)
@@ -2161,6 +2199,7 @@ const O = {
   MultidimensionalMap,
   EnhancedRenderingContext,
   Buffer,
+  Comparable,
   PriorityQueue,
   IO,
   Serializer,
@@ -3566,6 +3605,27 @@ const O = {
         index--;
 
     return num - 1n;
+  },
+
+  bisect(f){
+    if(f(0n)) return 0n;
+
+    let i = 0n;
+    let j = 1n;
+
+    while(!f(j)){
+      i = j;
+      j <<= 1n;
+    }
+
+    while(j - i !== 1n){
+      const k = i + j >> 1n;
+
+      if(f(k)) j = k;
+      else i = k;
+    }
+
+    return j;
   },
 
   /*
