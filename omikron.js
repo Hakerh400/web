@@ -1515,10 +1515,11 @@ class Comparable{
 class PriorityQueue{
   #arr = [null];
 
+  get arr(){ return this.#arr.slice(1); }
   get len(){ return this.#arr.length - 1; }
   get isEmpty(){ return this.#arr.length === 1; }
 
-  add(elem){
+  push(elem){
     const arr = this.#arr;
     let i = arr.length;
 
@@ -1575,6 +1576,14 @@ class PriorityQueue{
       throw new TypeError('The queue is empty');
 
     return arr[1];
+  }
+
+  *[Symbol.iterator](){
+    const arr = this.#arr;
+    const len = arr.length;
+
+    for(let i = 1; i !== len; i++)
+      yield arr[i];
   }
 }
 
@@ -2121,6 +2130,10 @@ class Semaphore{
   }
 }
 
+class AssertionError extends Error{
+  get name(){ return 'AssertionError'; }
+}
+
 const O = {
   global: null,
   isNode: null,
@@ -2207,6 +2220,7 @@ const O = {
   Iterable,
   Stringifiable,
   Semaphore,
+  AssertionError,
 
   init(loadProject=1){
     const CHROME_ONLY = 0;
@@ -2250,6 +2264,7 @@ const O = {
 
     O.module.cache = O.obj();
     O.modulesPolyfill = O.modulesPolyfill();
+    O.assert.fail = O.assertFail;
 
     /*
       Older versions of Google Chrome had issues with Math.random()
@@ -2630,7 +2645,8 @@ const O = {
     };
   },
 
-  addStyle(pth){
+  addStyle(pth, local=1){
+    if(local) pth = O.localPath(pth);
     const style = O.ce(O.head, 'style');
     
     return new Promise(res => {
@@ -2648,6 +2664,10 @@ const O = {
   urlTime(url){
     var char = url.indexOf('?') !== -1 ? '&' : '?';
     return `${url}${char}_=${O.now}`;
+  },
+
+  localPath(pth){
+    return `${O.baseURL}/projects/${O.project}/${pth}`;
   },
 
   rf(file, isBinary, cb=null){
@@ -2697,7 +2717,7 @@ const O = {
       isBinary = 0;
     }
 
-    O.rf(`${O.baseURL}/projects/${O.project}/${file}`, isBinary, cb);
+    O.rf(O.localPath(file), isBinary, cb);
   },
 
   async readFile(file){
@@ -3361,6 +3381,30 @@ const O = {
 
   // Other functions
 
+  assert(...args){
+    const len = args.length;
+
+    if(len < 1 || len > 2)
+      throw new TypeError(`Expected 1 or 2 arguments, but got ${len}`);
+
+    if(!args[0]){
+      let msg = `Assertion failed`;
+      if(len === 2) msg += ` ---> ${args[1]}`;
+      throw new O.AssertionError(msg);
+    }
+  },
+
+  assertFail(...args){
+    const len = args.length;
+
+    if(len > 1)
+      throw new TypeError(`Expected 0 or 1 argument, but got ${len}`);
+
+    let msg = `Assertion failed`;
+    if(len === 1) msg += ` ---> ${args[0]}`;
+    throw new O.AssertionError(msg);
+  },
+
   repeat(num, func){
     for(var i = 0; i !== num; i++)
       func(i, i / num, num);
@@ -3622,6 +3666,27 @@ const O = {
       const k = i + j >> 1n;
 
       if(f(k)) j = k;
+      else i = k;
+    }
+
+    return j;
+  },
+
+  async bisecta(f){
+    if(await f(0n)) return 0n;
+
+    let i = 0n;
+    let j = 1n;
+
+    while(!(await f(j))){
+      i = j;
+      j <<= 1n;
+    }
+
+    while(j - i !== 1n){
+      const k = i + j >> 1n;
+
+      if(await f(k)) j = k;
       else i = k;
     }
 

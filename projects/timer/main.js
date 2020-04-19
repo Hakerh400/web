@@ -10,20 +10,33 @@ const xOffset = g.measureText(formatTime(0)).width / 2;
 
 let t = parseTime(O.urlParam('time', '00:05:00'));
 let start = null;
+let stage = 0;
 
-main();
+speechSynthesis.onvoiceschanged = main;
 
 function main(){
   O.ael('keydown', evt => {
     if(evt.code !== 'Space') return;
-    setTimeout(() => start = O.now, 1e3);
+    setTimeout(() => {
+      start = O.now;
+      stage = 1;
+    }, 1e3);
   });
 
   O.raf(render);
 }
 
 function render(){
-  const tt = start === null ? t : Math.max(t - (O.now - start) / 1e3, 0);
+  const dt = t - (O.now - start) / 1e3;
+
+  if(stage === 1 && dt < 0){
+    const a = new SpeechSynthesisUtterance('a');
+    a.voice = speechSynthesis.getVoices()[21];
+    speechSynthesis.speak(a);
+    stage = 2;
+  }
+
+  const tt = start !== null ? Math.max(dt, 0) : t;
 
   g.clearRect(0, 0, w, h);
   g.fillText(formatTime(tt), wh - xOffset, hh);
