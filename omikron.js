@@ -3737,9 +3737,12 @@ const O = {
 
         join(...pths){
           return pths.reduce((p1, p2) => {
+            p1 = p1.slice(p1.match(/[\/\\]*$/)[0].length);
+            p2 = p2.slice(0, p2.length - p2.match(/^[\/\\]*/)[0].length);
+
             return p1.split(/[\/\\]/).
               concat(p2.split(/[\/\\]/)).
-              join('/').replace(/\/+/g, '/');
+              join('/');
           });
         },
       },
