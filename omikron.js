@@ -3789,8 +3789,15 @@ const O = {
     throw new TypeError(`${type} ${O.sf(name)} is virtual`);
   },
 
-  noimpl(name){
-    throw new TypeError(`${O.sf(name)} is not implemented`);
+  noimpl(...args){
+    if(args.length > 1)
+      throw new TypeError(`Expected 0 or 1 argument`);
+
+    const msg = args.length === 1 ?
+      `${O.sf(name)} is not implemented` :
+      `Not implemented`;
+
+    throw new Error(msg);
   },
 
   /*
@@ -4091,7 +4098,11 @@ const O = {
     return {encode, decode};
   })(),
 
-  // Exit
+  // Exceptions
+
+  err(msg){
+    O.exit(`ERROR: ${msg}`);
+  },
 
   exit(...args){
     if(!(O.isNode || O.isElectron))

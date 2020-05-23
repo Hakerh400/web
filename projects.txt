@@ -28,3 +28,5 @@ round-fractal
 circular-tree
 water-level
 diagram
+movie
+simulator
