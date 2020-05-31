@@ -3062,6 +3062,7 @@ const O = {
   lf(str){ return O.setLineBreak(str, '\n'); },
   crlf(str){ return O.setLineBreak(str, '\r\n'); },
   rev(str){ return str.split('').reverse().join(''); },
+  rept(arr, n){ return O.ca(arr.length * n, i => arr[i % arr.length]); },
 
   /*
     Array functions
