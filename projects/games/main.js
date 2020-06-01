@@ -162,6 +162,14 @@ class Game{
       g.clearRect(0, 0, w, h);
     });
 
+    this.ael('resize', evt => {
+      this.display.updateWH();
+      this.grid.resize();
+      this.drawGrid();
+      
+      g.fillStyle = 'red';
+    });
+
     function drawCursorLines(){
       g.clearRect(0, 0, w, h);
 
@@ -286,7 +294,7 @@ class Game{
     css.type = 'text/css';
     css.href = `/projects/${O.project}/style.css`;
 
-    var display = this.display = new Display(LAYERS_NUM);
+    var display = this.display = new Display(this, LAYERS_NUM);
     var layer = display.getLayer(0);
     var g = layer.g;
 
@@ -601,7 +609,7 @@ class Game{
     obj[Symbol.toPrimitive] = toPrimitive;
     return obj;
   }
-};
+}
 
 function createIntArr(game, x = null, y = null){
   var obj = createObj();
@@ -666,12 +674,13 @@ function str2buff(str){
 }
 
 class Display{
-  constructor(layersNum = 0){
+  constructor(game, layersNum=0){
+    this.game = game;
+
     this.div = this.div = O.ce(O.body, 'div');
     this.layers = [];
 
     this.updateWH();
-    this.aels();
 
     if(layersNum !== 0){
       O.repeat(layersNum, () => {
@@ -680,12 +689,6 @@ class Display{
     }
 
     this.show();
-  }
-
-  aels(){
-    window.addEventListener('resize', evt => {
-      this.updateWH();
-    });
   }
 
   updateWH(){
@@ -715,7 +718,7 @@ class Display{
   hide(){
     this.div.style.display = 'none';
   }
-};
+}
 
 class Layer{
   constructor(display, zIndex){
@@ -738,4 +741,4 @@ class Layer{
     canvas.style.zIndex = `${this.zIndex}`;
     this.g = new O.EnhancedRenderingContext(canvas.getContext('2d'));
   }
-};
+}
