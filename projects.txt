@@ -31,3 +31,4 @@ diagram
 movie
 simulator
 tower-of-hanoi
+games

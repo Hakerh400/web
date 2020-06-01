@@ -1,0 +1,6 @@
+sokoban
+snake
+tetris
+netwalk
+sudoku
+2048
