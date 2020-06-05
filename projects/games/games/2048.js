@@ -2,6 +2,20 @@
 
 game.levels = 1;
 
+if(0){
+  let dir = 0;
+
+  game.generate = () => {
+    game.loadGrid(45, 25);
+    spawnTile();
+  };
+
+  game.kb.Enter = () => {
+    game.kb.dir(dir);
+    if(!game.updated) dir ^= 1;
+  };
+}
+
 game.draw = (x, y, d, g) => {
   g.fillStyle = d[0] < cols.length ? cols[d[0]] : '#3e3933';
   g.fillRect(x, y, 1, 1);

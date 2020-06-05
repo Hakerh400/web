@@ -6,7 +6,7 @@ const BitStream = require('./bit-stream');
 const PSEUDO_RANDOM = 0;
 
 const LAYERS_NUM = 2;
-const TILE_SIZE = 40;
+const TILE_SIZE = O.urlParam('s', '40') | 0;
 const MAX_DIM = 100;
 const MAX_DIM1 = MAX_DIM - 1;
 
