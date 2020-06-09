@@ -38,7 +38,7 @@ function showGameList(){
       if(index !== 0) O.ceBr(gameList);
 
       var name = O.projectToName(game);
-      var url = `/?project=${O.project}&game=${game}`;
+      var url = `${O.baseURL}/?project=${O.project}&game=${game}`;
       var link = O.ceLink(gameList, name, url);
     });
   });
