@@ -5,6 +5,8 @@ const Vector = require('./vector');
 
 class GridGUI{
   constructor(w, h, s, func=() => O.obj()){
+    this.w = w;
+    this.h = h;
     this.func = func;
     this.grid = new SimpleGrid(w, h, func);
     this.scale = s;
@@ -24,7 +26,7 @@ class GridGUI{
 
     this.keys = O.obj();
     this.mbs = 0;
-    this.cur = new Vector;
+    this.cur = new Vector();
 
     this.funcs = {
       draw: [],
@@ -143,12 +145,12 @@ class GridGUI{
   }
 
   draw(){
-    const {grid, g, funcs, wrap} = this;
+    const {grid, g, funcs} = this;
 
     g.clearCanvas('darkgray');
+    g.save();
 
     for(const drawf of funcs.draw){
-      g.save();
       grid.iter((x, y, d) => {
         g.translate(x, y);
         drawf(g, d, x, y);
@@ -156,9 +158,38 @@ class GridGUI{
       });
     }
 
-    for(const framef of funcs.frame){
-      g.beginPath();
+    this.drawFrame();
+  }
 
+  drawTiles(tiles){
+    const {grid, g, funcs, wrap} = this;
+
+    g.save();
+
+    for(const drawf of funcs.draw){
+      for(let i = 0; i !== tiles.length; i += 2){
+        const x = tiles[i];
+        const y = tiles[i + 1];
+        const d = grid.get(x, y);
+
+        g.translate(x, y);
+        drawf(g, d, x, y);
+        g.restore();
+      }
+    }
+
+    this.drawFrame();
+  }
+
+  drawFrame(){
+    const {g, w, h, grid, wrap, funcs} = this;
+
+    g.save();
+
+    g.strokeStyle = '#000';
+    g.beginPath();
+
+    for(const framef of funcs.frame){
       grid.iter((x, y, d1) => {
         grid.adj(x, y, wrap, (xx, yy, d2, dir) => {
           if(dir === 3 && x !== 0) return;
@@ -188,16 +219,9 @@ class GridGUI{
           }
         });
       });
-
-      g.stroke();
     }
-  }
 
-  render(){
-    this.tick();
-    this.draw();
-
-    O.raf(this.render.bind(this));
+    g.stroke();
   }
 
   removeListener(type, func){

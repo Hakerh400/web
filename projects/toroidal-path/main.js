@@ -31,22 +31,15 @@ function main(){
 
   let colorized = 0;
 
-  gui.on('draw', (g, d, x, y) => {
-    g.fillStyle = '#ccc';
-    g.fillRect(0, 0, 1, 1);
-
-    g.strokeStyle = '#bbb';
-    g.beginPath();
-    g.moveTo(1, 0);
-    g.lineTo(0, 0);
-    g.lineTo(0, 1);
-    g.stroke();
-    g.strokeStyle = 'black';
-  });
+  const isBoundary = (x, y) => {
+    const d = grid.get(x, y);
+    return d === null || d.wall;
+  };
 
   gui.on('draw', (g, d, x, y) => {
     const ddirs = 1 << d.dirs;
-    const col =
+
+    g.fillStyle =
       d.z ? '#f00' :
       d.wall ? '#840' :
       d.locked ? '#888' :
@@ -54,18 +47,23 @@ function main(){
         ddirs & 279 ?
           (x ^ y) & 1 ? '#f08' : '#0ff' :
         ddirs & 59520 ? '#fa0' :
-        null :
-      null;
+        '#ccc' :
+      '#ccc';
 
-    if(col !== null){
-      g.fillStyle = col;
-      g.fillRect(0, 0, 1, 1);
-    }
+    g.fillRect(0, 0, 1, 1);
 
+    g.strokeStyle = '#bbb';
+    g.beginPath();
+    g.rect(0, 0, 1, 1);
+    g.stroke();
+  });
+
+  gui.on('draw', (g, d, x, y) => {
     if(!d.wall){
       const {dirs} = d;
 
       g.fillStyle = highlighted.has(x, y) ? '#ff0' : '#0f0';
+      g.strokeStyle = '#000';
       
       if(dirs !== 0)
         g.drawTube(0, 0, dirs, .3);
@@ -74,7 +72,7 @@ function main(){
 
   gui.on('frame', (g, d1, d2, x, y, dir) => {
     if(d2 === null) return 1;
-    return d1.wall ^ d2.wall;
+    return d1.wall || d2.wall;
   });
 
   gui.on('kF3', (x, y) => {
@@ -82,36 +80,46 @@ function main(){
       d.dirs = 0;
       d.locked = 0;
     });
+
+    gui.draw();
   });
 
   gui.on('kSpace', (x, y) => {
     if(!grid.has(x, y)) return;
     grid.get(x, y).toggleLock();
+
+    gui.drawTiles([x, y]);
   });
 
   gui.on('kKeyQ', (x, y) => {
     highlighted.reset();
-    if(!grid.has(x, y)) return;
 
-    const d = grid.get(x, y);
-    if(d.wall) return;
+    highlight: {
+      if(!grid.has(x, y)) break highlight;
 
-    highlighted.add(x, y);
-
-    grid.iterAdj(x, y, 1, (x, y, d, xp, yp, dir) => {
-      const dp = grid.get(xp, yp);
-
-      if(d.wall) return 0;
-      if(!(dp.dirs & (1 << dir))) return 0;
-      if(!(d.dirs & (1 << (dir ^ 2)))) return 0;
+      const d = grid.get(x, y);
+      if(d.wall) break highlight;
 
       highlighted.add(x, y);
-      return 1;
-    });
+
+      grid.iterAdj(x, y, 1, (x, y, d, xp, yp, dir) => {
+        const dp = grid.get(xp, yp);
+
+        if(d.wall) return 0;
+        if(!(dp.dirs & (1 << dir))) return 0;
+        if(!(d.dirs & (1 << (dir ^ 2)))) return 0;
+
+        highlighted.add(x, y);
+        return 1;
+      });
+    }
+
+    gui.draw();
   });
 
   gui.on('kKeyW', (x, y) => {
     colorized ^= 1;
+    gui.draw();
   });
 
   gui.on('kEnter', () => {
@@ -125,6 +133,8 @@ function main(){
       solving = 0;
       solver = null;
     }
+
+    gui.draw();
   });
 
   gui.on('kKeyA', () => {
@@ -142,6 +152,8 @@ function main(){
     colorized = 0;
     solving = 0;
     solver = null;
+
+    gui.draw();
   });
 
   gui.on('dragl', (x1, y1, x2, y2, dir) => {
@@ -158,6 +170,8 @@ function main(){
 
     d1.dirs ^= 1 << dir;
     d2.dirs ^= 1 << (dir ^ 2);
+
+    gui.drawTiles([x1, y1, x2, y2]);
   });
 
   {
@@ -201,6 +215,7 @@ function main(){
 
     gui.on('kArrowRight', () => {
       next();
+      gui.draw();
     });
 
     next();
@@ -212,7 +227,7 @@ function main(){
     });
   });
 
-  gui.render();
+  gui.draw();
 
   if(seed !== null)
     gui.emit('kKeyA');
