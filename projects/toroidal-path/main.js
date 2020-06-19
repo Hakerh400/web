@@ -5,30 +5,27 @@ const Solver = require('./solver');
 const Tile = require('./tile');
 
 const AUTO = 1;
-const CHECK = 0;
+const CHECK = 1;
 
-const w = 21;
-const h = 21;
+const w = 15;
+const h = 15;
 const s = 40;
 
-const density = .05;
+const density = .15;
 const speed = 1;
 
 O.enhanceRNG();
 let seed = O.urlParam('seed');
 if(seed !== null) O.randSeed(seed |= 0);
 
-const gui = new GridGUI(w, h, s, initFunc);
-const {grid, keys, cur} = gui;
-
 let solving = 0;
 let solver = null;
 
-window.setTimeout(main);
+const main = () => {
+  const gui = new GridGUI(w, h, s, initFunc);
+  const {grid, keys, cur} = gui;
 
-function main(){
   const highlighted = new O.Map2D();
-
   let colorized = 0;
 
   const isBoundary = (x, y) => {
@@ -231,20 +228,44 @@ function main(){
 
   if(seed !== null)
     gui.emit('kKeyA');
-}
+};
 
-function generate(grid){
-  grid.iter(genFunc);
-}
+const generate = grid => {
+  grid.iter((x, y, d) => {
+    d.wall = 0;
+    d.dirs = 0;
+    d.locked = 0;
+  });
 
-function initFunc(x, y){
+  grid.iter((x, y, d) => {
+    d.wall = O.randf() < density;
+
+    let found = 0;
+
+    grid.adj(x, y, 1, (x1, y1, d1) => {
+      let sum = 0;
+
+      grid.adj(x1, y1, 1, (x2, y2, d2) => {
+        if(d2.wall) sum++;
+      });
+
+      if(sum >= 3) found = 1;
+    });
+
+    if(found) d.wall = 0;
+  });
+};
+
+const initFunc = (x, y) => {
   const d = new Tile();
   genFunc(x, y, d);
   return d;
-}
+};
 
-function genFunc(x, y, d){
+const genFunc = (x, y, d) => {
   d.wall = O.randf() < density;
   d.dirs = 0;
   d.locked = 0;
-}
+};
+
+main();
