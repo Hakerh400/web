@@ -8,31 +8,25 @@ const radius = 30;
 const yMin = radius;
 const yMax = h1 - radius;
 
+const ref = hh;
+
 const fanMin = 0;
 const fanMax = 2;
 
-const gAcc = -.01;
-
-const kp = .00008;
-const ti = .001;
-const td = .005;
+const gAcc = 1;
 
 const cols = {
   bg: '#fff',
   ball: '#0f0',
 };
 
-let ref = hh;
-let y = 0;
-let v = 0;
-let fan = 0;
-
-let ePrev = 0;
-let ee = 0;
-
 const main = () => {
   render();
 };
+
+let y = 0;
+let v = 0;
+let fan = 0;
 
 const update = () => {
   y += v;
@@ -45,29 +39,24 @@ const update = () => {
     v = 0;
   }
 
-  v += gAcc + fan;
+  v += -gAcc + fan;
 };
 
-const pid = y => {
+let yPrev = 0;
+
+const regulate = y => {
+  const v = y - yPrev;
+  yPrev = y;
+
   const e = ref - y;
-  const de = e - ePrev;
-
-  ee += e;
-  fan = kp * (e + ee * ti + de * td);
-
-  if(fan < fanMin){
-    fan = fanMin;
-    ee -= e;
-  }else if(fan > fanMax){
-    fan = fanMax;
-    ee -= e;
-  }
+  fan = O.bound(e * .1 - v, fanMin, fanMax);
 };
 
 const render = () => {
   const yPrev = y;
+  
   update();
-  pid(yPrev);
+  regulate(yPrev);
 
   g.fillStyle = cols.bg;
   g.fillRect(0, 0, w, h);
