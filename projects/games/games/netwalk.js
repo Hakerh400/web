@@ -3,9 +3,10 @@
 game.levels = 2;
 
 game.draw = (x, y, d, g) => {
-  g.fillStyle = ['#c0c0c0', '#808080'][d[1]];
+  const d1 = d[1];
+  g.fillStyle = d1 ? d1 > 1 ? '#404040' : '#808080' : '#c0c0c0';
   g.fillRect(x, y, 1, 1);
-  g.fillStyle = ['#00ff00', '#008000'][d[1]];
+  g.fillStyle = d1 ? '#008000' : '#00ff00';
   game.tube(x, y, d[0], .25, 1);
 };
 
@@ -20,7 +21,7 @@ game.import = (x, y, d, bs) => {
 };
 
 game.generate = () => {
-  game.loadGrid(45, 25);
+  game.loadGrid(9, 9);
 
   var {w, h} = game;
   game.iterate((x, y, d) => d[0] = d[1] = 0);
@@ -72,5 +73,17 @@ game.mouse.lmb = (x, y, d) => {
 };
 
 game.mouse.rmb = (x, y, d) => {
-  d[1] ^= 1;
+  if(d[1] === 0) d[1] = 1;
+  else if(d[1] === 1) d[1] = 0;
+};
+
+game.kb.dir = dir => {
+  if(dir === 0)
+    game.iterate((x, y, d) => d[1] !== 0 && d[1]++);
+  else
+    game.iterate((x, y, d) => d[1] !== 0 && d[1]--);
+};
+
+game.kb.Enter = dir => {
+  game.iterate((x, y, d) => d[1] > 1 && d[1]--);
 };
