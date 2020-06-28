@@ -11,7 +11,7 @@ const w = 15;
 const h = 15;
 const s = 40;
 
-const density = .15;
+const density = .2;
 const speed = 1;
 
 O.enhanceRNG();
@@ -123,7 +123,7 @@ const main = () => {
     if(!solving){
       solver = new Solver(gui);
       solving = 1;
-      colorized = 0;
+      // colorized = 0;
     }
 
     if(!solver.move()){
