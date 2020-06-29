@@ -22,14 +22,28 @@ game.draw = (x, y, d, g) => {
 };
 
 game.export = (x, y, d, bs) => {
+  const {w, h} = game;
+
+  if(x === 0 && y === 0){
+    bs.write(offsetX, w - 1);
+    bs.write(offsetY, h - 1);
+  }
+
   bs.write(d[0], 15);
-  bs.write(d[1], 15);
+  bs.write(d[1], 1e3);
   bs.write(d[2], 1);
 };
 
 game.import = (x, y, d, bs) => {
+  const {w, h} = game;
+
+  if(x === 0 && y === 0){
+    offsetX = bs.read(w - 1);
+    offsetY = bs.read(h - 1);
+  }
+
   d[0] = bs.read(15);
-  d[1] = bs.read(15);
+  d[1] = bs.read(1e3);
   d[2] = bs.read(1);
 };
 
@@ -95,7 +109,7 @@ game.kb.KeyR = () => {
 };
 
 game.kb.KeyS = () => {
-  game.iterate((x, y, d) => d[1] !== 0 && d[1]++);
+  game.iterate((x, y, d) => d[1] !== 0 && d[1] !== 1e3 && d[1]++);
 };
 
 game.kb.KeyX = () => {

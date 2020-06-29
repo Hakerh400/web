@@ -19,6 +19,7 @@ if(0){
 game.draw = (x, y, d, g) => {
   g.fillStyle = d[0] < cols.length ? cols[d[0]] : '#3e3933';
   g.fillRect(x, y, 1, 1);
+  
   if(d[0]){
     g.fillStyle = d[0] < 3 ? '#000000' : '#ffffff';
     var str = (1 << d[0]).toString();
