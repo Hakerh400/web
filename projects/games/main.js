@@ -6,7 +6,7 @@ const BitStream = require('./bit-stream');
 const PSEUDO_RANDOM = 0;
 
 const LAYERS_NUM = 2;
-const TILE_SIZE = O.urlParam('s', '40') | 0;
+const TILE_SIZE = O.urlParam('s', '60') | 0;
 const MAX_DIM = 100;
 const MAX_DIM1 = MAX_DIM - 1;
 
@@ -101,7 +101,13 @@ class Game{
     this.mouse = createObj();
 
     this.func(O, this);
-    this.loadLevel(O.urlParam('level') || 1);
+
+    if(this.generate){
+      this.generate();
+      this.drawGrid();
+    }else{
+      this.loadLevel(O.urlParam('level') || 1);
+    }
   }
 
   addEventListeners(){

@@ -2,29 +2,42 @@
 
 game.levels = 2;
 
+let offsetX = 0;
+let offsetY = 0;
+
 game.draw = (x, y, d, g) => {
   const d1 = d[1];
-  g.fillStyle = d1 ? d1 > 1 ? '#404040' : '#808080' : '#c0c0c0';
+
+  g.fillStyle = d1 ?
+    d1 > 1 ? '#404040' : '#808080' :
+    '#c0c0c0';
+
   g.fillRect(x, y, 1, 1);
-  g.fillStyle = d1 ? '#008000' : '#00ff00';
+
+  g.fillStyle = d1 ?
+    d[2] ? '#aaaa00' : '#008000' :
+    d[2] ? '#ffff00' : '#00ff00';
+
   game.tube(x, y, d[0], .25, 1);
 };
 
 game.export = (x, y, d, bs) => {
   bs.write(d[0], 15);
-  bs.write(d[1], 1);
+  bs.write(d[1], 15);
+  bs.write(d[2], 1);
 };
 
 game.import = (x, y, d, bs) => {
   d[0] = bs.read(15);
-  d[1] = bs.read(1);
+  d[1] = bs.read(15);
+  d[2] = bs.read(1);
 };
 
 game.generate = () => {
   game.loadGrid(9, 9);
 
   var {w, h} = game;
-  game.iterate((x, y, d) => d[0] = d[1] = 0);
+  game.iterate((x, y, d) => d[0] = d[1] = d[2] = 0);
   var [x, y] = [w, h].map(a => a >> 1);
   var id = game.getId();
   var d = game.get(x, y);
@@ -77,13 +90,95 @@ game.mouse.rmb = (x, y, d) => {
   else if(d[1] === 1) d[1] = 0;
 };
 
-game.kb.dir = dir => {
-  if(dir === 0)
-    game.iterate((x, y, d) => d[1] !== 0 && d[1]++);
-  else
-    game.iterate((x, y, d) => d[1] !== 0 && d[1]--);
+game.kb.KeyR = () => {
+  game.iterate((a, y, d) => d[1] = 0);
 };
 
-game.kb.Enter = dir => {
-  game.iterate((x, y, d) => d[1] > 1 && d[1]--);
+game.kb.KeyS = () => {
+  game.iterate((x, y, d) => d[1] !== 0 && d[1]++);
+};
+
+game.kb.KeyX = () => {
+  let n = 0;
+
+  game.iterate((x, y, d) => d[1] >= 2 && (n = 1));
+  if(n) game.iterate((x, y, d) => d[1] !== 0 && d[1]--);
+};
+
+game.kb.Enter = () => {
+  game.iterate((x, y, d) => d[1] >= 2 && d[1]--);
+};
+
+game.kb.KeyQ = () => {
+  const {w, h} = game;
+  const {cx, cy} = game;
+  const d = game.get(cx, cy);
+
+  game.iterate((x, y, d) => d[2] = 0);
+  if(d === null) return;
+
+  const stack = [[cx, cy, d]];
+
+  while(stack.length !== 0){
+    const [x, y, d] = stack.pop();
+    if(d[2]) continue;
+
+    d[2] = 1;
+
+    if(d[0] & 1){
+      const y1 = y === 0 ? h - 1 : y - 1;
+      const d1 = game.get(x, y1);
+      if(!d1[2] && (d1[0] & 4)) stack.push([x, y1, d1]);
+    }
+
+    if(d[0] & 2){
+      const x1 = x === 0 ? w - 1 : x - 1;
+      const d1 = game.get(x1, y);
+      if(!d1[2] && (d1[0] & 8)) stack.push([x1, y, d1]);
+    }
+
+    if(d[0] & 4){
+      const y1 = y === h - 1 ? 0 : y + 1;
+      const d1 = game.get(x, y1);
+      if(!d1[2] && (d1[0] & 1)) stack.push([x, y1, d1]);
+    }
+
+    if(d[0] & 8){
+      const x1 = x === w - 1 ? 0 : x + 1;
+      const d1 = game.get(x1, y);
+      if(!d1[2] && (d1[0] & 2)) stack.push([x1, y, d1]);
+    }
+  }
+};
+
+const scroll = (dx, dy) => {
+  const {w, h} = game;
+  const map = new Map();
+
+  offsetX = ((offsetX + dx) % w + w) % w;
+  offsetY = ((offsetY + dy) % h + h) % h;
+
+  game.iterate((x, y, d) => {
+    const x1 = ((x + dx) % w + w) % w;
+    const y1 = ((y + dy) % h + h) % h;
+    const d1 = game.get(x1, y1);
+
+    map.set(d1, [d[0], d[1], d[2]]);
+  });
+
+  game.iterate((x, y, d) => {
+    const d1 = map.get(d);
+
+    d[0] = d1[0];
+    d[1] = d1[1];
+    d[2] = d1[2];
+  });
+};
+
+game.kb.dir = (dir, dx, dy) => {
+  scroll(-dx, -dy);
+};
+
+game.kb.Space = () => {
+  scroll(-offsetX, -offsetY);
 };
