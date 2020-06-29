@@ -990,6 +990,29 @@ class EnhancedRenderingContext{
     this.clearCanvas();
   }
 
+  resize(w, h){
+    const {canvas, g} = this;
+
+    const attribs = [
+      'fillStyle',
+      'strokeStyle',
+      'globalAlpha',
+      'textAlign',
+      'textBaseline',
+      'lineWidth',
+      'globalCompositeOperation',
+      'lineCap',
+      'lineJoin',
+    ];
+
+    const values = attribs.map(a => g[a]);
+
+    this.w = canvas.width = w;
+    this.h = canvas.height = h;
+
+    attribs.forEach((a, b) => g[a] = values[b]);
+  }
+
   clearCanvas(col=null){
     var {canvas, g} = this;
     if(col !== null) g.fillStyle = col;
@@ -1170,6 +1193,17 @@ class EnhancedRenderingContext{
     }
 
     this.g.fillRect(Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty), Math.round(w * this.s) + 1, Math.round(h * this.s) + 1);
+  }
+
+  strokeRect(x, y, w, h){
+    if(this.rot){
+      this.g.beginPath();
+      this.rect(x, y, w, h);
+      this.stroke();
+      return;
+    }
+
+    this.g.strokeRect(Math.round(x * this.s + this.tx) + .5, Math.round(y * this.s + this.ty) + .5, Math.round(w * this.s) + 1, Math.round(h * this.s) + 1);
   }
 
   moveTo(x, y){
