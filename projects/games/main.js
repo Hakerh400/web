@@ -6,7 +6,7 @@ const BitStream = require('./bit-stream');
 const PSEUDO_RANDOM = 0;
 
 const LAYERS_NUM = 2;
-const TILE_SIZE = O.urlParam('s', '60') | 0;
+const TILE_SIZE = O.urlParam('s', 70) | 0;
 const MAX_DIM = 100;
 const MAX_DIM1 = MAX_DIM - 1;
 
@@ -87,6 +87,8 @@ class Game{
     this.export = null;
     this.generate = null;
 
+    this.levels = 1;
+
     this.updated = 0;
     this.updates = createObj();
 
@@ -103,7 +105,12 @@ class Game{
     this.func(O, this);
 
     if(this.generate){
+      const w = O.urlParam('w', this.defaultW) | 0;
+      const h = O.urlParam('h', this.defaultW) | 0;
+
+      this.loadGrid(w, h);
       this.generate();
+      this.importGrid(this.exportGrid());
       this.drawGrid();
     }else{
       this.loadLevel(O.urlParam('level') || 1);
@@ -123,11 +130,11 @@ class Game{
     var cy = h >> 1;
 
     this.ael('keydown', evt => {
-      if(evt.shiftKey){
-        shift = true;
-        drawCursorLines();
-        return;
-      }
+      // if(evt.shiftKey){
+      //   shift = true;
+      //   drawCursorLines();
+      //   return;
+      // }
 
       this.restartUpdates();
       this.onKeyDown(evt);

@@ -1,6 +1,7 @@
 'use strict';
 
-game.levels = 2;
+game.defaultW = 9;
+game.defaultH = 9;
 
 let offsetX = 0;
 let offsetY = 0;
@@ -48,8 +49,6 @@ game.import = (x, y, d, bs) => {
 };
 
 game.generate = () => {
-  game.loadGrid(9, 9);
-
   var {w, h} = game;
   game.iterate((x, y, d) => d[0] = d[1] = d[2] = 0);
   var [x, y] = [w, h].map(a => a >> 1);

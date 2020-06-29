@@ -1,13 +1,16 @@
 'use strict';
 
-game.levels = 1;
+game.defaultW = 4;
+game.defaultH = 4;
 
 let px = 0;
 let py = 0;
 
 game.draw = (x, y, d, g) => {
+  const {w, h} = game;
+
+  const target = y * w + x + 1;
   const val = d[0];
-  const target = ((y << 2) | x) + 1 & 15;
 
   g.fillStyle = val ?
     val === target ? '#00ff00' : '#eee4da' :
@@ -23,11 +26,11 @@ game.draw = (x, y, d, g) => {
 };
 
 game.export = (x, y, d, bs) => {
-  bs.write(d[0], 15);
+  bs.write(d[0], 1e3);
 };
 
 game.import = (x, y, d, bs) => {
-  d[0] = bs.read(15);
+  d[0] = bs.read(1e3);
 
   if(d[0] === 0){
     px = x;
@@ -36,11 +39,11 @@ game.import = (x, y, d, bs) => {
 };
 
 game.generate = () => {
-  game.loadGrid(4, 4);
-  game.iterate((x, y, d) => d[0] = ((y << 2) | x) + 1 & 15);
+  const {w, h} = game;
+  game.iterate((x, y, d) => d[0] = y * w + x + 1);
 
-  px = 3;
-  py = 3;
+  px = w - 1;
+  py = h - 1;
   
   for(let i = O.rand(1e3, 2e3); i !== -1; i--)
     move(O.rand(4));
@@ -51,6 +54,8 @@ game.kb.dir = (dir, dx, dy) => {
 };
 
 const move = dir => {
+  const {w, h} = game;
+
   if(dir === 0){
     if(py === 0) return;
     const d = game.get(px, py--);
@@ -70,7 +75,7 @@ const move = dir => {
   }
 
   if(dir === 2){
-    if(py === 3) return;
+    if(py === h - 1) return;
     const d = game.get(px, py++);
     const d1 = game.get(px, py);
     d[0] = d1[0];
@@ -79,7 +84,7 @@ const move = dir => {
   }
 
   if(dir === 3){
-    if(px === 3) return;
+    if(px === w - 1) return;
     const d = game.get(px++, py);
     const d1 = game.get(px, py);
     d[0] = d1[0];
