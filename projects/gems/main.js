@@ -210,7 +210,7 @@ function render(){
     g.save();
     g.translate(x + .5, y + .5);
 
-    if(s1 !==  s2)
+    if(s1 !== 1 || s2 !== 1)
       g.scale(s1 * k1 + s2 * k);
 
     drawGem(d);
