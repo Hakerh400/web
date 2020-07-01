@@ -20,40 +20,23 @@ class Grid extends O.Grid{
     }
   }
 
-  match(tile, visited=null){
+  match(tile){
     const {w, h} = this;
     const {x, y, gem} = tile;
 
     const match = new Set();
     const matchHor = new Set();
 
-    if(visited !== null){
-      if(visited.has(tile)) return null;
-      visited.add(tile);
-    }
-
     for(let x1 = x - 1; x1 !== -1; x1--){
       const d1 = this.get(x1, y);
-
       if(d1.transitions.length !== 0 || d1.gem !== gem) break;
       matchHor.add(d1);
-
-      if(visited !== null){
-        if(visited.has(d1)) return null;
-        visited.add(match);
-      }
     }
 
     for(let x1 = x + 1; x1 !== w; x1++){
       const d1 = this.get(x1, y);
-
       if(d1.transitions.length !== 0 || d1.gem !== gem) break;
       matchHor.add(d1);
-
-      if(visited !== null){
-        if(visited.has(d1)) return null;
-        visited.add(match);
-      }
     }
 
     if(matchHor.size >= 2)
@@ -64,26 +47,14 @@ class Grid extends O.Grid{
 
     for(let y1 = y - 1; y1 !== -1; y1--){
       const d1 = this.get(x, y1);
-
       if(d1.transitions.length !== 0 || d1.gem !== gem) break;
       matchVert.add(d1);
-
-      if(visited !== null){
-        if(visited.has(d1)) return null;
-        visited.add(match);
-      }
     }
 
     for(let y1 = y + 1; y1 !== h; y1++){
       const d1 = this.get(x, y1);
-
       if(d1.transitions.length !== 0 || d1.gem !== gem) break;
       matchVert.add(d1);
-
-      if(visited !== null){
-        if(visited.has(d1)) return null;
-        visited.add(match);
-      }
     }
 
     if(matchVert.size >= 2)
