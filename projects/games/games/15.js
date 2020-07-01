@@ -44,8 +44,11 @@ game.generate = () => {
 
   px = w - 1;
   py = h - 1;
+
+  const movesMin = (w * h) ** 2;
+  const movesMax = movesMin * 2;
   
-  for(let i = O.rand(1e3, 2e3); i !== -1; i--)
+  for(let i = O.rand(movesMin, movesMax); i !== -1; i--)
     move(O.rand(4));
 };
 

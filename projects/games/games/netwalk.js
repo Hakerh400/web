@@ -126,9 +126,10 @@ game.kb.KeyQ = () => {
   const {w, h} = game;
   const {cx, cy} = game;
   const d = game.get(cx, cy);
+  const skip = d === null || d[2];
 
   game.iterate((x, y, d) => d[2] = 0);
-  if(d === null) return;
+  if(skip) return;
 
   const stack = [[cx, cy, d]];
 
