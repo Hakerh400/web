@@ -7,9 +7,6 @@ const Transition = require('./transition');
 const {min, max, abs, floor, sin, cos} = Math;
 const {pi, pih, pi2} = O;
 
-// O.enhanceRNG();
-// O.randSeed(0);
-
 const pi3 = pi / 3;
 const pi6 = pi / 6;
 const pi11 = pi * 1.1;
