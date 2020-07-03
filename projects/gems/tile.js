@@ -15,8 +15,8 @@ class Tile{
     this.y = y;
   }
 
-  createTransition(type, x1, y1, x2, y2, s1, s2, start, duration){
-    this.addTransition(new Transition(this, type, x1, y1, x2, y2, s1, s2, start, duration));
+  createTransition(type, x1, y1, x2, y2, start, duration){
+    this.addTransition(new Transition(this, type, x1, y1, x2, y2, start, duration));
   }
 
   addTransition(transition){

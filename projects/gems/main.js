@@ -70,12 +70,58 @@ function main(){
 function createGrid(){
   const w = 9;
   const h = 9;
+  const tilesNum = w * h;
+  const availAll = O.ca(gemsNum, i => i);
 
-  const grid = new Grid(w, h, (x, y, d) => {
-    d.gem = null;
+  const grid = O.ca(h, y => O.ca(w, x => null));
+
+  const get = (x, y) => grid[y][x];
+  const set = (x, y, gem) => grid[y][x] = gem;
+
+  let x = 0;
+  let y = 0;
+
+  while(y !== h){
+    const avail = availAll.slice();
+
+    if(y >= 2){
+      const gem = get(x, y - 1);
+
+      if(get(x, y - 2) === gem)
+        avail.splice(avail.indexOf(gem), 1);
+    }
+
+    if(x >= 2){
+      const gem = get(x - 1, y);
+      
+      if(get(x - 2, y) === gem && avail.includes(gem))
+        avail.splice(avail.indexOf(gem), 1);
+    }
+
+    if(avail.length === 0){
+      if(x !== 0){
+        x--;
+      }else{
+        x = w - 1;
+        y--;
+      }
+
+      continue;
+    }
+
+    set(x, y, O.randElem(avail));
+
+    if(x !== w - 1){
+      x++;
+    }else{
+      x = 0;
+      y++;
+    }
+  }
+
+  return new Grid(w, h, (x, y, d) => {
+    d.gem = get(x, y);
   });
-
-  return grid;
 };
 
 function aels(){
@@ -97,8 +143,7 @@ function aels(){
       dragged = 1;
 
       const d = grid.get(mx, my);
-      if(d === null) break drag;
-      if(d.transitions.length !== 0) break drag;
+      if(d === null || d.transitions.length !== 0 || d.gem === null) break drag;
 
       const dx = cx - mx;
       const dy = cy - my;
@@ -110,9 +155,9 @@ function aels(){
       const d1 = grid.nav({x: mx, y: my}, dir);
       if(d1 === null) break drag;
 
-      if(d1.gem === null || d1.transitions.length !== 0){
-        d.createTransition(trTypes.MOVE_ILLEGAL, d.x, d.y, d1.x, d1.y, 1, 1, time1, TRANSITION_DURATION);
-        d.createTransition(trTypes.MOVE_ILLEGAL, d1.x, d1.y, d.x, d.y, 1, 1, time1 + TRANSITION_DURATION, TRANSITION_DURATION);
+      if(d1.transitions.length !== 0 || d1.gem === null || d1.gem === d.gem){
+        d.createTransition(trTypes.MOVE_ILLEGAL, d.x, d.y, d1.x, d1.y, time1, TRANSITION_DURATION);
+        d.createTransition(trTypes.MOVE_ILLEGAL, d1.x, d1.y, d.x, d.y, time1 + TRANSITION_DURATION, TRANSITION_DURATION);
 
         break drag;
       }
@@ -121,8 +166,8 @@ function aels(){
       d.gem = d1.gem;
       d1.gem = gem;
 
-      const tr1 = new Transition(d, trTypes.MOVE_TRY, d1.x, d1.y, d.x, d.y, 1, 1, time1, TRANSITION_DURATION);
-      const tr2 = new Transition(d1, trTypes.MOVE_TRY, d.x, d.y, d1.x, d1.y, 1, 1, time1, TRANSITION_DURATION);
+      const tr1 = new Transition(d, trTypes.MOVE_TRY, d1.x, d1.y, d.x, d.y, time1, TRANSITION_DURATION);
+      const tr2 = new Transition(d1, trTypes.MOVE_TRY, d.x, d.y, d1.x, d1.y, time1, TRANSITION_DURATION);
 
       tr1.other = tr2;
       tr2.other = tr1;
@@ -195,8 +240,8 @@ function render(){
   });
 
   // Draw transitions
-  for(const transition of grid.transitions){
-    const {tile: d, x1, y1, x2, y2, s1, s2, start, duration} = transition;
+  for(const tr of grid.transitions){
+    const {tile: d, x1, y1, x2, y2, start, duration} = tr;
 
     const k = min((time1 - start) / duration, 1);
     const k1 = 1 - k;
@@ -207,28 +252,32 @@ function render(){
     g.save();
     g.translate(x + .5, y + .5);
 
-    if(s1 !== 1 || s2 !== 1)
-      g.scale(s1 * k1 + s2 * k);
+    if(tr.size1 !== 1 || tr.size2 !== 1)
+      g.scale(tr.size1 * k1 + tr.size2 * k);
+
+    let alpha = tr.alpha1 !== 1 || tr.alpha2 !== 1;
+    if(alpha) g.globalAlpha = tr.alpha1 * k1 + tr.alpha2 * k;
 
     drawGem(d);
 
+    if(alpha) g.globalAlpha = 1;
     g.restore();
 
     if(k !== 1) continue;
 
     // Transition finished
 
-    transition.remove();
+    tr.remove();
     updateGrid = 1;
 
-    switch(transition.type){
+    switch(tr.type){
       case trTypes.MOVE_TRY: {
-        const {other} = transition;
+        const {other} = tr;
         const match = grid.match(d);
 
         if(match === null){
           if(other.success === null){
-            transition.success = 0;
+            tr.success = 0;
             break;
           }
 
@@ -239,8 +288,8 @@ function render(){
             d.gem = d2.gem;
             d2.gem = gem;
 
-            d.createTransition(trTypes.MOVE_FAIL, x1, y1, x2, y2, 1, 1, time1, TRANSITION_DURATION);
-            d2.createTransition(trTypes.MOVE_FAIL, x2, y2, x1, y1, 1, 1, time1, TRANSITION_DURATION);
+            d.createTransition(trTypes.MOVE_FAIL, x1, y1, x2, y2, time1, TRANSITION_DURATION);
+            d2.createTransition(trTypes.MOVE_FAIL, x2, y2, x1, y1, time1, TRANSITION_DURATION);
           }
 
           break;
@@ -249,7 +298,7 @@ function render(){
         for(const d of match)
           destroyGem(d);
 
-        transition.success = 1;
+        tr.success = 1;
       } break;
 
       case trTypes.DESTROY_GEM: {
@@ -275,7 +324,7 @@ function render(){
         if(d1.transitions.length !== 0) break;
         if(d1.gem === null) break;
 
-        dPrev.createTransition(trTypes.FALL, x, y1, x, y1 + 1, 1, 1, time1, TRANSITION_DURATION);
+        dPrev.createTransition(trTypes.FALL, x, y1, x, y1 + 1, time1, TRANSITION_DURATION);
         dPrev.gem = d1.gem;
 
         dPrev = d1;
@@ -285,14 +334,19 @@ function render(){
 
       if(dLast.y === 0){
         dLast.gem = O.rand(gemsNum);
-        dLast.createTransition(trTypes.NEW, x, -1, x, 0, 1, 1, time1, TRANSITION_DURATION);
+
+        const tr = new Transition(dLast, trTypes.NEW, x, -1, x, 0, time1, TRANSITION_DURATION);
+        tr.alpha1 = 0;
+        dLast.addTransition(tr);
         return;
       }
 
       dLast.gem = null;
     });
 
-    // Destroy matched gems
+    const matched = new Set();
+
+    // Find matched gems
     grid.iter((x, y, d) => {
       if(d.transitions.length !== 0) return;
       if(d.gem === null) return;
@@ -301,8 +355,12 @@ function render(){
       if(match === null) return;
 
       for(const d of match)
-        destroyGem(d);
+        matched.add(d);
     });
+
+    // Destroy matched gems
+    for(const d of matched)
+      destroyGem(d);
   }
 
   time1 += TIME_STEP;
@@ -406,7 +464,9 @@ const drawGem = d => {
 const destroyGem = d => {
   const {x, y} = d;
 
-  d.createTransition(trTypes.DESTROY_GEM, x, y, x, y, 1, 0, time1, TRANSITION_DURATION);
+  const tr = new Transition(d, trTypes.DESTROY_GEM, x, y, x, y, time1, TRANSITION_DURATION);
+  tr.size2 = 0;
+  d.addTransition(tr);
 
   d.bgPrev = d.bg;
   if(d.bg !== bgsNum - 1) d.bg++;
