@@ -5,9 +5,9 @@ O.enhanceRNG();
 const MAX_LENGTH = 150;
 const FONT_SIZE = 32;
 const TEXT_OFFSET = 8;
-const DICE = 0;
-
-const offset = DICE ? 1 : 0;
+const DICE = O.urlParam('dice', 0) | 0;
+const HEX = O.urlParam('hex', 1) | 0;
+const offset = O.urlParam('offset', DICE) | 0;
 
 const cols = {
   bg: '#ffffff',
@@ -31,9 +31,9 @@ function main(){
 }
 
 function aels(){
-  const strs = O.ca(DICE ? 1 : 15 - offset, i => {
+  const strs = O.ca(DICE ? 1 : 15, i => {
     return O.ca(MAX_LENGTH, () => {
-      return toHex(O.rand(DICE ? 6 : i + 2) + offset);
+      return toStr(O.rand(DICE ? 6 : i + 2) + offset);
     }).join('');
   });
 
@@ -48,6 +48,13 @@ function aels(){
 
         updateStrs();
         break;
+
+      case 'KeyN':
+        location.href = location.href.replace(
+          /\?[\s\S]*|$/,
+          `?project=${O.project}&hex=0&offset=1`,
+        );
+        break;
     }
   });
 
@@ -55,7 +62,7 @@ function aels(){
     clearCanvas();
 
     strs.forEach((str, i) => {
-      drawStr(DICE ? str : `${toHex(i + 1)} - ${str}`, i, cols.text);
+      drawStr(DICE ? str : `${toStr(i + 1)} - ${str}`, i, cols.text);
     });
   }
 }
@@ -69,6 +76,7 @@ function clearCanvas(){
   g.clearCanvas(cols.bg);
 }
 
-function toHex(n){
-  return n.toString(16).toUpperCase();
+function toStr(n){
+  if(HEX) return n.toString(16).toUpperCase();
+  return n.toString();
 }
