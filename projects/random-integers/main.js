@@ -31,22 +31,29 @@ function main(){
 }
 
 function aels(){
-  const strs = O.ca(DICE ? 1 : 15, i => {
-    return O.ca(MAX_LENGTH, () => {
-      return toStr(O.rand(DICE ? 6 : i + 2) + offset);
-    }).join('');
+  const headers = DICE ? null : O.ca(15, i => {
+    return toStr(offset + i + 1);
   });
 
-  updateStrs();
+  const nums = O.ca(DICE ? 1 : 15, i => {
+    const max = DICE ? 6 : i + 2;
+
+    return O.ca(MAX_LENGTH, () => {
+      return toStr(offset + O.rand(max));
+    });
+  });
+
+  updateNums();
 
   O.ael('keydown', evt => {
     switch(evt.code){
       case 'ArrowRight':
-        strs.forEach((str, i) => {
-          strs[i] = `${str.substring(1)}${O.rand(DICE ? 6 : i + 2) + offset}`;
+        nums.forEach((nums, i) => {
+          nums.shift();
+          nums.push(offset + O.rand(DICE ? 6 : i + 2));
         });
 
-        updateStrs();
+        updateNums();
         break;
 
       case 'KeyN':
@@ -58,11 +65,11 @@ function aels(){
     }
   });
 
-  function updateStrs(){
+  function updateNums(){
     clearCanvas();
 
-    strs.forEach((str, i) => {
-      drawStr(DICE ? str : `${toStr(i + 1)} - ${str}`, i, cols.text);
+    nums.forEach((nums, i) => {
+      drawStr(DICE ? nums.join('') : `${headers[i]} - ${nums.join(headers[i].length === 1 ? '' : ' ')}`, i, cols.text);
     });
   }
 }
