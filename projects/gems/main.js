@@ -215,7 +215,7 @@ function render(){
       if(transitions.length !== 0){
         const tr = transitions[0];
 
-        if(tr.type === trTypes.DESTROY_GEM){
+        if(tr.type === trTypes.DESTROY_GEM && bg !== bgPrev){
           g.fillStyle = cols.tileBgs[bgPrev];
           g.fillRect(-.5, -.5, 1, 1);
           g.globalAlpha = min((time1 - tr.start) / tr.duration, 1);
