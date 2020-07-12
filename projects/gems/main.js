@@ -159,6 +159,11 @@ function aels(){
         d.createTransition(trTypes.MOVE_ILLEGAL, d.x, d.y, d1.x, d1.y, time1, TRANSITION_DURATION);
         d.createTransition(trTypes.MOVE_ILLEGAL, d1.x, d1.y, d.x, d.y, time1 + TRANSITION_DURATION, TRANSITION_DURATION);
 
+        if(d1.transitions.length === 0 && d1.gem === d.gem){
+          d1.createTransition(trTypes.MOVE_ILLEGAL, d1.x, d1.y, d.x, d.y, time1, TRANSITION_DURATION);
+          d1.createTransition(trTypes.MOVE_ILLEGAL, d.x, d.y, d1.x, d1.y, time1 + TRANSITION_DURATION, TRANSITION_DURATION);
+        }
+
         break drag;
       }
 
