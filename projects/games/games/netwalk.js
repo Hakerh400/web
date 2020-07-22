@@ -1,5 +1,7 @@
 'use strict';
 
+const {pi2} = O;
+
 game.defaultW = 9;
 game.defaultH = 9;
 
@@ -49,47 +51,85 @@ game.import = (x, y, d, bs) => {
 };
 
 game.generate = () => {
-  var {w, h} = game;
-  game.iterate((x, y, d) => d[0] = d[1] = d[2] = 0);
-  var [x, y] = [w, h].map(a => a >> 1);
-  var id = game.getId();
-  var d = game.get(x, y);
-  var queue = [[x, y, d]];
-  d.id1 = id;
-  while(queue.length !== 0){
-    [x, y, d] = queue.splice(O.rand(queue.length), 1)[0];
-    if(d[0]) continue;
-    d.id = id;
-    var dirs = [];
-    var q = [];
-    for(var dir = 0; dir < 4; dir++){
-      var x1 = x + (dir === 1 ? -1 : dir === 3 ? 1 : 0);
-      var y1 = y + (dir === 0 ? -1 : dir === 2 ? 1 : 0);
-      if(x1 === -1) x1 = w - 1;
-      else if(x1 === w) x1 = 0;
-      if(y1 === -1) y1 = h - 1;
-      else if(y1 === h) y1 = 0;
-      var d1 = game.get(x1, y1);
-      var ddir1 = 1 << dir;
-      var ddir2 = 1 << (dir + 2 & 3);
-      if(d1.id === id && (d1[0] || d1.id1 === id)){
-        if((d[0] | ddir1) === 15 || (d1[0] | ddir2) === 15) continue;
-        dirs.push([d1, dir]);
-      }else{
-        q.push([x1, y1, d1]);
-      }
-    }
-    if(d.id1 === id || dirs.length !== 0) queue.push(...q);
-    if(dirs.length !== 0){
-      var [d1, dir] = dirs[O.rand(dirs.length)];
-      d[0] |= 1 << dir;
-      d1[0] |= 1 << (dir + 2 & 3);
-    }else{
-      queue.push([x, y, d]);
-    }
-  }
+  const {w, h, grid} = game;
+
   game.iterate((x, y, d) => {
-    d[0] = ((d[0] | (d[0] << 4)) >> O.rand(4)) & 15;
+    d[0] = d[1] = d[2] = 0;
+  });
+
+  if(w === 1 && h === 1) return;
+
+  const pending = new O.Set2D();
+
+  const get = (x, y) => {
+    return grid.get(x, y).d;
+  };
+
+  const adj = (x, y, f) => {
+    let t;
+
+    f(x, t = (y - 1 + h) % h, get(x, t), 0);
+    f(t = (x - 1 + w) % w, y, get(t, y), 1);
+    f(x, t = (y + 1 + h) % h, get(x, t), 2);
+    f(t = (x + 1 + w) % w, y, get(t, y), 3);
+  };
+
+  const addAdj = (x, y) => {
+    adj(x, y, (x, y, d, dir) => {
+      if(pending.has(x, y)) return;
+      if(d[0] !== 0) return;
+
+      pending.add(x, y);
+    });
+  };
+
+  {
+    const x1 = O.rand(w);
+    const y1 = O.rand(h);
+
+    const dir = O.randElem(O.ca(4, i => i).filter(dir => {
+      if((dir & 1) === 0 && h === 1) return 0;
+      if((dir & 1) === 1 && w === 1) return 0;
+      return 1;
+    }));
+
+    const x2 = (x1 + (dir === 1 ? -1 : dir === 3 ? 1 : 0) + w) % w;
+    const y2 = (y1 + (dir === 0 ? -1 : dir === 2 ? 1 : 0) + h) % h;
+
+    get(x1, y1)[0] = 1 << dir;
+    get(x2, y2)[0] = 1 << (dir + 2 & 3);
+
+    addAdj(x1, y1);
+    addAdj(x2, y2);
+  }
+
+  while(pending.size !== 0){
+    const [x, y] = O.randElem([...pending]);
+    const d = get(x, y);
+    const avail = [];
+    let dir = 0;
+
+    adj(x, y, (x, y, d, dir) => {
+      if(d[0] === 0) return;
+      if(d[0] === (15 ^ (1 << (dir + 2 & 3)))) return;
+
+      avail.push([dir, d]);
+    });
+
+    if(avail.length === 0) continue;
+    pending.delete(x, y);
+
+    const [dir1, d1] = O.randElem(avail);
+
+    d[0] |= 1 << dir1;
+    d1[0] |= 1 << (dir1 + 2 & 3);
+
+    addAdj(x, y);
+  }
+
+  game.iterate((x, y, d) => {  
+    const n = O.rand(4);
+    d[0] = ((d[0] << n) | (d[0] >> 4 - n)) & 15;
   });
 };
 
@@ -104,7 +144,7 @@ game.mouse.rmb = (x, y, d) => {
 };
 
 game.kb.KeyR = () => {
-  game.iterate((a, y, d) => d[1] = 0);
+  game.iterate((x, y, d) => d[1] = 0);
 };
 
 game.kb.KeyS = () => {
