@@ -63,6 +63,263 @@ class Set2D{
   }
 }
 
+class Map2D{
+  constructor(x=null, y=null, val=1){
+    this.d = O.obj();
+
+    if(x !== null)
+      this.add(x, y, val);
+  }
+
+  reset(x=null, y=null, val=1){
+    this.d = O.obj();
+
+    if(x !== null)
+      this.add(x, y, val);
+  }
+
+  empty(){
+    this.reset();
+  }
+
+  clone(){
+    const map = new O.Map2D();
+    this.iter((x, y, d) => map.add(x, y, d));
+    return map;
+  }
+
+  eq(map){
+    if(this.some((x, y) => !map.has(x, y))) return 0;
+    if(map.some((x, y) => !this.has(x, y))) return 0;
+    return 1;
+  }
+
+  neq(map){
+    return !this.eq(map);
+  }
+
+  get(x, y, defaultVal=null){
+    if(!this.has(x, y)) return defaultVal;
+    return this.d[y][x];
+  }
+
+  set(x, y, val=1){
+    var {d} = this;
+
+    if(!(y in d)) d[y] = O.obj();
+    d[y][x] = val;
+
+    return this;
+  }
+
+  add(x, y, val=1){
+    return this.set(x, y, val);
+  }
+
+  remove(x, y){
+    var {d} = this;
+
+    if(!(y in d)) return;
+    delete d[y][x];
+  }
+
+  delete(x, y){
+    this.remove(x, y);
+  }
+
+  del(x, y){
+    this.remove(x, y);
+  }
+
+  has(x, y){
+    var {d} = this;
+
+    if(!(y in d)) return 0;
+    if(!(x in d[y])) return 0;
+    return 1;
+  }
+
+  iter(func){
+    const {d} = this;
+
+    for(let y in d)
+      for(let x in d[y |= 0])
+        func(x |= 0, y, d[y][x]);
+  }
+
+  iterate(func){
+    this.iter(func);
+  }
+
+  some(func){
+    const {d} = this;
+
+    for(let y in d)
+      for(let x in d[y |= 0])
+        if(func(x |= 0, y, d[y][x]))
+          return;
+  }
+
+  find(v, func){
+    const {d} = this;
+
+    for(let y in d){
+      for(let x in d[y |= 0]){
+        const val = d[y][x |= 0];
+
+        if(func(x, y, val)){
+          v.x = x;
+          v.y = y;
+
+          return val;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  getArr(){
+    const arr = [];
+    this.iter((x, y) => arr.push([x, y]));
+    return arr;
+  }
+
+  *[Symbol.iterator](){
+    const {d} = this;
+
+    for(let y in d)
+      for(let x in d[y |= 0])
+        yield [x |= 0, y, d[y][x]];
+  }
+}
+
+class Map3D{
+  constructor(x=null, y=null, z=null, val=1){
+    this.d = O.obj();
+
+    if(x !== null)
+      this.add(x, y, z, val);
+  }
+
+  get(x, y, z){
+    if(!this.has(x, y, z)) return null;
+    return this.d[z][y][x];
+  }
+
+  set(x, y, z, val=1){
+    var {d} = this;
+
+    if(!(z in d)) d[z] = O.obj();
+    d = d[z];
+
+    if(!(y in d)) d[y] = O.obj();
+    d[y][x] = val;
+  }
+
+  add(x, y, z, val=1){
+    this.set(x, y, z, val);
+  }
+
+  remove(x, y, z){
+    var {d} = this;
+
+    if(!(z in d)) return;
+    d = d[z];
+
+    if(!(y in d)) return;
+    delete d[y][x];
+  }
+
+  delete(x, y, z){
+    this.remove(x, y, z);
+  }
+
+  has(x, y, z){
+    var {d} = this;
+
+    if(!(z in d)) return 0;
+    d = d[z];
+
+    if(!(y in d)) return 0;
+    return d[y][x];
+  }
+
+  getArr(){
+    var {d} = this;
+
+    var arr = [];
+
+    O.keys(d).forEach(z => {
+      z |= 0;
+      O.keys(d = d[z]).forEach(y => {
+        y |= 0;
+        O.keys(d[y]).forEach(x => {
+          x |= 0;
+          arr.push([x, y, z]);
+        });
+      });
+    });
+
+    return arr;
+  }
+}
+
+class MultidimensionalMap{
+  constructor(){
+    this.d = O.obj();
+    this.end = Symbol('end');
+  }
+
+  has(arr, val){
+    let {d} = this;
+
+    for(const elem of arr){
+      if(!(elem in d)) return 0;
+      d = d[elem];
+    }
+
+    return this.end in d;
+  }
+
+  get(arr, val){
+    let {d} = this;
+
+    for(const elem of arr){
+      if(!(elem in d)) return null;
+      d = d[elem];
+    }
+
+    return this.end in d ? d[this.end] : null;
+  }
+
+  set(arr, val){
+    let {d} = this;
+
+    for(const elem of arr){
+      if(!(elem in d)) d[elem] = O.obj();
+      d = d[elem];
+    }
+
+    d[this.end] = val;
+  }
+
+  remove(arr){
+    let {d} = this;
+
+    for(const elem of arr){
+      if(!(elem in d)) return;
+      d = d[elem];
+    }
+
+    delete d[this.end];
+  }
+
+  delete(arr){
+    this.remove(arr);
+  }
+}
+
 class Color extends Uint8ClampedArray{
   static #g = null;
 
@@ -669,263 +926,6 @@ class Grid{
 
   includes(x, y){
     return this.has(x, y);
-  }
-}
-
-class Map2D{
-  constructor(x=null, y=null, val=1){
-    this.d = O.obj();
-
-    if(x !== null)
-      this.add(x, y, val);
-  }
-
-  reset(x=null, y=null, val=1){
-    this.d = O.obj();
-
-    if(x !== null)
-      this.add(x, y, val);
-  }
-
-  empty(){
-    this.reset();
-  }
-
-  clone(){
-    const map = new O.Map2D();
-    this.iter((x, y, d) => map.add(x, y, d));
-    return map;
-  }
-
-  eq(map){
-    if(this.some((x, y) => !map.has(x, y))) return 0;
-    if(map.some((x, y) => !this.has(x, y))) return 0;
-    return 1;
-  }
-
-  neq(map){
-    return !this.eq(map);
-  }
-
-  get(x, y, defaultVal=null){
-    if(!this.has(x, y)) return defaultVal;
-    return this.d[y][x];
-  }
-
-  set(x, y, val=1){
-    var {d} = this;
-
-    if(!(y in d)) d[y] = O.obj();
-    d[y][x] = val;
-
-    return this;
-  }
-
-  add(x, y, val=1){
-    return this.set(x, y, val);
-  }
-
-  remove(x, y){
-    var {d} = this;
-
-    if(!(y in d)) return;
-    delete d[y][x];
-  }
-
-  delete(x, y){
-    this.remove(x, y);
-  }
-
-  del(x, y){
-    this.remove(x, y);
-  }
-
-  has(x, y){
-    var {d} = this;
-
-    if(!(y in d)) return 0;
-    if(!(x in d[y])) return 0;
-    return 1;
-  }
-
-  iter(func){
-    const {d} = this;
-
-    for(let y in d)
-      for(let x in d[y |= 0])
-        func(x |= 0, y, d[y][x]);
-  }
-
-  iterate(func){
-    this.iter(func);
-  }
-
-  some(func){
-    const {d} = this;
-
-    for(let y in d)
-      for(let x in d[y |= 0])
-        if(func(x |= 0, y, d[y][x]))
-          return;
-  }
-
-  find(v, func){
-    const {d} = this;
-
-    for(let y in d){
-      for(let x in d[y |= 0]){
-        const val = d[y][x |= 0];
-
-        if(func(x, y, val)){
-          v.x = x;
-          v.y = y;
-
-          return val;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  getArr(){
-    const arr = [];
-    this.iter((x, y) => arr.push([x, y]));
-    return arr;
-  }
-
-  *[Symbol.iterator](){
-    const {d} = this;
-
-    for(let y in d)
-      for(let x in d[y |= 0])
-        yield [x |= 0, y, d[y][x]];
-  }
-}
-
-class Map3D{
-  constructor(x=null, y=null, z=null, val=1){
-    this.d = O.obj();
-
-    if(x !== null)
-      this.add(x, y, z, val);
-  }
-
-  get(x, y, z){
-    if(!this.has(x, y, z)) return null;
-    return this.d[z][y][x];
-  }
-
-  set(x, y, z, val=1){
-    var {d} = this;
-
-    if(!(z in d)) d[z] = O.obj();
-    d = d[z];
-
-    if(!(y in d)) d[y] = O.obj();
-    d[y][x] = val;
-  }
-
-  add(x, y, z, val=1){
-    this.set(x, y, z, val);
-  }
-
-  remove(x, y, z){
-    var {d} = this;
-
-    if(!(z in d)) return;
-    d = d[z];
-
-    if(!(y in d)) return;
-    delete d[y][x];
-  }
-
-  delete(x, y, z){
-    this.remove(x, y, z);
-  }
-
-  has(x, y, z){
-    var {d} = this;
-
-    if(!(z in d)) return 0;
-    d = d[z];
-
-    if(!(y in d)) return 0;
-    return d[y][x];
-  }
-
-  getArr(){
-    var {d} = this;
-
-    var arr = [];
-
-    O.keys(d).forEach(z => {
-      z |= 0;
-      O.keys(d = d[z]).forEach(y => {
-        y |= 0;
-        O.keys(d[y]).forEach(x => {
-          x |= 0;
-          arr.push([x, y, z]);
-        });
-      });
-    });
-
-    return arr;
-  }
-}
-
-class MultidimensionalMap{
-  constructor(){
-    this.d = O.obj();
-    this.end = Symbol('end');
-  }
-
-  has(arr, val){
-    let {d} = this;
-
-    for(const elem of arr){
-      if(!(elem in d)) return 0;
-      d = d[elem];
-    }
-
-    return this.end in d;
-  }
-
-  get(arr, val){
-    let {d} = this;
-
-    for(const elem of arr){
-      if(!(elem in d)) return null;
-      d = d[elem];
-    }
-
-    return this.end in d ? d[this.end] : null;
-  }
-
-  set(arr, val){
-    let {d} = this;
-
-    for(const elem of arr){
-      if(!(elem in d)) d[elem] = O.obj();
-      d = d[elem];
-    }
-
-    d[this.end] = val;
-  }
-
-  remove(arr){
-    let {d} = this;
-
-    for(const elem of arr){
-      if(!(elem in d)) return;
-      d = d[elem];
-    }
-
-    delete d[this.end];
-  }
-
-  delete(arr){
-    this.remove(arr);
   }
 }
 
@@ -2199,6 +2199,7 @@ const O = {
   // Log
 
   log: null,
+  displayBigIntsAsOrdinaryNumbers: 0,
 
   // Node modules
 
@@ -2236,12 +2237,12 @@ const O = {
   // Classes
 
   Set2D,
+  Map2D,
+  Map3D,
   Color,
   ImageData,
   EventEmitter,
   Grid,
-  Map2D,
-  Map3D,
   MultidimensionalMap,
   EnhancedRenderingContext,
   Buffer,
@@ -2454,10 +2455,19 @@ const O = {
     const {util} = O.nm;
     const fstStr = typeof arr[0] === 'string';
 
-    return arr.map(val => {
+    let str = arr.map(val => {
       if(fstStr && typeof val === 'string') return val;
       return util.inspect(val);
     }).join(' ');
+
+    if(O.displayBigIntsAsOrdinaryNumbers)
+      str = str.replace(/\b(\d+)n\b/g, (a, b) => b);
+
+    return str;
+  },
+
+  bion(val){
+    O.displayBigIntsAsOrdinaryNumbers = val;
   },
 
   title(title){
@@ -2968,6 +2978,10 @@ const O = {
 
   chars(start, len, arr=0){
     const cc = O.cc(start);
+
+    if(typeof len === 'string')
+      len = O.cc(len) - cc + 1;
+
     const array = O.ca(len, i => O.sfcc(cc + i));
 
     if(arr) return array;

@@ -1,6 +1,7 @@
 'use strict';
 
 const {g, w, h, wh, hh} = O.ceCanvas();
+
 g.font = '300px arial';
 g.textBaseline = 'middle';
 g.textAlign = 'left';
