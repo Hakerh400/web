@@ -1,8 +1,5 @@
 'use strict';
 
-O.enhanceRNG();
-O.randSeed(0);
-
 const {pi2} = O;
 
 game.defaultW = 9;
