@@ -1,5 +1,8 @@
 'use strict';
 
+O.enhanceRNG();
+O.randSeed(0);
+
 const {pi2} = O;
 
 game.defaultW = 9;
@@ -8,18 +11,30 @@ game.defaultH = 9;
 let offsetX = 0;
 let offsetY = 0;
 
+const adj = (x, y, f) => {
+  const {w, h} = game;
+  let t;
+
+  f(x, t = (y - 1 + h) % h, game.get(x, t), 0);
+  f(t = (x - 1 + w) % w, y, game.get(t, y), 1);
+  f(x, t = (y + 1 + h) % h, game.get(x, t), 2);
+  f(t = (x + 1 + w) % w, y, game.get(t, y), 3);
+};
+
 game.draw = (x, y, d, g) => {
   const d1 = d[1];
+  const d2 = d[2];
+  const d3 = d[3];
 
-  g.fillStyle = d1 ?
+  g.fillStyle = d3 ? '#ff0000' : d1 ?
     d1 > 1 ? '#404040' : '#808080' :
     '#c0c0c0';
 
   g.fillRect(x, y, 1, 1);
 
   g.fillStyle = d1 ?
-    d[2] ? '#aaaa00' : '#008000' :
-    d[2] ? '#ffff00' : '#00ff00';
+    d2 ? '#aaaa00' : '#008000' :
+    d2 ? '#ffff00' : '#00ff00';
 
   game.tube(x, y, d[0], .25, 1);
 };
@@ -35,6 +50,7 @@ game.export = (x, y, d, bs) => {
   bs.write(d[0], 15);
   bs.write(d[1], 1e3);
   bs.write(d[2], 1);
+  bs.write(d[3], 1);
 };
 
 game.import = (x, y, d, bs) => {
@@ -48,31 +64,19 @@ game.import = (x, y, d, bs) => {
   d[0] = bs.read(15);
   d[1] = bs.read(1e3);
   d[2] = bs.read(1);
+  d[3] = bs.read(1);
 };
 
 game.generate = () => {
   const {w, h, grid} = game;
 
   game.iterate((x, y, d) => {
-    d[0] = d[1] = d[2] = 0;
+    d[0] = d[1] = d[2] = d[3] = 0;
   });
 
   if(w === 1 && h === 1) return;
 
   const pending = new O.Set2D();
-
-  const get = (x, y) => {
-    return grid.get(x, y).d;
-  };
-
-  const adj = (x, y, f) => {
-    let t;
-
-    f(x, t = (y - 1 + h) % h, get(x, t), 0);
-    f(t = (x - 1 + w) % w, y, get(t, y), 1);
-    f(x, t = (y + 1 + h) % h, get(x, t), 2);
-    f(t = (x + 1 + w) % w, y, get(t, y), 3);
-  };
 
   const addAdj = (x, y) => {
     adj(x, y, (x, y, d, dir) => {
@@ -96,8 +100,8 @@ game.generate = () => {
     const x2 = (x1 + (dir === 1 ? -1 : dir === 3 ? 1 : 0) + w) % w;
     const y2 = (y1 + (dir === 0 ? -1 : dir === 2 ? 1 : 0) + h) % h;
 
-    get(x1, y1)[0] = 1 << dir;
-    get(x2, y2)[0] = 1 << (dir + 2 & 3);
+    game.get(x1, y1)[0] = 1 << dir;
+    game.get(x2, y2)[0] = 1 << (dir + 2 & 3);
 
     addAdj(x1, y1);
     addAdj(x2, y2);
@@ -105,7 +109,7 @@ game.generate = () => {
 
   while(pending.size !== 0){
     const [x, y] = O.randElem([...pending]);
-    const d = get(x, y);
+    const d = game.get(x, y);
     const avail = [];
     let dir = 0;
 
@@ -139,8 +143,26 @@ game.mouse.lmb = (x, y, d) => {
 };
 
 game.mouse.rmb = (x, y, d) => {
-  if(d[1] === 0) d[1] = 1;
-  else if(d[1] === 1) d[1] = 0;
+  if(d[1] > 1) return;
+
+  if(d[1] === 1){
+    d[1] = 0;
+    d[3] = 0;
+    return;
+  }
+
+  d[1] = 1;
+
+  adj(x, y, (x, y, d1, dir) => {
+    if(!d1[1]) return;
+
+    const a = (
+      !(d[0] & (1 << dir)) ^
+      !(d1[0] & (1 << (dir + 2 & 3)))
+    );
+
+    if(a) d[3] = 1;
+  });
 };
 
 game.kb.KeyR = () => {
