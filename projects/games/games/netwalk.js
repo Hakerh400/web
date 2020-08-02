@@ -236,7 +236,7 @@ const scroll = (dx, dy) => {
     const y1 = ((y + dy) % h + h) % h;
     const d1 = game.get(x1, y1);
 
-    map.set(d1, [d[0], d[1], d[2]]);
+    map.set(d1, [d[0], d[1], d[2], d[3]]);
   });
 
   game.iterate((x, y, d) => {
@@ -245,6 +245,7 @@ const scroll = (dx, dy) => {
     d[0] = d1[0];
     d[1] = d1[1];
     d[2] = d1[2];
+    d[3] = d1[3];
   });
 };
 
