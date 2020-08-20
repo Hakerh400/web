@@ -37,3 +37,4 @@ regulator
 gems
 draw
 counter
+pebbling-a-chessboard
