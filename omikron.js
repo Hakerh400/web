@@ -1316,7 +1316,6 @@ class EnhancedRenderingContext{
     const phi1 = (1.9 - size / (radius * 4)) * O.pi;
     const phi2 = phi1 + O.pi2 - size / radius * O.pih;
 
-    let dphi = 0;
     let foundArc = round;
 
     g.beginPath();
@@ -1336,7 +1335,6 @@ class EnhancedRenderingContext{
             break;
 
           case 2:
-            dphi = O.pi2 - (O.pi + O.pih);
             g.moveTo(x + p2, y + s2);
             g.lineTo(x + 1, y + s2);
             g.lineTo(x + 1, y + s1);
@@ -1344,7 +1342,6 @@ class EnhancedRenderingContext{
             break;
 
           case 4:
-            dphi = O.pi;
             g.moveTo(x + s1, y + p2);
             g.lineTo(x + s1, y + 1);
             g.lineTo(x + s2, y + 1);
@@ -1352,7 +1349,6 @@ class EnhancedRenderingContext{
             break;
 
           case 8:
-            dphi = O.pi2 - O.pih;
             g.moveTo(x + p1, y + s1);
             g.lineTo(x, y + s1);
             g.lineTo(x, y + s2);
@@ -1395,8 +1391,14 @@ class EnhancedRenderingContext{
     }
 
     if(foundArc){
-      if(dirs !== 0)
-        g.arc(x + .5, y + .5, radius, phi2 + dphi, phi1 + dphi, 1);
+      if(dirs !== 0){
+        const a = Math.atan((.5 - p1) / (s2 - .5));
+        const b = O.pi - a;
+        const c = (dirs === 1 ? 0 : dirs === 2 ? 1 : dirs === 4 ? 2 : 3) * O.pih;
+
+        g.arc(x + .5, y + .5, radius, c - b, c - a, 1);
+        g.closePath();
+      }
 
       g.fill();
       g.stroke();
@@ -1950,6 +1952,38 @@ class Iterable{
   setCh(index, val){ O.virtual('getCh'); }
 
   get chArr(){ return [...this]; }
+
+  traverse(func){
+    const {kBreak} = this;
+    const stack = [this];
+    const flags = [0];
+
+    while(stack.length !== 0){
+      const elem = O.last(stack);
+
+      if(O.last(flags)){
+        stack.pop();
+        flags.pop();
+
+        const result = func(elem, 1);
+        if(result === kBreak) return 1;
+
+        continue;
+      }
+
+      func(elem, 0);
+      O.setLast(flags, 1);
+
+      const {chNum} = elem;
+
+      for(let i = chNum - 1; i !== -1; i--){
+        stack.push(elem.getCh(i));
+        flags.push(0);
+      }
+    }
+
+    return 0;
+  }
 
   topDown(func){
     const {kCont, kBreak} = this;
