@@ -2482,6 +2482,10 @@ const O = {
     };
   },
 
+  logb(){
+    log(`\n${'='.repeat(100)}\n`);
+  },
+
   inspect(arr){
     if(!(O.isNode || O.isElectron))
       throw new TypeError('Function "inspect" is available only in Node.js and Electron');
