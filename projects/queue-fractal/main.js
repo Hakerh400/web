@@ -3,7 +3,9 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const func = (x, y, n) => {
-  return O.hypot(x + Math.cos(n), y - Math.sin(n)) * n ^ (x + y);
+  // return O.hypot(x + Math.cos(n), y - Math.sin(n)) * n ^ (x + y);
+  return x ** y & n;
+  // return x ** n & y;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -13,7 +15,7 @@ const ScheduledCoords = require('./scheduled-coords');
 
 const {assert} = O;
 
-const AUTOPLAY = 0;
+const AUTOPLAY = 1;
 const SPEED = 1e3;
 
 // O.enhanceRNG();
