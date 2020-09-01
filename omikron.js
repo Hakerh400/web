@@ -2077,7 +2077,7 @@ class Stringifiable extends Iterable{
     return this.toString();
   }
 
-  toString(arg=null){
+  toString(arg=O.obj()){
     const {tabSize, inc, dec, prefixPush, prefixPop} = this;
     const prefixes = this.#prefixes;
 
