@@ -1,17 +1,25 @@
 'use strict';
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const func = (x, y, n) => {
+  return O.hypot(x + Math.cos(n), y - Math.sin(n)) * n ^ (x + y);
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 const Tile = require('./tile');
 const ScheduledCoords = require('./scheduled-coords');
 
 const {assert} = O;
 
-const AUTOPLAY = 1;
+const AUTOPLAY = 0;
 const SPEED = 1e3;
 
 // O.enhanceRNG();
 // O.randSeed(0);
 
-const {g, w, h} = O.ceCanvas();
+const {g, w, h, wh, hh} = O.ceCanvas();
 
 const black = new Uint8ClampedArray([0, 0, 0]);
 const white = new Uint8ClampedArray([255, 255, 255]);
@@ -69,19 +77,26 @@ const main = () => {
     return d.biome;
   };
 
+  const col = new Uint8ClampedArray(3);
+  let abc = 0;
+
   const setBiome = (x, y, biome, isScheduled=1) => {
     const d = getTile(x, y);
 
     if(isScheduled) unschedule(x, y);
 
     d.biome = biome;
-    setCol(x, y, biomeCols[biome]);
+    // setCol(x, y, biomeCols[biome]);
+
+    const N = 100e3;
+    setCol(x, y, O.hsv((abc / N) % 1, col));
+    if(++abc === N) abc = 0;
 
     grid.adj(x, y, (x, y) => schedule(x, y));
   };
 
   const schedule = (x, y) => {
-    if(scheduledSet.has(x, y)) return;
+    // if(scheduledSet.has(x, y)) return;
 
     const d = getTile(x, y);
     if(d === null) return;
@@ -90,12 +105,14 @@ const main = () => {
     scheduledSet.add(x, y);
 
     let n = 0;
+    let i = 1;
 
     grid.adjc(x, y, (x, y, d) => {
-      if(d !== null && d.biome !== null) n++;
+      if(d !== null && d.biome !== null) n |= i;
+      i <<= 1;
     });
 
-    const pri = n// * (1 - O.randf() ** 3) + O.randf(1e3);
+    const pri = func(x - wh, y - hh, n);
     scheduledQueue.push(new ScheduledCoords(x, y, pri));
   };
 
@@ -103,9 +120,7 @@ const main = () => {
     scheduledSet.delete(x, y);
   };
 
-  // setBiome(w / 2 - 100 | 0, h / 2 | 0, 0, 0);
-  // setBiome(w / 2 + 100 | 0, h / 2 | 0, 1, 0);
-  setBiome(w >> 1, h >> 1, 0, 0);
+  setBiome(0, 0, 0, 0);
 
   let paused = !AUTOPLAY;
 

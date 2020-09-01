@@ -39,3 +39,4 @@ draw
 counter
 pebbling-a-chessboard
 world-generator
+queue-fractal
