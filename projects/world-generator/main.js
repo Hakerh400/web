@@ -1,32 +1,33 @@
 'use strict';
 
+const Grid = require('./grid');
 const Tile = require('./tile');
-const ScheduledCoords = require('./scheduled-coords');
 
-const {assert} = O;
+const {abs, sqrt, sin, cos} = Math;
 const {pi, pi2, pih} = O;
 
-const pi1 = 1 / pi;
+const DEBUG = 0;
+const DETERMINISTIC = 0;
+const RAINBOW = 1;
+const AUTOPLAY = O.urlParam('a', 1) | 0;
+const SPEED = DEBUG ? 100 : 1e4;
 
-const AUTOPLAY = 1;
-const SPEED = 1e4;
+if(DETERMINISTIC){
+  O.enhanceRNG();
+  O.randSeed(0);
+}
 
-// O.enhanceRNG();
-// O.randSeed(0);
+const {g, w, h, wh, hh} = O.ceCanvas();
 
-const {g, w, h} = O.ceCanvas();
-
-const black = new Uint8ClampedArray([0, 0, 0]);
-const white = new Uint8ClampedArray([255, 255, 255]);
-const red = new Uint8ClampedArray([255, 0, 0]);
-const green = new Uint8ClampedArray([0, 255, 0]);
+const black = [0, 0, 0];
+const white = [255, 255, 255];
+const red = [255, 0, 0];
+const green = [0, 255, 0];
 
 const bgCol = black;
 
-const biomeCols = [
-  red,
-  green,
-];
+const biomesNum = 20;
+const biomeCols = O.ca(biomesNum, (i, k) => O.hsv(k));
 
 const main = () => {
   const imgd = g.createImageData(w, h);
@@ -48,73 +49,123 @@ const main = () => {
 
   g.putImageData(imgd, 0, 0);
 
-  const grid = new O.Grid(w, h);
+  const grid = new Grid(w, h);
 
-  const getTile = (x, y) => {
-    if(!grid.has(x, y)) return null;
-
-    const d = grid.get(x, y);
-    if(d !== null) return d;
-
-    const tile = new Tile();
-    grid.set(x, y, tile);
-
-    return tile;
-  };
-
-  const scheduledSet = new O.Set2D();
-  const scheduledQueue = new O.PriorityQueue();
+  const scheduledMap = new O.Map2D();
+  const arrsNum = 20;
+  const scheduledArrs = O.ca(arrsNum, () => []);
 
   const getBiome = (x, y) => {
-    const d = getTile(x, y);
+    const d = grid.get(x, y);
 
     if(d === null) return null;
     return d.biome;
   };
 
-  const setBiome = (x, y, biome, isScheduled=1) => {
-    const d = getTile(x, y);
+  const colAux = new Uint8ClampedArray(3);
 
-    if(isScheduled) unschedule(x, y);
+  const rainbowIndexMax = 1e5;
+  const rainbowIndices = O.ca(biomesNum, () => 0);
 
-    d.biome = biome;
-    setCol(x, y, biomeCols[biome]);
+  const setBiome = (x, y, b) => {
+    const d = grid.get(x, y);
+    d.biome = b;
 
-    grid.adj(x, y, (x, y) => schedule(x, y));
+    let col;
+
+    if(RAINBOW){
+      const k = (b + 3) / (biomesNum - 2);
+      col = O.hsv(rainbowIndices[b] / rainbowIndexMax, colAux);
+      for(let i = 0; i !== 3; i++)
+        col[i] *= k;
+
+      if(++rainbowIndices[b] === rainbowIndexMax)
+        rainbowIndices[b] = 0
+    }else{
+      col = biomeCols[b];
+    }
+
+    setCol(x, y, col);
+
+    grid.adj(x, y, (x, y) => schedule(x, y, b));
   };
 
-  const schedule = (x, y) => {
-    // if(scheduledSet.has(x, y)) return;
+  const schedule = (x, y, b) => {
+    const d = grid.get(x, y);
+    if(d === null || d.biome !== null) return;
 
-    const d = getTile(x, y);
-    if(d === null) return;
-    if(d.biome !== null) return;
+    if(scheduledMap.has(x, y))
+      unschedule(x, y);
 
-    scheduledSet.add(x, y);
+    const biomes = O.obj();
 
-    let n = 0;
+    let maxNum = 0;
+    let maxBiome = null;
 
     grid.adj(x, y, (x, y, d) => {
-      if(d !== null && d.biome !== null) n++;
+      if(d === null) return;
+
+      const {biome} = d;
+      if(biome === null) return;
+
+      if(!(biome in biomes)) biomes[biome] = 0;
+
+      const n = ++biomes[biome];
+
+      if(n > maxNum || (n === maxNum && biome !== maxBiome && O.rand(2))){
+        maxNum = n;
+        maxBiome = biome;
+      }
     });
 
-    grid.adjc(x, y, (x, y, d) => {
-      if(d !== null && d.biome !== null) n += pi1;
-    });
+    const xx = x;
+    const yy = y;
+    let arr;
 
-    if(n === 0) n = 100;
+    {
+      const x = xx / wh - 1;
+      const y = yy / hh - 1;
+      const n = maxNum / 1.5 - 1;
 
-    const pri = n + O.randf(1.5) + O.randf(1);
-    scheduledQueue.push(new ScheduledCoords(x, y, pri));
+      const num = n + O.hypot(x, y) % x;
+
+      arr = scheduledArrs[O.bound((num + 1) * arrsNum >> 1, 0, arrsNum - 1)];
+    }
+
+    arr.push([x, y]);
+    scheduledMap.set(x, y, [arr, arr.length - 1]);
   };
 
   const unschedule = (x, y) => {
-    scheduledSet.delete(x, y);
+    const [arr, index] = scheduledMap.get(x, y);
+    const len1 = arr.length - 1;
+
+    if(index !== len1){
+      const coords = arr[len1];
+      const [x, y] = coords;
+
+      arr[index] = coords;
+      scheduledMap.get(x, y)[1] = index;
+    }
+
+    arr.pop();
+    scheduledMap.delete(x, y);
   };
 
-  setBiome(w / 2 - 100 | 0, h / 2 | 0, 0, 0);
-  setBiome(w / 2 + 100 | 0, h / 2 | 0, 1, 0);
-  // setBiome(w >> 1, h >> 1, 0, 0);
+  if(DEBUG){
+    setBiome(w >> 1, h >> 1, 0);
+  }else{
+    for(let i = 0; i !== biomeCols.length; i++){
+      while(1){
+        const x = O.rand(w);
+        const y = O.rand(h);
+        if(grid.get(x, y).biome !== null) continue;
+    
+        setBiome(x, y, i);
+        break;
+      }
+    }
+  }
 
   let paused = !AUTOPLAY;
 
@@ -126,7 +177,7 @@ const main = () => {
     }
   });
 
-  const gridAux = new O.Grid(3, 3, () => new Tile());
+  const gridAux = new Grid(3, 3);
   const vecAux = {x: 0, y: 0};
 
   const auxGet = (x, y) => {
@@ -140,11 +191,35 @@ const main = () => {
   const render = () => {
     if(!paused){
       for(let i = 0; i !== SPEED; i++){
-        if(scheduledQueue.isEmpty) break;
+        const arrs = scheduledArrs.filter(a => a.length !== 0);
+        if(arrs.length === 0) break;
 
-        const elem = scheduledQueue.pop();
-        const {x, y} = elem;
-        if(getBiome(x, y) !== null) continue;
+        let arrIndex = arrsNum * (1 - O.randf() ** 2) | 0;
+        if(arrIndex === arrsNum) arrIndex--;
+
+        let arr = scheduledArrs[arrIndex];
+
+        findNonEmptyArr: if(arr.length === 0){
+          for(let i = arrIndex + 1; i !== arrsNum; i++){
+            const a = scheduledArrs[i];
+            if(a.length !== 0){
+              arr = a;
+              break findNonEmptyArr;
+            }
+          }
+
+          for(let i = arrIndex - 1; i !== -1; i--){
+            const a = scheduledArrs[i];
+            if(a.length !== 0){
+              arr = a;
+              break findNonEmptyArr;
+            }
+          }
+        }
+
+        const [x, y] = O.randElem(arr);
+
+        unschedule(x, y);
 
         const avail = new Set();
         const availCount = new Map();
@@ -186,10 +261,7 @@ const main = () => {
           candidates.push(b, n);
         }
 
-        if(candidates.length === 0){
-          unschedule(x, y);
-          continue;
-        }
+        if(candidates.length === 0) continue;
 
         let candIndex = O.rand(totalCand);
         let biome;
