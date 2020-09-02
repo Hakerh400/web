@@ -4,9 +4,12 @@ const Tile = require('./tile');
 const ScheduledCoords = require('./scheduled-coords');
 
 const {assert} = O;
+const {pi, pi2, pih} = O;
+
+const pi1 = 1 / pi;
 
 const AUTOPLAY = 1;
-const SPEED = 1e3;
+const SPEED = 1e4;
 
 // O.enhanceRNG();
 // O.randSeed(0);
@@ -81,7 +84,7 @@ const main = () => {
   };
 
   const schedule = (x, y) => {
-    if(scheduledSet.has(x, y)) return;
+    // if(scheduledSet.has(x, y)) return;
 
     const d = getTile(x, y);
     if(d === null) return;
@@ -91,11 +94,17 @@ const main = () => {
 
     let n = 0;
 
-    grid.adjc(x, y, (x, y, d) => {
+    grid.adj(x, y, (x, y, d) => {
       if(d !== null && d.biome !== null) n++;
     });
 
-    const pri = n// * (1 - O.randf() ** 3) + O.randf(1e3);
+    grid.adjc(x, y, (x, y, d) => {
+      if(d !== null && d.biome !== null) n += pi1;
+    });
+
+    if(n === 0) n = 100;
+
+    const pri = n + O.randf(1.5) + O.randf(1);
     scheduledQueue.push(new ScheduledCoords(x, y, pri));
   };
 
@@ -103,9 +112,9 @@ const main = () => {
     scheduledSet.delete(x, y);
   };
 
-  // setBiome(w / 2 - 100 | 0, h / 2 | 0, 0, 0);
-  // setBiome(w / 2 + 100 | 0, h / 2 | 0, 1, 0);
-  setBiome(w >> 1, h >> 1, 0, 0);
+  setBiome(w / 2 - 100 | 0, h / 2 | 0, 0, 0);
+  setBiome(w / 2 + 100 | 0, h / 2 | 0, 1, 0);
+  // setBiome(w >> 1, h >> 1, 0, 0);
 
   let paused = !AUTOPLAY;
 

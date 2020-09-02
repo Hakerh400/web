@@ -13,7 +13,7 @@ const ScheduledCoords = require('./scheduled-coords');
 
 const {assert} = O;
 
-const AUTOPLAY = 1;
+const AUTOPLAY = O.urlParam('a', 1) | 0;
 const SPEED = 10e3;
 
 // O.enhanceRNG();
