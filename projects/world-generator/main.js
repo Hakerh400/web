@@ -127,7 +127,7 @@ const main = () => {
       const y = yy / hh - 1;
       const n = maxNum / 1.5 - 1;
 
-      const num = n + O.hypot(x, y) % x;
+      const num = n + O.hypot(n, y) % x;
 
       arr = scheduledArrs[O.bound((num + 1) * arrsNum >> 1, 0, arrsNum - 1)];
     }
