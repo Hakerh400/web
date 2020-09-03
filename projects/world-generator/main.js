@@ -189,10 +189,10 @@ const main = () => {
   };
 
   const render = () => {
-    if(!paused){
+    draw: if(!paused){
       for(let i = 0; i !== SPEED; i++){
         const arrs = scheduledArrs.filter(a => a.length !== 0);
-        if(arrs.length === 0) break;
+        if(arrs.length === 0) break draw;
 
         let arrIndex = arrsNum * (1 - O.randf() ** 2) | 0;
         if(arrIndex === arrsNum) arrIndex--;

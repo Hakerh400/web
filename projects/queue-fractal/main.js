@@ -144,9 +144,9 @@ const main = () => {
   };
 
   const render = () => {
-    if(!paused){
+    draw: if(!paused){
       for(let i = 0; i !== SPEED; i++){
-        if(scheduledQueue.isEmpty) break;
+        if(scheduledQueue.isEmpty) break draw;
 
         const elem = scheduledQueue.pop();
         const {x, y} = elem;
