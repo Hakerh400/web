@@ -43,6 +43,11 @@ class RenderEngine{
 
     this.renderBound = this.render.bind(this);
     O.raf(this.renderBound);
+
+    this.fps = 0;
+    this.fpsFactor = .5;
+    this.fpsTime = O.now;
+    this.fpsFramesNum = 0;
   }
 
   aels(){
@@ -257,6 +262,43 @@ class RenderEngine{
     }
 
     grid.draw(g, t, k);
+
+    drawFPS: {
+      const fontSize = 64;
+      const offset = 10;
+
+      const timeCur = t;
+      const timeDif = timeCur - this.fpsTime;
+
+      this.fpsFramesNum++;
+
+      if(timeDif > 500){
+        const fpsCur = this.fpsFramesNum * 1e3 / timeDif;
+        const fpsNew = this.fpsFactor * this.fps + (1 - this.fpsFactor) * fpsCur;
+
+        this.fps = fpsNew;
+        this.fpsTime = timeCur;
+        this.fpsFramesNum = 1;
+      }
+
+      const str = String(Math.round(this.fps));
+
+      g.save();
+      g.resetTransform();
+
+      g.font = `${fontSize}px arial`;
+      g.fillStyle = 'black';
+      g.textBaseline = 'top';
+      g.textAlign = 'left';
+
+      g.fillStyle = 'white';
+      g.fillRect(0, 0, g.measureText(str).width + offset * 2, fontSize + offset * 2);
+
+      g.fillStyle = 'black';
+      g.fillText(str, offset, offset);
+
+      g.restore();
+    }
 
     O.raf(this.renderBound);
   }

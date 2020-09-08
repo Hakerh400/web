@@ -45,7 +45,7 @@ function main(){
   canvas.width = O.iw;
   canvas.height = O.ih;
 
-  const reng = new RenderEngine(canvas, [Grid.SquareGrid, Grid.HexagonalGrid][1]);
+  const reng = new RenderEngine(canvas, [Grid.SquareGrid, Grid.HexagonalGrid][0]);
   const {grid} = reng;
 
   const map = new O.Map2D();

@@ -3,11 +3,6 @@ html, body{
   height: 100%;
 }
 
-*{
-  overflow: hidden;
-  outline: none;
-}
-
 a,
 a:link,
 a:visited,
@@ -19,6 +14,8 @@ a:active{
 
 .has-canvas{
   margin: 0px;
+  overflow: hidden;
+  outline: none;
 }
 
 /*::-webkit-scrollbar{
