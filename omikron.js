@@ -1,5 +1,11 @@
 'use strict';
 
+const {
+  PI, min, max, abs, floor,
+  ceil, round, sqrt, sin, cos,
+  atan, clz32,
+} = Math;
+
 class Set2D{
   static #sym = Symbol();
   #d = Set2D.obj();
@@ -1075,8 +1081,8 @@ class EnhancedRenderingContext{
       var y2 = q[i + 2];
 
       if(fillMode){
-        if(Math.abs(x1 - x2) === 1) x2 = x1;
-        if(Math.abs(y1 - y2) === 1) y2 = y1;
+        if(abs(x1 - x2) === 1) x2 = x1;
+        if(abs(y1 - y2) === 1) y2 = y1;
       }
 
       if(!type){
@@ -1134,8 +1140,8 @@ class EnhancedRenderingContext{
     if(angle){
       this.rtx = x;
       this.rty = y;
-      this.rcos = Math.cos(angle);
-      this.rsin = -Math.sin(angle);
+      this.rcos = cos(angle);
+      this.rsin = -sin(angle);
     }
   }
 
@@ -1191,7 +1197,7 @@ class EnhancedRenderingContext{
       return;
     }
 
-    this.g.fillRect(Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty), Math.round(w * this.s) + 1, Math.round(h * this.s) + 1);
+    this.g.fillRect(round(x * this.s + this.tx), round(y * this.s + this.ty), round(w * this.s) + 1, round(h * this.s) + 1);
   }
 
   strokeRect(x, y, w, h){
@@ -1202,7 +1208,7 @@ class EnhancedRenderingContext{
       return;
     }
 
-    this.g.strokeRect(Math.round(x * this.s + this.tx) + .5, Math.round(y * this.s + this.ty) + .5, Math.round(w * this.s) + 1, Math.round(h * this.s) + 1);
+    this.g.strokeRect(round(x * this.s + this.tx) + .5, round(y * this.s + this.ty) + .5, round(w * this.s) + 1, round(h * this.s) + 1);
   }
 
   moveTo(x, y){
@@ -1214,7 +1220,7 @@ class EnhancedRenderingContext{
       y = this.rty + yy * this.rcos + xx * this.rsin;
     }
 
-    this.pointsQueue.push(0, Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty));
+    this.pointsQueue.push(0, round(x * this.s + this.tx), round(y * this.s + this.ty));
   }
 
   lineTo(x, y){
@@ -1226,7 +1232,7 @@ class EnhancedRenderingContext{
       y = this.rty + yy * this.rcos + xx * this.rsin;
     }
 
-    this.pointsQueue.push(1, Math.round(x * this.s + this.tx), Math.round(y * this.s + this.ty));
+    this.pointsQueue.push(1, round(x * this.s + this.tx), round(y * this.s + this.ty));
   }
 
   arc(x, y, r, a1, a2, acw){
@@ -1246,8 +1252,8 @@ class EnhancedRenderingContext{
     var rr = r * this.s;
     this.arcsQueue.push(this.pointsQueue.length, xx, yy, rr, a1, a2, acw);
 
-    xx += Math.cos(a2) * rr;
-    yy += Math.sin(a2) * rr;
+    xx += cos(a2) * rr;
+    yy += sin(a2) * rr;
     this.pointsQueue.push(0, xx, yy);
   }
 
@@ -1260,7 +1266,7 @@ class EnhancedRenderingContext{
       y = this.rty + yy * this.rcos + xx * this.rsin;
     }
 
-    this.g.fillText(text, Math.round(x * this.s + this.tx) + 1, Math.round(y * this.s + this.ty) + 1);
+    this.g.fillText(text, round(x * this.s + this.tx) + 1, round(y * this.s + this.ty) + 1);
   }
 
   strokeText(text, x, y){
@@ -1272,7 +1278,7 @@ class EnhancedRenderingContext{
       y = this.rty + yy * this.rcos + xx * this.rsin;
     }
 
-    this.g.strokeText(text, Math.round(x * this.s + this.tx) + 1, Math.round(y * this.s + this.ty) + 1);
+    this.g.strokeText(text, round(x * this.s + this.tx) + 1, round(y * this.s + this.ty) + 1);
   }
 
   updateFont(){
@@ -1308,9 +1314,9 @@ class EnhancedRenderingContext{
     const s1 = (1 - size) / 2;
     const s2 = 1 - s1;
 
-    const radius = Math.min(size, .5);
+    const radius = min(size, .5);
 
-    const p1 = (1 - Math.sqrt(radius * radius * 4 - size * size)) / 2;
+    const p1 = (1 - sqrt(radius * radius * 4 - size * size)) / 2;
     const p2 = 1 - p1;
 
     const phi1 = (1.9 - size / (radius * 4)) * O.pi;
@@ -1392,7 +1398,7 @@ class EnhancedRenderingContext{
 
     if(foundArc){
       if(dirs !== 0){
-        const a = Math.atan((.5 - p1) / (s2 - .5));
+        const a = atan((.5 - p1) / (s2 - .5));
         const b = O.pi - a;
         const c = (dirs === 1 ? 0 : dirs === 2 ? 1 : dirs === 4 ? 2 : 3) * O.pih;
 
@@ -1541,403 +1547,6 @@ class Buffer extends Uint8Array{
   errEnc(encoding){
     throw new TypeError(`Unsupported encoding ${O.sf(encoding)}`);
   }
-}
-
-class Comparable{
-  cmp(obj){ O.virtual('cmp'); }
-}
-
-class PriorityQueue{
-  #arr = [null];
-
-  get arr(){ return this.#arr.slice(1); }
-  get len(){ return this.#arr.length - 1; }
-  get isEmpty(){ return this.#arr.length === 1; }
-
-  push(elem){
-    const arr = this.#arr;
-    let i = arr.length;
-
-    arr.push(elem);
-
-    while(i !== 1){
-      const j = i >> 1;
-
-      if(arr[i].cmp(arr[j]) >= 0) break;
-
-      const t = arr[i];
-      arr[i] = arr[j];
-      arr[j] = t;
-
-      i = j;
-    }
-
-    return this;
-  }
-
-  pop(){
-    const arr = this.#arr;
-    const first = this.top();
-    const last = arr.pop();
-    const len = arr.length;
-
-    if(len !== 1){
-      let i = 1;
-
-      arr[1] = last;
-
-      while(1){
-        let j = i << 1;
-
-        if(j >= len) break;
-        if(j + 1 !== len && arr[j].cmp(arr[j + 1]) > 0) j++;
-        if(arr[j].cmp(arr[i]) >= 0) break;
-
-        const t = arr[i];
-        arr[i] = arr[j];
-        arr[j] = t;
-
-        i = j;
-      }
-    }
-
-    return first;
-  }
-
-  top(){
-    const arr = this.#arr;
-
-    if(arr.length === 1)
-      throw new TypeError('The queue is empty');
-
-    return arr[1];
-  }
-
-  *[Symbol.iterator](){
-    const arr = this.#arr;
-    const len = arr.length;
-
-    for(let i = 1; i !== len; i++)
-      yield arr[i];
-  }
-}
-
-class IO{
-  constructor(input='', checksum=0, pad=0){
-    let buf = O.Buffer.from(input);
-    if(checksum) buf = IO.unlock(buf, 1);
-
-    this.input = buf
-    this.output = O.Buffer.alloc(1);
-
-    this.pad = pad;
-
-    this.inputIndex = pad ? 0 : 1;
-    this.outputIndex = 0;
-    this.byte = 0;
-  }
-
-  static name(){ return 'Standard'; }
-  static isBit(){ return 0; }
-
-  static lock(buf, sameBuf=0){
-    if(!sameBuf) buf = O.Buffer.from(buf);
-
-    const cs = O.sha256(buf);
-    IO.xor(buf, cs, 1);
-    buf = O.Buffer.concat([buf, cs]);
-
-    return buf;
-  }
-
-  static unlock(buf, sameBuf=0){
-    if(!sameBuf) buf = O.Buffer.from(buf);
-    const err = () => { throw new TypeError('Invalid checksum'); };
-
-    const len = buf.length;
-    if(len < 32) err();
-
-    const cs = O.Buffer.from(buf.slice(len - 32));
-
-    buf = O.Buffer.from(buf.slice(0, len - 32));
-    IO.xor(buf, cs, 1);
-
-    if(!O.sha256(buf).equals(cs)) err();
-
-    return buf;
-  }
-
-  static async unlocka(buf, sameBuf=0){
-    if(!sameBuf) buf = O.Buffer.from(buf);
-    const err = () => { throw new TypeError('Invalid checksum'); };
-
-    const len = buf.length;
-    if(len < 32) err();
-
-    const cs = O.Buffer.from(buf.slice(len - 32));
-
-    buf = O.Buffer.from(buf.slice(0, len - 32));
-    await IO.xora(buf, cs, 1);
-
-    if(!O.sha256(buf).equals(cs)) err();
-
-    return buf;
-  }
-
-  static xor(buf, hash, sameBuf=0){
-    if(!sameBuf) buf = O.Buffer.from(buf);
-    const len = buf.length;
-
-    for(let i = 0, j = 0; i !== len; i++, j++){
-      buf[i] ^= hash[j];
-
-      if(j === 32){
-        hash = O.sha256(hash);
-        j = -1;
-      }
-    }
-
-    return buf;
-  }
-
-  static async xora(buf, hash, sameBuf=0){
-    if(!sameBuf) buf = O.Buffer.from(buf);
-    const len = buf.length;
-    let cnt = 0;
-
-    for(let i = 0, j = 0; i !== len; i++, j++){
-      buf[i] ^= hash[j];
-
-      if(j === 32){
-        hash = O.sha256(hash);
-        j = -1;
-      }
-
-      if(++cnt === 1e5){
-        await O.waita(16);
-        cnt = 0;
-      }
-    }
-
-    return buf;
-  }
-
-  read(){
-    const {input} = this;
-    const i = this.inputIndex;
-
-    if((i >> 4) >= input.length) return 0;
-    this.inputIndex += this.pad ? 1 : 2;
-
-    if((i & 1) === 0) return 1;
-    return input[i >> 4] & (1 << ((i >> 1) & 7)) ? 1 : 0;
-  }
-
-  write(bit){
-    this.byte |= bit << (this.outputIndex++ & 7);
-    if((this.outputIndex & 7) === 0) this.addByte();
-  }
-
-  get hasMore(){
-    return (this.inputIndex >> 4) < this.input.length;
-  }
-
-  addByte(){
-    const len = this.outputIndex - 1 >> 3;
-
-    if(len === this.output.length){
-      const buf = O.Buffer.alloc(len);
-      this.output = O.Buffer.concat([this.output, buf]);
-    }
-
-    this.output[len] = this.byte;
-    this.byte = 0;
-  }
-
-  getOutput(checksum=0, encoding=null){
-    if((this.outputIndex & 7) !== 0) this.addByte();
-
-    const len = Math.ceil(this.outputIndex / 8);
-    let buf = O.Buffer.from(this.output.slice(0, len));
-    if(checksum) buf = IO.lock(buf, 1);
-
-    if(encoding !== null) buf = buf.toString(encoding);
-    return buf;
-  }
-}
-
-class Serializer extends IO{
-  static #abuf = new ArrayBuffer(8);
-  static #view = new DataView(this.#abuf);
-
-  constructor(buf, checksum=0){
-    super(buf, checksum);
-  }
-
-  write(num, max=1){
-    num |= 0;
-    max |= 0;
-    if(max === 0) return;
-
-    let mask = 1 << 31 - Math.clz32(max);
-    let limit = 1;
-
-    while(mask !== 0){
-      if(!limit || (max & mask)){
-        let bit = num & mask ? 1 : 0;
-        super.write(bit);
-        if(!bit) limit = 0;
-      }
-      mask >>= 1;
-    }
-
-    return this;
-  }
-
-  read(max=1){
-    max |= 0;
-    if(max === 0) return 0;
-
-    let mask = 1 << 31 - Math.clz32(max);
-    let limit = 1;
-    let num = 0;
-
-    while(mask !== 0){
-      num <<= 1;
-      if(!limit || (max & mask)){
-        let bit = super.read();
-        num |= bit;
-        if(!bit) limit = 0;
-      }
-      mask >>= 1;
-    }
-
-    return num;
-  }
-
-  writeInt(num, signed=0){
-    const snum = num;
-    num = -~Math.abs(num);
-
-    while(num !== 1){
-      super.write(1);
-      super.write(num & 1);
-      num >>= 1;
-    }
-
-    super.write(0);
-
-    if(signed && snum !== 0)
-      super.write(snum < 0);
-
-    return this;
-  }
-
-  readInt(signed=1){
-    let num = 0;
-    let mask = 1;
-    let len = 0;
-
-    while(super.read()){
-      if(super.read()) num |= mask;
-      mask <<= 1;
-    }
-
-    num = ~-(num | mask);
-
-    if(signed && num !== 0 && super.read())
-      num = -num;
-
-    return num;
-  }
-
-  writeUint(num){
-    return this.writeInt(num, 0);
-  }
-
-  readUint(){
-    return this.readInt(0);
-  }
-
-  writeFloat(f){
-    const view = this.constructor.#view;
-    view.setFloat32(0, f, 1);
-    for(let i = 0; i !== 4; i++)
-      this.write(view.getUint8(i), 255);
-    return this;
-  }
-
-  readFloat(){
-    const view = this.constructor.#view;
-    for(let i = 0; i !== 4; i++)
-      view.setUint8(i, this.read(255));
-    return view.getFloat32(0, 1);
-  }
-
-  writeDouble(f){
-    const view = this.constructor.#view;
-    view.setFloat64(0, f, 1);
-    for(let i = 0; i !== 8; i++)
-      this.write(view.getUint8(i), 255);
-    return this;
-  }
-
-  readDouble(){
-    const view = this.constructor.#view;
-    for(let i = 0; i !== 8; i++)
-      view.setUint8(i, this.read(255));
-    return view.getFloat64(0, 1);
-  }
-
-  writeBuf(buf){
-    this.writeUint(buf.length);
-
-    for(const byte of buf)
-      this.write(byte, 255);
-
-    return this;
-  }
-
-  readBuf(){
-    const len = this.readUint();
-    const buf = O.Buffer.alloc(len);
-
-    for(let i = 0; i !== len; i++)
-      buf[i] = this.read(255);
-
-    return buf;
-  }
-
-  writeStr(str){
-    return this.writeBuf(O.Buffer.from(str, 'utf8'));
-  }
-
-  readStr(){
-    return this.readBuf().toString('utf8');
-  }
-
-  getOutput(checksum=0, encoding=null, trim=1){
-    let buf = super.getOutput(checksum);
-    let len = buf.length;
-
-    if(trim && len !== 0 && buf[len - 1] === 0){
-      let i = len - 1;
-      for(; i !== -1; i--)
-        if(buf[i] !== 0) break;
-      buf = O.Buffer.from(buf.slice(0, i + 1));
-    }
-
-    if(encoding !== null) buf = buf.toString(encoding);
-    return buf;
-  }
-}
-
-class Serializable{
-  ser(ser=new O.Serializer()){ O.virtual('ser'); }
-  deser(ser){ O.virtual('deser'); }
-
-  static deser(ser){ return new this().deser(ser); }
-  reser(){ return this.deser(new O.Serializer(this.ser().getOutput())); }
 }
 
 class Iterable{
@@ -2164,6 +1773,629 @@ class Stringifiable extends Iterable{
   }
 }
 
+class Comparable extends Stringifiable{
+  cmp(obj){ O.virtual('cmp'); }
+}
+
+class PriorityQueue extends Stringifiable{
+  #arr = [null];
+
+  get arr(){ return this.#arr.slice(1); }
+  get len(){ return this.#arr.length - 1; }
+  get isEmpty(){ return this.#arr.length === 1; }
+
+  push(elem){
+    const arr = this.#arr;
+    let i = arr.length;
+
+    arr.push(elem);
+
+    while(i !== 1){
+      const j = i >> 1;
+
+      if(arr[i].cmp(arr[j]) >= 0) break;
+
+      const t = arr[i];
+      arr[i] = arr[j];
+      arr[j] = t;
+
+      i = j;
+    }
+
+    return this;
+  }
+
+  pop(){
+    const arr = this.#arr;
+    const first = this.top();
+    const last = arr.pop();
+    const len = arr.length;
+
+    if(len !== 1){
+      let i = 1;
+
+      arr[1] = last;
+
+      while(1){
+        let j = i << 1;
+
+        if(j >= len) break;
+        if(j + 1 !== len && arr[j].cmp(arr[j + 1]) > 0) j++;
+        if(arr[j].cmp(arr[i]) >= 0) break;
+
+        const t = arr[i];
+        arr[i] = arr[j];
+        arr[j] = t;
+
+        i = j;
+      }
+    }
+
+    return first;
+  }
+
+  top(){
+    const arr = this.#arr;
+
+    if(arr.length === 1)
+      throw new TypeError('The queue is empty');
+
+    return arr[1];
+  }
+
+  *[Symbol.iterator](){
+    const arr = this.#arr;
+    const len = arr.length;
+
+    for(let i = 1; i !== len; i++)
+      yield arr[i];
+  }
+}
+
+class TreeNode extends Stringifiable{
+  #parent = null;
+  #type = null;
+  #left = null;
+  #right = null;
+
+  constructor(obj){
+    super();
+    this.obj = obj;
+  }
+
+  get parent(){ return this.#parent; }
+  get type(){ return this.#type; }
+  get left(){ return this.#left; }
+  get right(){ return this.#right; }
+
+  set left(node){
+    this.#left = node;
+
+    if(node !== null){
+      node.#parent = this;
+      node.#type = 0;
+    }
+  }
+
+  set right(node){
+    this.#right = node;
+
+    if(node !== null){
+      node.#parent = this;
+      node.#type = 1;
+    }
+  }
+
+  get(type){
+    if(type === 0) return this.#left;
+    return this.#right;
+  }
+
+  set(type, node){
+    if(type === 0) this.left = node;
+    else this.right = node;
+  }
+
+  detach(){
+    this.#type = null;
+    this.#parent = null;
+  }
+
+  get chNum(){ return (this.left !== null) + (this.right !== null); }
+  getCh(i){ return this.i === 0 ? this.left : this.right; }
+
+  toStr(){
+    const f = a => a !== null ? a : 'null';
+    return ['(', this.obj, ', ', f(this.left), ', ', f(this.right), ')'];
+  }
+}
+
+class Tree extends Stringifiable{
+  root = null;
+
+  toStr(){
+    const {root} = this;
+    return root !== null ? root : 'null';
+  }
+}
+
+class AVLNode extends TreeNode{
+  #height = 1;
+
+  get height(){
+    return this.#height;
+  }
+
+  get bfac(){
+    const {left, right} = this;
+
+    return (
+      (right !== null ? right.#height : 0) -
+      (left !== null ? left.#height : 0)
+    );
+  }
+
+  get left(){ return super.left; }
+  get right(){ return super.right; }
+
+  set left(node){
+    super.left = node;
+    this.updateHeight();
+  }
+
+  set right(node){
+    super.right = node;
+    this.updateHeight();
+  }
+
+  updateHeight(){
+    const {left, right} = this;
+
+    return this.#height = max(
+      left !== null ? left.#height : 0,
+      right !== null ? right.#height : 0,
+    ) + 1;
+  }
+
+  cmp(other){
+    return this.obj.cmp(other.obj);
+  }
+
+  rotate(dir){
+    /*
+      dir === 0 ---> left
+      dir === 1 ---> right
+    */
+
+    const d0 = dir;
+    const d1 = dir ^ 1;
+
+    const a = this;
+    const c = a.get(d1);
+    const f = c.get(d0);
+
+    a.set(d1, f);
+    c.set(d0, a);
+
+    return c;
+  }
+
+  toStr(){
+    const f = a => a !== null ? a : 'null';
+    return [
+      String(this.height),
+      '(', this.obj, ', ', f(this.left), ', ', f(this.right), ')',
+    ];
+  }
+}
+
+class AVLTree extends Tree{
+  insert(obj){
+    const {root} = this;
+    const nodeNew = new AVLNode(obj);
+
+    if(root === null){
+      this.root = nodeNew;
+      return;
+    }
+
+    let node = root;
+
+    while(1){
+      const dir = nodeNew.cmp(node) <= 0 ? 0 : 1;
+      const next = node.get(dir);
+
+      if(next === null){
+        node.set(dir, nodeNew);
+        break;
+      }
+
+      node = next;
+    }
+
+    while(node !== null){
+      node.updateHeight();
+
+      const {bfac} = node;
+      const abfac = abs(bfac);
+
+      if(abfac !== 2){
+        node = node.parent;
+        continue;
+      }
+
+      const dir1 = bfac < 0 ? 0 : 1;
+      const ch = node.get(dir1);
+      const dir2 = ch.bfac < 0 ? 0 : 1;
+
+      if(dir2 !== dir1)
+        node.set(dir1, ch.rotate(dir2 ^ 1));
+
+      const {parent, type} = node;
+      const afterRot = node.rotate(dir1 ^ 1);
+
+      if(parent === null){
+        afterRot.detach();
+        this.root = afterRot;
+      }else{
+        parent.set(type, afterRot);
+      }
+
+      break;
+    }
+  }
+
+  traverse(func){
+    for(const obj of this)
+      func(obj);
+  }
+
+  *[Symbol.iterator](){
+    const {root} = this;
+    if(root === null) return;
+
+    const stack = [[this.root, 0]];
+
+    while(stack.length !== 0){
+      const frame = stack.pop();
+      const [node, flag] = frame;
+
+      if(flag === 0){
+        const {left, right} = node;
+
+        if(right !== null) stack.push([right, 0]);
+
+        frame[1] = 1;
+        stack.push(frame);
+
+        if(left !== null) stack.push([left, 0]);
+
+        continue;
+      }
+
+      yield node.obj;
+    }
+  }
+}
+
+class IO{
+  constructor(input='', checksum=0, pad=0){
+    let buf = O.Buffer.from(input);
+    if(checksum) buf = IO.unlock(buf, 1);
+
+    this.input = buf
+    this.output = O.Buffer.alloc(1);
+
+    this.pad = pad;
+
+    this.inputIndex = pad ? 0 : 1;
+    this.outputIndex = 0;
+    this.byte = 0;
+  }
+
+  static name(){ return 'Standard'; }
+  static isBit(){ return 0; }
+
+  static lock(buf, sameBuf=0){
+    if(!sameBuf) buf = O.Buffer.from(buf);
+
+    const cs = O.sha256(buf);
+    IO.xor(buf, cs, 1);
+    buf = O.Buffer.concat([buf, cs]);
+
+    return buf;
+  }
+
+  static unlock(buf, sameBuf=0){
+    if(!sameBuf) buf = O.Buffer.from(buf);
+    const err = () => { throw new TypeError('Invalid checksum'); };
+
+    const len = buf.length;
+    if(len < 32) err();
+
+    const cs = O.Buffer.from(buf.slice(len - 32));
+
+    buf = O.Buffer.from(buf.slice(0, len - 32));
+    IO.xor(buf, cs, 1);
+
+    if(!O.sha256(buf).equals(cs)) err();
+
+    return buf;
+  }
+
+  static async unlocka(buf, sameBuf=0){
+    if(!sameBuf) buf = O.Buffer.from(buf);
+    const err = () => { throw new TypeError('Invalid checksum'); };
+
+    const len = buf.length;
+    if(len < 32) err();
+
+    const cs = O.Buffer.from(buf.slice(len - 32));
+
+    buf = O.Buffer.from(buf.slice(0, len - 32));
+    await IO.xora(buf, cs, 1);
+
+    if(!O.sha256(buf).equals(cs)) err();
+
+    return buf;
+  }
+
+  static xor(buf, hash, sameBuf=0){
+    if(!sameBuf) buf = O.Buffer.from(buf);
+    const len = buf.length;
+
+    for(let i = 0, j = 0; i !== len; i++, j++){
+      buf[i] ^= hash[j];
+
+      if(j === 32){
+        hash = O.sha256(hash);
+        j = -1;
+      }
+    }
+
+    return buf;
+  }
+
+  static async xora(buf, hash, sameBuf=0){
+    if(!sameBuf) buf = O.Buffer.from(buf);
+    const len = buf.length;
+    let cnt = 0;
+
+    for(let i = 0, j = 0; i !== len; i++, j++){
+      buf[i] ^= hash[j];
+
+      if(j === 32){
+        hash = O.sha256(hash);
+        j = -1;
+      }
+
+      if(++cnt === 1e5){
+        await O.waita(16);
+        cnt = 0;
+      }
+    }
+
+    return buf;
+  }
+
+  read(){
+    const {input} = this;
+    const i = this.inputIndex;
+
+    if((i >> 4) >= input.length) return 0;
+    this.inputIndex += this.pad ? 1 : 2;
+
+    if((i & 1) === 0) return 1;
+    return input[i >> 4] & (1 << ((i >> 1) & 7)) ? 1 : 0;
+  }
+
+  write(bit){
+    this.byte |= bit << (this.outputIndex++ & 7);
+    if((this.outputIndex & 7) === 0) this.addByte();
+  }
+
+  get hasMore(){
+    return (this.inputIndex >> 4) < this.input.length;
+  }
+
+  addByte(){
+    const len = this.outputIndex - 1 >> 3;
+
+    if(len === this.output.length){
+      const buf = O.Buffer.alloc(len);
+      this.output = O.Buffer.concat([this.output, buf]);
+    }
+
+    this.output[len] = this.byte;
+    this.byte = 0;
+  }
+
+  getOutput(checksum=0, encoding=null){
+    if((this.outputIndex & 7) !== 0) this.addByte();
+
+    const len = ceil(this.outputIndex / 8);
+    let buf = O.Buffer.from(this.output.slice(0, len));
+    if(checksum) buf = IO.lock(buf, 1);
+
+    if(encoding !== null) buf = buf.toString(encoding);
+    return buf;
+  }
+}
+
+class Serializer extends IO{
+  static #abuf = new ArrayBuffer(8);
+  static #view = new DataView(this.#abuf);
+
+  constructor(buf, checksum=0){
+    super(buf, checksum);
+  }
+
+  write(num, max=1){
+    num |= 0;
+    max |= 0;
+    if(max === 0) return;
+
+    let mask = 1 << 31 - clz32(max);
+    let limit = 1;
+
+    while(mask !== 0){
+      if(!limit || (max & mask)){
+        let bit = num & mask ? 1 : 0;
+        super.write(bit);
+        if(!bit) limit = 0;
+      }
+      mask >>= 1;
+    }
+
+    return this;
+  }
+
+  read(max=1){
+    max |= 0;
+    if(max === 0) return 0;
+
+    let mask = 1 << 31 - clz32(max);
+    let limit = 1;
+    let num = 0;
+
+    while(mask !== 0){
+      num <<= 1;
+      if(!limit || (max & mask)){
+        let bit = super.read();
+        num |= bit;
+        if(!bit) limit = 0;
+      }
+      mask >>= 1;
+    }
+
+    return num;
+  }
+
+  writeInt(num, signed=0){
+    const snum = num;
+    num = -~abs(num);
+
+    while(num !== 1){
+      super.write(1);
+      super.write(num & 1);
+      num >>= 1;
+    }
+
+    super.write(0);
+
+    if(signed && snum !== 0)
+      super.write(snum < 0);
+
+    return this;
+  }
+
+  readInt(signed=1){
+    let num = 0;
+    let mask = 1;
+    let len = 0;
+
+    while(super.read()){
+      if(super.read()) num |= mask;
+      mask <<= 1;
+    }
+
+    num = ~-(num | mask);
+
+    if(signed && num !== 0 && super.read())
+      num = -num;
+
+    return num;
+  }
+
+  writeUint(num){
+    return this.writeInt(num, 0);
+  }
+
+  readUint(){
+    return this.readInt(0);
+  }
+
+  writeFloat(f){
+    const view = this.constructor.#view;
+    view.setFloat32(0, f, 1);
+    for(let i = 0; i !== 4; i++)
+      this.write(view.getUint8(i), 255);
+    return this;
+  }
+
+  readFloat(){
+    const view = this.constructor.#view;
+    for(let i = 0; i !== 4; i++)
+      view.setUint8(i, this.read(255));
+    return view.getFloat32(0, 1);
+  }
+
+  writeDouble(f){
+    const view = this.constructor.#view;
+    view.setFloat64(0, f, 1);
+    for(let i = 0; i !== 8; i++)
+      this.write(view.getUint8(i), 255);
+    return this;
+  }
+
+  readDouble(){
+    const view = this.constructor.#view;
+    for(let i = 0; i !== 8; i++)
+      view.setUint8(i, this.read(255));
+    return view.getFloat64(0, 1);
+  }
+
+  writeBuf(buf){
+    this.writeUint(buf.length);
+
+    for(const byte of buf)
+      this.write(byte, 255);
+
+    return this;
+  }
+
+  readBuf(){
+    const len = this.readUint();
+    const buf = O.Buffer.alloc(len);
+
+    for(let i = 0; i !== len; i++)
+      buf[i] = this.read(255);
+
+    return buf;
+  }
+
+  writeStr(str){
+    return this.writeBuf(O.Buffer.from(str, 'utf8'));
+  }
+
+  readStr(){
+    return this.readBuf().toString('utf8');
+  }
+
+  getOutput(checksum=0, encoding=null, trim=1){
+    let buf = super.getOutput(checksum);
+    let len = buf.length;
+
+    if(trim && len !== 0 && buf[len - 1] === 0){
+      let i = len - 1;
+      for(; i !== -1; i--)
+        if(buf[i] !== 0) break;
+      buf = O.Buffer.from(buf.slice(0, i + 1));
+    }
+
+    if(encoding !== null) buf = buf.toString(encoding);
+    return buf;
+  }
+}
+
+class Serializable{
+  ser(ser=new O.Serializer()){ O.virtual('ser'); }
+  deser(ser){ O.virtual('deser'); }
+
+  static deser(ser){ return new this().deser(ser); }
+  reser(){ return this.deser(new O.Serializer(this.ser().getOutput())); }
+}
+
 class Semaphore{
   constructor(s=1){
     this.s = s;
@@ -2211,13 +2443,13 @@ const O = {
   head: document.head,
   body: document.body,
 
-  pi: Math.PI,
-  pi2: Math.PI * 2,
-  pih: Math.PI / 2,
-  pi3: Math.PI * 3,
-  pi4: Math.PI / 4,
-  pi32: Math.PI * 3 / 2,
-  pi34: Math.PI * 3 / 4,
+  pi: PI,
+  pi2: PI * 2,
+  pih: PI / 2,
+  pi3: PI * 3,
+  pi4: PI / 4,
+  pi32: PI * 3 / 2,
+  pi34: PI * 3 / 4,
   N: Infinity,
 
   get iw(){ return innerWidth; },
@@ -2280,13 +2512,17 @@ const O = {
   MultidimensionalMap,
   EnhancedRenderingContext,
   Buffer,
+  Iterable,
+  Stringifiable,
   Comparable,
   PriorityQueue,
+  TreeNode,
+  Tree,
+  AVLNode,
+  AVLTree,
   IO,
   Serializer,
   Serializable,
-  Iterable,
-  Stringifiable,
   Semaphore,
   AssertionError,
 
@@ -3033,7 +3269,7 @@ const O = {
 
     const pad = lines
       .filter(line => line.trim().length !== 0)
-      .reduce((pad, line, i) => Math.min(pad, line.match(/^\s*/)[0].length), Infinity);
+      .reduce((pad, line, i) => min(pad, line.match(/^\s*/)[0].length), Infinity);
 
     return lines.map(line => line.slice(pad)).join('\n');
   },
@@ -3429,8 +3665,8 @@ const O = {
       my = cy + (k * k + 1) * r * r / (2 * k * r) - k * r;
     }
 
-    const a1 = Math.atan2(by - my, bx - mx);
-    const a2 = Math.atan2(ay - my, ax - mx);
+    const a1 = atan2(by - my, bx - mx);
+    const a2 = atan2(ay - my, ax - mx);
 
     g.arc(mx, my, O.dist(mx, my, ax, ay), a2, a1, k < 0);
 
@@ -3538,7 +3774,7 @@ const O = {
   },
 
   hsv(val, col=new Uint8Array(3)){
-    const v = Math.round((val % 1 + 1) % 1 * (256 * 6 - 1)) | 0;
+    const v = round((val % 1 + 1) % 1 * (256 * 6 - 1)) | 0;
     const h = v & 255;
 
     if(v < 256) col[2] = 0, col[0] = 255, col[1] = h;
@@ -3560,7 +3796,7 @@ const O = {
   dist(x1, y1, x2, y2){
     const dx = x2 - x1;
     const dy = y2 - y1;
-    return Math.sqrt(dx * dx + dy * dy);
+    return sqrt(dx * dx + dy * dy);
   },
 
   dists(x1, y1, x2, y2){
@@ -3570,7 +3806,7 @@ const O = {
   },
 
   distm(x1, y1, x2, y2){
-    return Math.abs(x2 - x1) + Math.abs(y2 - y1);
+    return abs(x2 - x1) + abs(y2 - y1);
   },
 
   enum(arr){
@@ -3687,9 +3923,9 @@ const O = {
   cc(char, index=0){ return char.charCodeAt(index); },
   sfcc(cc){ return String.fromCharCode(cc); },
   hex(val, bytesNum){ return val.toString(16).toUpperCase().padStart(bytesNum << 1, '0'); },
-  hypot(x, y){ return Math.sqrt(x * x + y * y); },
+  hypot(x, y){ return sqrt(x * x + y * y); },
   hypots(x, y){ return x * x + y * y; },
-  hypotm(x, y){ return Math.abs(x) + Math.abs(y); },
+  hypotm(x, y){ return abs(x) + abs(y); },
   sf(val){ return JSON.stringify(val, null, 2); },
   sfa(arr){ return `[${arr.join(', ')}]`; },
   rev(str){ return str.split('').reverse().join(''); },
