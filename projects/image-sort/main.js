@@ -2,16 +2,24 @@
 
 const main = () => {
   const tree = new O.AVLTree();
+  const arr = O.ca(200, i => new Test(i));
 
-  for(const i of O.repeatg(64))
-    tree.insert(new Test(i * 2 + 1));
+  const n = 5;
 
-  for(const i of O.repeatg(64))
-    tree.insert(new Test((64 - i - 1) * 2 + 2));
+  for(const i of O.repeatg(n))
+    tree.insert(arr[i * 2 + 1]);
+
+  for(const i of O.repeatg(n))
+    tree.insert(arr[(n - i - 1) * 2 + 2]);
+
+  for(const i of O.repeatg(n))
+    tree.delete(arr[i * 2 + 1]);
+
+  for(const i of O.repeatg(n))
+    tree.delete(arr[(n - i - 1) * 2 + 2]);
 
   log([...tree].join(' '));
   log(tree.toString());
-  log(tree.root.height);
 };
 
 class Test extends O.Comparable{

@@ -1961,6 +1961,26 @@ class AVLNode extends TreeNode{
     return this.obj.cmp(other.obj);
   }
 
+  get needsRebalancing(){
+    this.updateHeight();
+    return abs(this.bfac) === 2;
+  }
+
+  rebalance(){
+    const {bfac} = this;
+    const abfac = abs(bfac);
+    if(abfac !== 2) O.assert.fail();
+
+    const dir1 = bfac < 0 ? 0 : 1;
+    const ch = this.get(dir1);
+    const dir2 = ch.bfac < 0 ? 0 : 1;
+
+    if(dir2 !== dir1)
+      this.set(dir1, ch.rotate(dir2 ^ 1));
+
+    return this.rotate(dir1 ^ 1);
+  }
+
   rotate(dir){
     /*
       dir === 0 ---> left
@@ -1983,7 +2003,7 @@ class AVLNode extends TreeNode{
   toStr(){
     const f = a => a !== null ? a : 'null';
     return [
-      String(this.height),
+      // String(this.height),
       '(', this.obj, ', ', f(this.left), ', ', f(this.right), ')',
     ];
   }
@@ -2013,35 +2033,74 @@ class AVLTree extends Tree{
       node = next;
     }
 
+    for(;node !== null; node = node.parent){
+      if(node.needsRebalancing){
+        this.rebalance(node);
+        break;
+      }
+    }
+  }
+
+  has(obj){
+    return this.find(obj) !== null;
+  }
+
+  find(obj){
+    let node = this.root;
+
     while(node !== null){
-      node.updateHeight();
+      if(node.obj === obj) return node;
 
-      const {bfac} = node;
-      const abfac = abs(bfac);
+      const dir = obj.cmp(node.obj) <= 0 ? 0 : 1;
+      node = node.get(dir);
+    }
 
-      if(abfac !== 2){
-        node = node.parent;
-        continue;
+    return null;
+  }
+
+  delete(obj){
+    let node = this.find(obj);
+    if(node === null) O.assert.fail();
+
+    const {left, right} = node;
+
+    if(left !== null && right !== null){
+      let pred = left;
+
+      while(1){
+        const {right} = pred;
+        if(right === null) break;
+        pred = right;
       }
 
-      const dir1 = bfac < 0 ? 0 : 1;
-      const ch = node.get(dir1);
-      const dir2 = ch.bfac < 0 ? 0 : 1;
+      node.obj = pred.obj;
+      node = pred;
+    }
 
-      if(dir2 !== dir1)
-        node.set(dir1, ch.rotate(dir2 ^ 1));
+    this.replace(node.parent, node.type, node.left || node.right);
 
-      const {parent, type} = node;
-      const afterRot = node.rotate(dir1 ^ 1);
+    for(;node !== null; node = node.parent)
+      if(node.needsRebalancing)
+        node = this.rebalance(node);
+  }
 
-      if(parent === null){
-        afterRot.detach();
-        this.root = afterRot;
-      }else{
-        parent.set(type, afterRot);
-      }
+  rebalance(node){
+    const {parent, type} = node;
+    const nodeNew = node.rebalance();
 
-      break;
+    this.replace(parent, type, nodeNew);
+
+    return nodeNew;
+  }
+
+  replace(parent, type, nodeNew){
+    if(parent === null){
+      if(nodeNew !== null)
+        nodeNew.detach();
+
+      this.root = nodeNew;
+    }else{
+      parent.set(type, nodeNew);
     }
   }
 
