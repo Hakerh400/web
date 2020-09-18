@@ -1906,7 +1906,7 @@ class TreeNode extends Stringifiable{
 
   toStr(){
     const f = a => a !== null ? a : 'null';
-    return ['(', this.obj, ', ', f(this.left), ', ', f(this.right), ')'];
+    return ['\(', this.obj, ', ', f(this.left), ', ', f(this.right), '\)'];
   }
 }
 
@@ -1998,14 +1998,6 @@ class AVLNode extends TreeNode{
     c.set(d0, a);
 
     return c;
-  }
-
-  toStr(){
-    const f = a => a !== null ? a : 'null';
-    return [
-      // String(this.height),
-      '(', this.obj, ', ', f(this.left), ', ', f(this.right), ')',
-    ];
   }
 }
 
@@ -2559,34 +2551,39 @@ const O = {
     enhanceRNG: Symbol('enhanceRNG'),
   },
 
-  // Classes
+  // Constructors
 
-  Set2D,
-  Map2D,
-  Map3D,
-  Color,
-  ImageData,
-  EventEmitter,
-  Grid,
-  MultidimensionalMap,
-  EnhancedRenderingContext,
-  Buffer,
-  Iterable,
-  Stringifiable,
-  Comparable,
-  PriorityQueue,
-  TreeNode,
-  Tree,
-  AVLNode,
-  AVLTree,
-  IO,
-  Serializer,
-  Serializable,
-  Semaphore,
-  AssertionError,
+  ctors: {
+    Set2D,
+    Map2D,
+    Map3D,
+    Color,
+    ImageData,
+    EventEmitter,
+    Grid,
+    MultidimensionalMap,
+    EnhancedRenderingContext,
+    Buffer,
+    Iterable,
+    Stringifiable,
+    Comparable,
+    PriorityQueue,
+    TreeNode,
+    Tree,
+    AVLNode,
+    AVLTree,
+    IO,
+    Serializer,
+    Serializable,
+    Semaphore,
+    AssertionError,
+  },
 
   init(loadProject=1){
     const CHROME_ONLY = 0;
+
+    const {ctors} = O;
+    Object.assign(O, ctors);
 
     O.glob = O.obj();
 
@@ -2629,14 +2626,170 @@ const O = {
     O.modulesPolyfill = O.modulesPolyfill();
     O.assert.fail = O.assertFail;
 
-    /*
-      Older versions of Google Chrome had issues with Math.random()
-      Ref: https://bugs.chromium.org/p/v8/issues/detail?id=8212
-      Function O.enhanceRNG creates cryptographically secure
-      random number generator that depends on current time in
-      milliseconds and internal 256-bit state.
-    */
-    // O.enhanceRNG(O.symbols.enhanceRNG);
+    // Asyncify constructors
+    if(0){
+      const tabSize = 2;
+      const tab = ' '.repeat(tabSize);
+
+      const kws = O.arr2obj([
+        'if', 'switch', 'throw', 'catch',
+        'function', 'return', 'while', 'for',
+        'await',
+      ]);
+
+      const asyncCtors = O.obj();
+
+      const AAAAA = [];
+
+      for(const name in ctors){
+        const ctor = ctors[name];
+        let str = ctor.toString();
+        const lines = O.sanl(str);
+        const linesNum = lines.length;
+
+        for(let i = 0; i !== linesNum; i++){
+          const line = lines[i].slice(tabSize);
+          const match = line.match(/^(?:static )?([^\s\(]+)\(.*\)\{/s);
+          if(match === null) continue;
+
+          const name = match[1];
+
+          if(name === 'constructor'){
+            lines[i] = line.replace(/[^\s\(]+\(/, `${name}\x00(`);
+            continue;
+          }
+
+          lines[i] = `${tab}${line.replace(/[^\s\(]+\(/, `async ${name}\x00(`)}`;
+        }
+
+        str = lines.join('\n').replace(/\}\(/g, '}\x00(');
+
+        addAwaits: while(1){
+          const index = str.search(/[a-zA-Z0-9\)\]]\(/);
+          if(index === -1) break;
+
+          let target = '';
+
+          parseTarget: {
+            const stack = [];
+
+            loop: for(let i = index;; i--){
+              O.assert(i !== -1);
+
+              const char = str[i];
+
+              checkChar: {
+                if(str[i - 1] === '\\') break checkChar;
+
+                if(/\s/.test(char)){
+                  if(stack.length === 0) break parseTarget;
+                  break checkChar;
+                }
+
+                if(/[\)\]\}]/.test(char)){
+                  if(char === '}' && target === 'while') break parseTarget;
+                  stack.push(char);
+                  break checkChar;
+                }
+
+                if(/[\(\[\{]/.test(char)){
+                  if(stack.length === 0) break parseTarget;
+
+                  const last = stack.pop();
+
+                  O.assert((
+                    (char === '(' && last === ')') ||
+                    (char === '[' && last === ']') ||
+                    (char === '{' && last === '}')
+                  ));
+
+                  break checkChar;
+                }
+
+                if(/['"`]/.test(char)){
+                  if(stack.length !== 0 && O.last(stack) === char) stack.pop();
+                  else stack.push(char);
+                  break checkChar;
+                }
+              }
+
+              target = char + target;
+            }
+          }
+
+          checkExceptions: {
+            if(target in kws) break checkExceptions;
+            if(/(^|[^a-zA-Z0-9])[A-Z][a-zA-Z0-9]*$/.test(target)) break checkExceptions;
+
+            let args = '';
+
+            parseArgs: {
+              const stack = [];
+
+              loop: for(let i = index + 1;; i++){
+                O.assert(i !== str.length);
+
+                const char = str[i];
+
+                checkChar: {
+                  if(char === '\\'){
+                    args += `\\${str[++i]}`;
+                    continue loop;
+                  }
+
+                  if(/[\(\[\{]/.test(char)){
+                    stack.push(char);
+                    break checkChar;
+                  }
+
+                  if(/[\)\]\}]/.test(char)){
+                    const last = stack.pop();
+
+                    O.assert((
+                      (last === '(' && char === ')') ||
+                      (last === '[' && char === ']') ||
+                      (last === '{' && char === '}')
+                    ));
+
+                    if(stack.length === 0){
+                      args += ')';
+                      break parseArgs;
+                    }
+
+                    break checkChar;
+                  }
+
+                  if(/['"`]/.test(char)){
+                    if(O.last(stack) === char) stack.pop();
+                    else stack.push(char);
+                    break checkChar;
+                  }
+                }
+
+                args += char;
+              }
+            }
+
+            AAAAA.push(`${target}${args}`);
+
+            str = `${str.slice(0, index + 1)}\x00${str.slice(index + 1)}`;
+            continue addAwaits;
+          }
+
+          str = `${str.slice(0, index + 1)}\x00${str.slice(index + 1)}`;
+        }
+
+        str = str.replace(/\x00/g, '');
+
+        // log(str);
+
+        // break;
+      }
+
+      log(O.sortAsc(O.undupe(AAAAA)).sort((a, b) => a.length - b.length).join`\n`.replace(/\x00/g, ''));
+
+      return;
+    }
 
     if(loadProject){
       const mainProject = 'main';
