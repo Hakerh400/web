@@ -1906,7 +1906,7 @@ class AsyncTreeNode extends AsyncStringifiable{
   getCh(i){ return this.i === 0 ? this.left : this.right; }
 
   toStr(){
-    const f = a => a !== null ? a : 'null';
+    const f = a => a !== null ? a : '#';
     return ['(', this.obj, ', ', f(this.left), ', ', f(this.right), ')'];
   }
 }
@@ -1916,7 +1916,7 @@ class AsyncTree extends AsyncStringifiable{
 
   toStr(){
     const {root} = this;
-    return root !== null ? root : 'null';
+    return root !== null ? root : '#';
   }
 }
 
@@ -2051,7 +2051,7 @@ class AsyncAVLTree extends AsyncTree{
     return null;
   }
 
-  async delete(obj){
+  async remove(obj){
     let node = await this.find(obj);
     if(node === null) O.assert.fail();
 
@@ -2482,6 +2482,11 @@ class Semaphore{
 }
 
 class AssertionError extends Error{
+  constructor(){
+    super();
+    new Function('debugger')();
+  }
+
   get name(){ return 'AssertionError'; }
 }
 
@@ -2802,6 +2807,7 @@ const O = {
 
   logb(){
     log(`\n${'='.repeat(100)}\n`);
+    if(O.isBrowser) log();
   },
 
   inspect(arr){
@@ -3841,6 +3847,38 @@ const O = {
 
   wait(time){ return O.sleep(time); },
   waita(time){ return O.sleepa(time); },
+
+  async forEacha(arr, func){
+    let i = 0;
+
+    for(const elem of arr)
+      await func(elem, i++, arr);
+  },
+
+  async mapa(arr, func){
+    const arrNew = [];
+    let i = 0;
+
+    for(const elem of arr)
+      arrNew.push(await func(elem, i++, arr));
+
+    return arrNew;
+  },
+
+  async filtera(arr, func){
+    const arrNew = [];
+    let i = 0;
+
+    for(const elem of arr)
+      if(await func(elem, i++, arr))
+        arrNew.push(elem);
+
+    return arrNew;
+  },
+
+  async joina(arr, sep){
+    return (await O.mapa(arr, a => a.toString())).join(sep);
+  },
 
   bound(val, min, max){
     if(val < min) return min;
