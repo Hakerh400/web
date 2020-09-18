@@ -3,7 +3,7 @@
 const {
   PI, min, max, abs, floor,
   ceil, round, sqrt, sin, cos,
-  atan, clz32,
+  atan, atan2, clz32,
 } = Math;
 
 class Set2D{
@@ -69,7 +69,7 @@ class Set2D{
   }
 }
 
-class Map2D{
+class AsyncMap2D{
   constructor(x=null, y=null, val=1){
     this.d = O.obj();
 
@@ -145,35 +145,35 @@ class Map2D{
     return 1;
   }
 
-  iter(func){
+  async iter(func){
     const {d} = this;
 
     for(let y in d)
       for(let x in d[y |= 0])
-        func(x |= 0, y, d[y][x]);
+        await func(x |= 0, y, d[y][x]);
   }
 
-  iterate(func){
-    this.iter(func);
+  async iterate(func){
+    await this.iter(func);
   }
 
-  some(func){
+  async some(func){
     const {d} = this;
 
     for(let y in d)
       for(let x in d[y |= 0])
-        if(func(x |= 0, y, d[y][x]))
+        if(await func(x |= 0, y, d[y][x]))
           return;
   }
 
-  find(v, func){
+  async find(v, func){
     const {d} = this;
 
     for(let y in d){
       for(let x in d[y |= 0]){
         const val = d[y][x |= 0];
 
-        if(func(x, y, val)){
+        if(await func(x, y, val)){
           v.x = x;
           v.y = y;
 
@@ -458,7 +458,7 @@ class Color extends Uint8ClampedArray{
   }
 }
 
-class ImageData{
+class AsyncImageData{
   constructor(g=null, clear=0){
     this.g = null;
 
@@ -558,13 +558,13 @@ class ImageData{
     d[(i | 0) + 2 | 0] = b | 0;
   }
 
-  iter(func, includeAlpha=0){
+  async iter(func, includeAlpha=0){
     const {w, h, d} = this;
 
     if(includeAlpha){
       for(var y = 0, i = 0; y < h; y++){
         for(var x = 0; x < w; x++, i += 4){
-          var col = func(x | 0, y | 0, d[i | 0] | 0, d[(i | 0) + 1 | 0] | 0, d[(i | 0) + 2 | 0] | 0, d[(i | 0) + 3 | 0] | 0);
+          var col = await func(x | 0, y | 0, d[i | 0] | 0, d[(i | 0) + 1 | 0] | 0, d[(i | 0) + 2 | 0] | 0, d[(i | 0) + 3 | 0] | 0);
 
           if(col){
             d[i | 0] = col[0] | 0;
@@ -577,7 +577,7 @@ class ImageData{
     }else{
       for(var y = 0, i = 0; y < h; y++){
         for(var x = 0; x < w; x++, i += 4){
-          var col = func(x | 0, y | 0, d[i | 0] | 0, d[(i | 0) + 1 | 0] | 0, d[(i | 0) + 2 | 0] | 0);
+          var col = await func(x | 0, y | 0, d[i | 0] | 0, d[(i | 0) + 1 | 0] | 0, d[(i | 0) + 2 | 0] | 0);
 
           if(col){
             d[i | 0] = col[0] | 0;
@@ -589,8 +589,8 @@ class ImageData{
     }
   }
 
-  iterate(func, includeAlpha){
-    this.iter(func, includeAlpha);
+  async iterate(func, includeAlpha){
+    await this.iter(func, includeAlpha);
   }
 }
 
@@ -651,7 +651,7 @@ class EventEmitter{
   }
 }
 
-class Grid{
+class AsyncGrid{
   constructor(w, h, func=null, d=null){
     this.w = w;
     this.h = h;
@@ -668,35 +668,35 @@ class Grid{
     this.d = d;
   }
 
-  iter(func){
+  async iter(func){
     const {w, h} = this;
 
     for(let y = 0; y !== h; y++)
       for(let x = 0; x !== w; x++)
-        func(x, y, this.get(x, y));
+        await func(x, y, this.get(x, y));
   }
 
-  iterate(func){
-    this.iter(func);
+  async iterate(func){
+    await this.iter(func);
   }
 
-  some(func){
+  async some(func){
     const {w, h} = this;
 
     for(let y = 0; y !== h; y++)
       for(let x = 0; x !== w; x++)
-        if(func(x, y, this.get(x, y)))
+        if(await func(x, y, this.get(x, y)))
           return 1;
 
     return 0;
   }
 
-  find(v, func){
+  async find(v, func){
     const {w, h} = this;
 
     for(let y = 0; y !== h; y++){
       for(let x = 0; x !== w; x++){
-        if(func(x, y, this.get(x, y))){
+        if(await func(x, y, this.get(x, y))){
           v.x = x;
           v.y = y;
           return 1;
@@ -707,19 +707,19 @@ class Grid{
     return 0;
   }
 
-  count(func){
+  async count(func){
     const {w, h} = this;
     let num = 0;
 
     for(let y = 0; y !== h; y++)
       for(let x = 0; x !== w; x++)
-        if(func(x, y, this.get(x, y)))
+        if(await func(x, y, this.get(x, y)))
           num++;
 
     return num;
   }
 
-  iterAdj(x, y, wrap, func=null){
+  async iterAdj(x, y, wrap, func=null){
     if(func === null){
       func = wrap;
       wrap = 0;
@@ -736,12 +736,12 @@ class Grid{
       queued.remove(x, y);
       visited.add(x, y);
 
-      this.adj(x, y, wrap, (x1, y1, d, dir, wrapped) => {
+      await this.adj(x, y, wrap, async (x1, y1, d, dir, wrapped) => {
         if(d === null) return;
         if(queued.has(x1, y1)) return;
         if(visited.has(x1, y1)) return;
 
-        if(func(x1, y1, d, x, y, dir, wrapped)){
+        if(await func(x1, y1, d, x, y, dir, wrapped)){
           queue.push(x1, y1);
           queued.add(x1, y1);
         }
@@ -749,7 +749,7 @@ class Grid{
     }
   }
 
-  adj(x, y, wrap, func=null){
+  async adj(x, y, wrap, func=null){
     const {w, h} = this;
 
     if(func === null){
@@ -760,14 +760,14 @@ class Grid{
     let wd = 0;
 
     return (
-      func(x, (wd = wrap && y === 0) ? h - 1 : y - 1, this.get(x, y - 1, wrap), 0, wd) ||
-      func((wd = wrap && x === w - 1) ? 0 : x + 1, y, this.get(x + 1, y, wrap), 1, wd) ||
-      func(x, (wd = wrap && y === h - 1) ? 0 : y + 1, this.get(x, y + 1, wrap), 2, wd) ||
-      func((wd = wrap && x === 0) ? w - 1 : x - 1, y, this.get(x - 1, y, wrap), 3, wd)
+      (await func(x, (wd = wrap && y === 0) ? h - 1 : y - 1, this.get(x, y - 1, wrap), 0, wd)) ||
+      (await func((wd = wrap && x === w - 1) ? 0 : x + 1, y, this.get(x + 1, y, wrap), 1, wd)) ||
+      (await func(x, (wd = wrap && y === h - 1) ? 0 : y + 1, this.get(x, y + 1, wrap), 2, wd)) ||
+      (await func((wd = wrap && x === 0) ? w - 1 : x - 1, y, this.get(x - 1, y, wrap), 3, wd))
     );
   }
 
-  adjc(x, y, wrap, func=null){
+  async adjc(x, y, wrap, func=null){
     const {w, h} = this;
 
     if(func === null){
@@ -776,14 +776,14 @@ class Grid{
     }
 
     return (
-      func(wrap && x === 0 ? w - 1 : x - 1, wrap && y === 0 ? h - 1 : y - 1, this.get(x - 1, y - 1, wrap), 0) ||
-      func(wrap && x === w - 1 ? 0 : x + 1, wrap && y === 0 ? h - 1 : y - 1, this.get(x + 1, y - 1, wrap), 1) ||
-      func(wrap && x === 0 ? w - 1 : x - 1, wrap && y === h - 1 ? 0 : y + 1, this.get(x - 1, y + 1, wrap), 2) ||
-      func(wrap && x === w - 1 ? 0 : x + 1, wrap && y === h - 1 ? 0 : y + 1, this.get(x + 1, y + 1, wrap), 3)
+      (await func(wrap && x === 0 ? w - 1 : x - 1, wrap && y === 0 ? h - 1 : y - 1, this.get(x - 1, y - 1, wrap), 0)) ||
+      (await func(wrap && x === w - 1 ? 0 : x + 1, wrap && y === 0 ? h - 1 : y - 1, this.get(x + 1, y - 1, wrap), 1)) ||
+      (await func(wrap && x === 0 ? w - 1 : x - 1, wrap && y === h - 1 ? 0 : y + 1, this.get(x - 1, y + 1, wrap), 2)) ||
+      (await func(wrap && x === w - 1 ? 0 : x + 1, wrap && y === h - 1 ? 0 : y + 1, this.get(x + 1, y + 1, wrap), 3))
     );
   }
 
-  findAdj(x, y, wrap, func=null){
+  async findAdj(x, y, wrap, func=null){
     const {w, h} = this;
 
     if(func === null){
@@ -795,10 +795,10 @@ class Grid{
     let wd;
 
     const found = (
-      func(x, (wd = wrap && y === 0) ? h - 1 : y - 1, this.get(x, y - 1, wrap), dir++, wd) ||
-      func((wd = wrap && x === w - 1) ? 0 : x + 1, y, this.get(x + 1, y, wrap), dir++, wd) ||
-      func(x, (wd = wrap && y === h - 1) ? 0 : y + 1, this.get(x, y + 1, wrap), dir++, wd) ||
-      func((wd = wrap && x === 0) ? w - 1 : x - 1, y, this.get(x - 1, y, wrap), dir++, wd)
+      (await func(x, (wd = wrap && y === 0) ? h - 1 : y - 1, this.get(x, y - 1, wrap), dir++, wd)) ||
+      (await func((wd = wrap && x === w - 1) ? 0 : x + 1, y, this.get(x + 1, y, wrap), dir++, wd)) ||
+      (await func(x, (wd = wrap && y === h - 1) ? 0 : y + 1, this.get(x, y + 1, wrap), dir++, wd)) ||
+      (await func((wd = wrap && x === 0) ? w - 1 : x - 1, y, this.get(x - 1, y, wrap), dir++, wd))
     );
 
     if(!found) return -1;
@@ -825,7 +825,7 @@ class Grid{
     return this.get(v.x, v.y, wrap);
   }
 
-  path(xs, ys, wrap=null, all=null, func=null){
+  async path(xs, ys, wrap=null, all=null, func=null){
     if(func === null){
       if(all === null){
         func = wrap;
@@ -855,7 +855,7 @@ class Grid{
       else
         visited[sp].add(x, y);
 
-      if(this.adj(x, y, wrap, (x1, y1, d, dir, wrapped) => {
+      if(await this.adj(x, y, wrap, async (x1, y1, d, dir, wrapped) => {
         if(dir === dirp) return;
 
         const start = x1 === xs && y1 === ys;
@@ -877,7 +877,7 @@ class Grid{
           if((s in visited) && visited[s].has(x1, y1)) return;
         }
 
-        switch(func(x1, y1, d, x, y, dir, wrapped, p, c, cp)){
+        switch(await func(x1, y1, d, x, y, dir, wrapped, p, c, cp)){
           case 1:
             if(start) break;
             queue.push([x1, y1, p, c, s]);
@@ -898,8 +898,8 @@ class Grid{
     return path;
   }
 
-  findPath(x, y, wrap, all, func){
-    this.path(x, y, wrap, all, func);
+  async findPath(x, y, wrap, all, func){
+    await this.path(x, y, wrap, all, func);
   }
 
   get(x, y, wrap=0, defaultVal=null){
@@ -1549,7 +1549,7 @@ class Buffer extends Uint8Array{
   }
 }
 
-class Iterable{
+class AsyncIterable{
   static #kCont = Symbol('continue');
   static #kBreak = Symbol('break');
 
@@ -1557,12 +1557,13 @@ class Iterable{
   get kBreak(){ return Iterable.#kBreak; }
 
   get chNum(){ O.virtual('chNum'); }
-  getCh(index){ O.virtual('getCh'); }
-  setCh(index, val){ O.virtual('getCh'); }
+  async getCh(index){ O.virtual('getCh'); }
+  async setCh(index, val){ O.virtual('getCh'); }
 
+  async getChNum(){ return this.chNum; }
   get chArr(){ return [...this]; }
 
-  traverse(func){
+  async traverse(func){
     const {kBreak} = this;
     const stack = [this];
     const flags = [0];
@@ -1574,19 +1575,19 @@ class Iterable{
         stack.pop();
         flags.pop();
 
-        const result = func(elem, 1);
+        const result = await func(elem, 1);
         if(result === kBreak) return 1;
 
         continue;
       }
 
-      func(elem, 0);
+      await func(elem, 0);
       O.setLast(flags, 1);
 
-      const {chNum} = elem;
+      const chNum = await elem.getChNum();
 
       for(let i = chNum - 1; i !== -1; i--){
-        stack.push(elem.getCh(i));
+        stack.push(await elem.getCh(i));
         flags.push(0);
       }
     }
@@ -1594,27 +1595,27 @@ class Iterable{
     return 0;
   }
 
-  topDown(func){
+  async topDown(func){
     const {kCont, kBreak} = this;
     const stack = [this];
   
     while(stack.length !== 0){
       const elem = stack.pop();
   
-      const result = func(elem);
+      const result = await func(elem);
       if(result === kCont) continue;
       if(result === kBreak) return 1;
   
-      const {chNum} = elem;
+      const chNum = await elem.getChNum();
   
       for(let i = chNum - 1; i !== -1; i--)
-        stack.push(elem.getCh(i));
+        stack.push(await elem.getCh(i));
     }
   
     return 0;
   }
 
-  bottomUp(func){
+  async bottomUp(func){
     const {kBreak} = this;
     const stack = [this];
     const flags = [0];
@@ -1626,7 +1627,7 @@ class Iterable{
         stack.pop();
         flags.pop();
 
-        const result = func(elem);
+        const result = await func(elem);
         if(result === kBreak) return 1;
 
         continue;
@@ -1634,10 +1635,10 @@ class Iterable{
 
       O.setLast(flags, 1);
 
-      const {chNum} = elem;
+      const chNum = await elem.getChNum();
 
       for(let i = chNum - 1; i !== -1; i--){
-        stack.push(elem.getCh(i));
+        stack.push(await elem.getCh(i));
         flags.push(0);
       }
     }
@@ -1645,33 +1646,33 @@ class Iterable{
     return 0;
   }
 
-  *[Symbol.iterator](){
-    const {chNum} = this;
+  async *[Symbol.iterator](){
+    const chNum = await this.getChNum();
 
     for(let i = 0; i !== chNum; i++)
-      yield this.getCh(i);
+      yield await this.getCh(i);
   }
 }
 
-class Stringifiable extends Iterable{
+class AsyncStringifiable extends AsyncIterable{
   static tabSize = 2;
   static #inc = Symbol('inc');
   static #dec = Symbol('dec');
   static #prefixPush = Symbol('prefixPush');
   static #prefixPop = Symbol('prefixPop');
 
-  #tabSize = Stringifiable.tabSize;
+  #tabSize = AsyncStringifiable.tabSize;
   #prefixes = [];
 
   get tabSize(){ return this.#tabSize; }
   set tabSize(tabSize){ this.#tabSize = tabSize; }
 
-  get inc(){ return Stringifiable.#inc; }
-  get dec(){ return Stringifiable.#dec; }
-  get prefixPush(){ return Stringifiable.#prefixPush; }
-  get prefixPop(){ return Stringifiable.#prefixPop; }
+  get inc(){ return AsyncStringifiable.#inc; }
+  get dec(){ return AsyncStringifiable.#dec; }
+  get prefixPush(){ return AsyncStringifiable.#prefixPush; }
+  get prefixPop(){ return AsyncStringifiable.#prefixPop; }
 
-  toStr(arg){ O.virtual('toStr'); }
+  async toStr(arg){ O.virtual('toStr'); }
 
   join(stack, arr, sep){
     arr.forEach((elem, index) => {
@@ -1682,11 +1683,11 @@ class Stringifiable extends Iterable{
     return stack;
   }
 
-  toJSON(){
-    return this.toString();
+  async toJSON(){
+    return await this.toString();
   }
 
-  toString(arg=O.obj()){
+  async toString(arg=O.obj()){
     const {tabSize, inc, dec, prefixPush, prefixPop} = this;
     const prefixes = this.#prefixes;
 
@@ -1698,7 +1699,8 @@ class Stringifiable extends Iterable{
       check: {
         if(typeof val === 'string') break check;
         if(typeof val === 'symbol') break check;
-        if(val instanceof Stringifiable) break check;
+        if(val instanceof O.Stringifiable) break check;
+        if(val instanceof O.AsyncStringifiable) break check;
 
         throw new TypeError(`${
           context.constructor.name}: Invalid value pushed to the stack${
@@ -1755,7 +1757,7 @@ class Stringifiable extends Iterable{
         continue;
       }
 
-      const val = elem.toStr(arg);
+      const val = await elem.toStr(arg);
 
       if(!Array.isArray(val)){
         push(elem, null, val);
@@ -1773,18 +1775,18 @@ class Stringifiable extends Iterable{
   }
 }
 
-class Comparable extends Stringifiable{
-  cmp(obj){ O.virtual('cmp'); }
+class AsyncComparable extends AsyncStringifiable{
+  async cmp(obj){ O.virtual('cmp'); }
 }
 
-class PriorityQueue extends Stringifiable{
+class AsyncPriorityQueue extends AsyncStringifiable{
   #arr = [null];
 
   get arr(){ return this.#arr.slice(1); }
   get len(){ return this.#arr.length - 1; }
   get isEmpty(){ return this.#arr.length === 1; }
 
-  push(elem){
+  async push(elem){
     const arr = this.#arr;
     let i = arr.length;
 
@@ -1793,7 +1795,7 @@ class PriorityQueue extends Stringifiable{
     while(i !== 1){
       const j = i >> 1;
 
-      if(arr[i].cmp(arr[j]) >= 0) break;
+      if(await arr[i].cmp(arr[j]) >= 0) break;
 
       const t = arr[i];
       arr[i] = arr[j];
@@ -1805,7 +1807,7 @@ class PriorityQueue extends Stringifiable{
     return this;
   }
 
-  pop(){
+  async pop(){
     const arr = this.#arr;
     const first = this.top();
     const last = arr.pop();
@@ -1820,8 +1822,8 @@ class PriorityQueue extends Stringifiable{
         let j = i << 1;
 
         if(j >= len) break;
-        if(j + 1 !== len && arr[j].cmp(arr[j + 1]) > 0) j++;
-        if(arr[j].cmp(arr[i]) >= 0) break;
+        if(j + 1 !== len && (await arr[j].cmp(arr[j + 1])) > 0) j++;
+        if((await arr[j].cmp(arr[i])) >= 0) break;
 
         const t = arr[i];
         arr[i] = arr[j];
@@ -1852,7 +1854,7 @@ class PriorityQueue extends Stringifiable{
   }
 }
 
-class TreeNode extends Stringifiable{
+class AsyncTreeNode extends AsyncStringifiable{
   #parent = null;
   #type = null;
   #left = null;
@@ -1906,11 +1908,11 @@ class TreeNode extends Stringifiable{
 
   toStr(){
     const f = a => a !== null ? a : 'null';
-    return ['\(', this.obj, ', ', f(this.left), ', ', f(this.right), '\)'];
+    return ['(', this.obj, ', ', f(this.left), ', ', f(this.right), ')'];
   }
 }
 
-class Tree extends Stringifiable{
+class AsyncTree extends AsyncStringifiable{
   root = null;
 
   toStr(){
@@ -1919,7 +1921,7 @@ class Tree extends Stringifiable{
   }
 }
 
-class AVLNode extends TreeNode{
+class AsyncAVLNode extends AsyncTreeNode{
   #height = 1;
 
   get height(){
@@ -1957,8 +1959,8 @@ class AVLNode extends TreeNode{
     ) + 1;
   }
 
-  cmp(other){
-    return this.obj.cmp(other.obj);
+  async cmp(other){
+    return await this.obj.cmp(other.obj);
   }
 
   get needsRebalancing(){
@@ -2001,10 +2003,10 @@ class AVLNode extends TreeNode{
   }
 }
 
-class AVLTree extends Tree{
-  insert(obj){
+class AsyncAVLTree extends AsyncTree{
+  async insert(obj){
     const {root} = this;
-    const nodeNew = new AVLNode(obj);
+    const nodeNew = new O.AVLNode(obj);
 
     if(root === null){
       this.root = nodeNew;
@@ -2014,7 +2016,7 @@ class AVLTree extends Tree{
     let node = root;
 
     while(1){
-      const dir = nodeNew.cmp(node) <= 0 ? 0 : 1;
+      const dir = (await nodeNew.cmp(node)) <= 0 ? 0 : 1;
       const next = node.get(dir);
 
       if(next === null){
@@ -2033,25 +2035,25 @@ class AVLTree extends Tree{
     }
   }
 
-  has(obj){
-    return this.find(obj) !== null;
+  async has(obj){
+    return (await this.find(obj)) !== null;
   }
 
-  find(obj){
+  async find(obj){
     let node = this.root;
 
     while(node !== null){
       if(node.obj === obj) return node;
 
-      const dir = obj.cmp(node.obj) <= 0 ? 0 : 1;
+      const dir = (await obj.cmp(node.obj)) <= 0 ? 0 : 1;
       node = node.get(dir);
     }
 
     return null;
   }
 
-  delete(obj){
-    let node = this.find(obj);
+  async delete(obj){
+    let node = await this.find(obj);
     if(node === null) O.assert.fail();
 
     const {left, right} = node;
@@ -2096,9 +2098,9 @@ class AVLTree extends Tree{
     }
   }
 
-  traverse(func){
+  async traverse(func){
     for(const obj of this)
-      func(obj);
+      await func(obj);
   }
 
   *[Symbol.iterator](){
@@ -2555,23 +2557,23 @@ const O = {
 
   ctors: {
     Set2D,
-    Map2D,
+    AsyncMap2D,
     Map3D,
     Color,
-    ImageData,
+    AsyncImageData,
     EventEmitter,
-    Grid,
+    AsyncGrid,
     MultidimensionalMap,
     EnhancedRenderingContext,
     Buffer,
-    Iterable,
-    Stringifiable,
-    Comparable,
-    PriorityQueue,
-    TreeNode,
-    Tree,
-    AVLNode,
-    AVLTree,
+    AsyncIterable,
+    AsyncStringifiable,
+    AsyncComparable,
+    AsyncPriorityQueue,
+    AsyncTreeNode,
+    AsyncTree,
+    AsyncAVLNode,
+    AsyncAVLTree,
     IO,
     Serializer,
     Serializable,
@@ -2626,169 +2628,38 @@ const O = {
     O.modulesPolyfill = O.modulesPolyfill();
     O.assert.fail = O.assertFail;
 
-    // Asyncify constructors
-    if(0){
-      const tabSize = 2;
-      const tab = ' '.repeat(tabSize);
+    // Syncify constructors
+    {
+      const header = O.ftext(`
+        'use strict';
 
-      const kws = O.arr2obj([
-        'if', 'switch', 'throw', 'catch',
-        'function', 'return', 'while', 'for',
-        'await',
-      ]);
+        const {
+          PI, min, max, abs, floor,
+          ceil, round, sqrt, sin, cos,
+          atan, clz32,
+        } = Math;
+      `);
 
-      const asyncCtors = O.obj();
+      for(const name of O.keys(ctors)){
+        if(!name.startsWith('Async')) continue;
 
-      const AAAAA = [];
-
-      for(const name in ctors){
         const ctor = ctors[name];
-        let str = ctor.toString();
-        const lines = O.sanl(str);
-        const linesNum = lines.length;
+        const nameNew = name.replace(/^Async/, '');
+        const src = ctor.toString();
 
-        for(let i = 0; i !== linesNum; i++){
-          const line = lines[i].slice(tabSize);
-          const match = line.match(/^(?:static )?([^\s\(]+)\(.*\)\{/s);
-          if(match === null) continue;
+        const srcNew = src.
+          replace(/^[^\r\n]+\bextends /, a => `${a}O.`).
+          replace(/\bAsync([a-zA-z0-9]+)/g, (a, b) => b).
+          replace(/\b(async|await)\b ?/g, '');
 
-          const name = match[1];
+        const ctorNew = new Function(
+          'O',
+          `${header}\n\n${srcNew}\n\nreturn ${nameNew};`,
+        )(O);
 
-          if(name === 'constructor'){
-            lines[i] = line.replace(/[^\s\(]+\(/, `${name}\x00(`);
-            continue;
-          }
-
-          lines[i] = `${tab}${line.replace(/[^\s\(]+\(/, `async ${name}\x00(`)}`;
-        }
-
-        str = lines.join('\n').replace(/\}\(/g, '}\x00(');
-
-        addAwaits: while(1){
-          const index = str.search(/[a-zA-Z0-9\)\]]\(/);
-          if(index === -1) break;
-
-          let target = '';
-
-          parseTarget: {
-            const stack = [];
-
-            loop: for(let i = index;; i--){
-              O.assert(i !== -1);
-
-              const char = str[i];
-
-              checkChar: {
-                if(str[i - 1] === '\\') break checkChar;
-
-                if(/\s/.test(char)){
-                  if(stack.length === 0) break parseTarget;
-                  break checkChar;
-                }
-
-                if(/[\)\]\}]/.test(char)){
-                  if(char === '}' && target === 'while') break parseTarget;
-                  stack.push(char);
-                  break checkChar;
-                }
-
-                if(/[\(\[\{]/.test(char)){
-                  if(stack.length === 0) break parseTarget;
-
-                  const last = stack.pop();
-
-                  O.assert((
-                    (char === '(' && last === ')') ||
-                    (char === '[' && last === ']') ||
-                    (char === '{' && last === '}')
-                  ));
-
-                  break checkChar;
-                }
-
-                if(/['"`]/.test(char)){
-                  if(stack.length !== 0 && O.last(stack) === char) stack.pop();
-                  else stack.push(char);
-                  break checkChar;
-                }
-              }
-
-              target = char + target;
-            }
-          }
-
-          checkExceptions: {
-            if(target in kws) break checkExceptions;
-            if(/(^|[^a-zA-Z0-9])[A-Z][a-zA-Z0-9]*$/.test(target)) break checkExceptions;
-
-            let args = '';
-
-            parseArgs: {
-              const stack = [];
-
-              loop: for(let i = index + 1;; i++){
-                O.assert(i !== str.length);
-
-                const char = str[i];
-
-                checkChar: {
-                  if(char === '\\'){
-                    args += `\\${str[++i]}`;
-                    continue loop;
-                  }
-
-                  if(/[\(\[\{]/.test(char)){
-                    stack.push(char);
-                    break checkChar;
-                  }
-
-                  if(/[\)\]\}]/.test(char)){
-                    const last = stack.pop();
-
-                    O.assert((
-                      (last === '(' && char === ')') ||
-                      (last === '[' && char === ']') ||
-                      (last === '{' && char === '}')
-                    ));
-
-                    if(stack.length === 0){
-                      args += ')';
-                      break parseArgs;
-                    }
-
-                    break checkChar;
-                  }
-
-                  if(/['"`]/.test(char)){
-                    if(O.last(stack) === char) stack.pop();
-                    else stack.push(char);
-                    break checkChar;
-                  }
-                }
-
-                args += char;
-              }
-            }
-
-            AAAAA.push(`${target}${args}`);
-
-            str = `${str.slice(0, index + 1)}\x00${str.slice(index + 1)}`;
-            continue addAwaits;
-          }
-
-          str = `${str.slice(0, index + 1)}\x00${str.slice(index + 1)}`;
-        }
-
-        str = str.replace(/\x00/g, '');
-
-        // log(str);
-
-        // break;
+        ctors[nameNew] = ctorNew;
+        O[nameNew] = ctorNew;
       }
-
-      log(O.sortAsc(O.undupe(AAAAA)).sort((a, b) => a.length - b.length).join`\n`.replace(/\x00/g, ''));
-
-      return;
     }
 
     if(loadProject){

@@ -22,7 +22,7 @@ const main = async () => {
     };
 
     img.onerror = rej;
-    img.src = O.urlTime('/projects/test/img.png');
+    img.src = O.urlTime('/projects/test/1.png');
   });
 
   const {g, w, h, wh, hh} = O.ceCanvas();
