@@ -34,7 +34,7 @@ class Test extends O.AsyncComparable{
     return new Promise((res, rej) => {
       setTimeout(() => {
         res(this.val - other.val);
-      }, 10);
+      });
     });
   }
 

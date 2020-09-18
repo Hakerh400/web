@@ -1699,7 +1699,6 @@ class AsyncStringifiable extends AsyncIterable{
       check: {
         if(typeof val === 'string') break check;
         if(typeof val === 'symbol') break check;
-        if(val instanceof O.Stringifiable) break check;
         if(val instanceof O.AsyncStringifiable) break check;
 
         throw new TypeError(`${
@@ -2006,7 +2005,7 @@ class AsyncAVLNode extends AsyncTreeNode{
 class AsyncAVLTree extends AsyncTree{
   async insert(obj){
     const {root} = this;
-    const nodeNew = new O.AVLNode(obj);
+    const nodeNew = new O.AsyncAVLNode(obj);
 
     if(root === null){
       this.root = nodeNew;
