@@ -10,7 +10,6 @@ class Image extends Sortable{
   }
 
   async cmp(other){
-    O.z++;
     // log('---> CMP ' + (await this.toString()) + ' ' + (await other.toString()));
     return this.val - other.val || 1;
   }

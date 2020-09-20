@@ -41,3 +41,4 @@ pebbling-a-chessboard
 world-generator
 queue-fractal
 sorter
+encrypted

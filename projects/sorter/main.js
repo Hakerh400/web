@@ -25,8 +25,6 @@ const {g} = O.ceCanvas();
 const main = async () => {
   const sorter = new Sorter(g);
 
-  O.z = 0;
-
   if(1){
     for(let i = 0; i !== 10; i++){
       const n = O.rand(1e3) + 1;
@@ -44,7 +42,6 @@ const main = async () => {
   }
 
   const arr = await sorter.getArr();
-  log(O.z);
   const str = await O.joina(arr, ' ');
 
   log(str);
