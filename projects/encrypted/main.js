@@ -6,7 +6,7 @@ const main = () => {
 
   const input = O.ce(O.body, 'input');
   input.type = 'text';
-  input.autofocus = 1;
+  input.focus();
 
   O.ceBr(O.body, 2);
   const errMsg = O.ce(O.body, 'span');
@@ -20,7 +20,7 @@ const main = () => {
       const pass = O.Buffer.from(input.value);
       let hash = O.sha256(pass);
       
-      input.value = '';
+      // input.value = '';
       errMsg.innerText = '';
 
       const text = encrypted;
