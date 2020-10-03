@@ -1,52 +1,58 @@
 'use strict';
 
-const Sorter = require('./sorter');
-const Sortable = require('./sortable');
+const VisualSorter = require('./visual-sorter');
 const Image = require('./image');
 
-const USE_SEED = 0;
-
-if(USE_SEED){
-  let seed = O.urlParam('s', null);
-
-  if(seed === null){
-    seed = O.rand(1e5);
-
-    log(`Seed: ${seed}`);
-    log();
-  }
-
-  O.enhanceRNG();
-  O.randSeed(seed);
-}
-
 const {g} = O.ceCanvas();
+const {canvas} = g;
 
 const main = async () => {
-  const sorter = new Sorter(g);
+  const sorter = new VisualSorter(g);
 
-  if(1){
-    for(let i = 0; i !== 10; i++){
-      const n = O.rand(1e3) + 1;
-      // log(n);
-      sorter.insert(new Image(sorter, n));
-    }
-    
-    // log();
-  }else{
-    sorter.insert(new Image(sorter, 2));
-    sorter.insert(new Image(sorter, 3));
-    sorter.insert(new Image(sorter, 1));
-    sorter.insert(new Image(sorter, 4));
-    sorter.insert(new Image(sorter, 5));
-  }
+  O.ael('resize', () => {
+    canvas.width = O.iw;
+    canvas.height = O.ih;
+  });
 
-  const arr = await sorter.getArr();
-  const str = await O.joina(arr, ' ');
+  const render = () => {
+    sorter.render();
+    O.raf(render);
+  };
 
-  log(str);
+  render();
 
-  O.assert(str === O.sortAsc(str.split(' ').map(a => a | 0)).join(' '));
+  const imgs = O.shuffle(O.ca(5, i => {
+    const label = String(i + 1);
+
+    const w = 300;
+    const h = 300;
+
+    const canvas = O.doc.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+
+    const g = canvas.getContext('2d');
+
+    g.fillStyle = 'white';
+    g.fillRect(0, 0, w, h);
+
+    g.textBaseline = 'middle';
+    g.textAlign = 'center';
+    g.font = '100px arial';
+
+    g.fillStyle = 'black';
+    g.fillText(label, w / 2, h / 2);
+
+    return new Image(sorter, g.canvas, label);
+  }));
+
+  for(const img of imgs)
+    sorter.insert(img);
+
+  const sorted = await sorter.getArr();
+
+  g.clearRect(0, 0, O.iw, O.ih);
+  log(sorted.map(a => a.label).join(' '));
 };
 
 main();

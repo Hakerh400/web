@@ -6,12 +6,6 @@ class Sorter extends O.AsyncStringifiable{
   objs = new Map();
   pairs = [];
 
-  constructor(g){
-    super();
-
-    this.g = g;
-  }
-
   has(obj){
     return this.objs.has(obj);
   }
