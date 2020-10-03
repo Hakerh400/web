@@ -21,30 +21,20 @@ const main = async () => {
 
   render();
 
-  const imgs = O.shuffle(O.ca(5, i => {
-    const label = String(i + 1);
+  const imgs = await O.caa(27, i => {
+    return new Promise((res, rej) => {
+      const label = String(i + 1).padStart(3, '0');
+      const img = new window.Image();
 
-    const w = 300;
-    const h = 300;
+      img.onload = () => {
+        res(new Image(sorter, img, label));
+      };
 
-    const canvas = O.doc.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
+      img.onerror = rej;
 
-    const g = canvas.getContext('2d');
-
-    g.fillStyle = 'white';
-    g.fillRect(0, 0, w, h);
-
-    g.textBaseline = 'middle';
-    g.textAlign = 'center';
-    g.font = '100px arial';
-
-    g.fillStyle = 'black';
-    g.fillText(label, w / 2, h / 2);
-
-    return new Image(sorter, g.canvas, label);
-  }));
+      img.src = O.urlTime(O.localPath(`images/${label}.png`));
+    });
+  });
 
   for(const img of imgs)
     sorter.insert(img);
