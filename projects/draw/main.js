@@ -7,53 +7,21 @@ const {g} = O.ceCanvas(1);
 
 const N = null;
 
-const grid1 = [
-  [
-    [1, 2, 2, N, N],
-    [2, N, 2, N, N],
-    [2, N, 1, N, N],
-    [2, N, 4, N, N],
-  ], [
-    [N, 4, 3, N, N],
-    [N, N, N, N, N],
-    [N, N, 1, N, N],
-    [N, N, N, N, N],
-  ], [
-    [N, 0, 1, N, N],
-    [N, N, 3, N, N],
-    [N, N, 2, N, N],
-    [N, N, 4, N, N],
-  ], [
-    [N, 1, 3, N, N],
-    [N, N, 2, N, N],
-    [N, N, 3, N, N],
-    [N, N, 3, N, N],
-]];
+const drawSolution = 1;
 
-const grid2 = [
-  [
-    [1, 2, 2, 0, N],
-    [2, N, 2, 1, 0],
-    [2, N, 1, 0, N],
-    [2, N, 4, 1, 0],
-  ], [
-    [N, 4, 3, 1, N],
-    [N, N, 4, 1, N],
-    [N, N, 1, 1, N],
-    [N, N, 2, 1, N],
-  ], [
-    [N, 0, 1, 0, 1],
-    [N, N, 3, 0, 1],
-    [N, N, 2, 0, 1],
-    [N, N, 4, 0, 1],
-  ], [
-    [N, 1, 3, 0, N],
-    [N, N, 2, 0, 0],
-    [N, N, 3, 1, N],
-    [N, N, 3, 0, 0],
-]];
+const grid = [
+  [3, 1, 2, 2],
+  [2, 3, 4, 2],
+  [2, 2, 1, 2],
+  [4, 2, 3, 1],
+];
 
-const grid = grid2;
+const solution = [
+  [1, 1, 1, 0],
+  [0, 1, 1, 1],
+  [1, 0, 1, 0],
+  [1, 1, 1, 1],
+];
 
 const main = () => {
   const h = grid.length;
@@ -71,33 +39,24 @@ const main = () => {
   g.font(TILE_SIZE * .5);
 
   const drawTile = (x, y, d) => {
-    g.fillStyle = d[3] === N ? 'darkgray' : d[3] ? 'black' : 'white';
-    g.fillRect(0, 0, 1, 1);
+    if(!drawSolution){
+      g.fillStyle = 'darkgray';
+      g.fillRect(0, 0, 1, 1);
 
-    if(d[2] !== N){
-      g.fillStyle = d[3] === 1 ? 'white' : 'black';
-      g.fillText(d[2], .5, .5);
+      g.fillStyle = 'black';
+      g.fillText(d, .5, .5);
+    }else{
+      const white = solution[y][x];
+      g.fillStyle = white ? 'white' : 'black';
+      g.fillRect(0, 0, 1, 1);
+
+      if(white){
+        g.fillStyle = 'black';
+        g.fillText(d, .5, .5);
+      }
     }
-
-    g.fillStyle = 'black';
-    if(d[0] !== N) g.fillText(d[0], .5, -.5);
-    if(d[1] !== N) g.fillText(d[1], -.5, .5);
 
     g.strokeRect(0, 0, 1, 1);
-
-    if(d[4] !== N){
-      const offset = .125;
-      const offset2 = offset * 2;
-
-      g.strokeStyle = 'white';
-      g.globalCompositeOperation = 'difference';
-
-      if(d[4] === 0) g.strokeRect(-1 + offset, offset, 2 - offset2, 1 - offset2);
-      else g.strokeRect(offset, -1 + offset, 1 - offset2, 2 - offset2);
-
-      g.globalCompositeOperation = 'source-over';
-      g.strokeStyle = 'black';
-    }
   };
 
   grid.forEach((row, y) => {
