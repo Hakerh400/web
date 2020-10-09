@@ -1,0 +1,12 @@
+{
+  "simulator": {
+    "objects": {
+      "dirt": "Dirt",
+      "rock": "Rock",
+      "tree": "Tree",
+      "animal": "Animal",
+      "bot": "Bot",
+      "coin": "Coin"
+    }
+  }
+}

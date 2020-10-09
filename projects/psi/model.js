@@ -1,7 +1,8 @@
 'use strict';
 
+const path = require('path');
+
 const LOADING_SPEED = 1e5;
-const TIME_TO_WAIT = 16;
 
 const dd = 1e-3;
 
@@ -52,7 +53,6 @@ class Model{
           arr[i] = ser.readFloat();
 
           if(++cnt === speed){
-            await O.waita(TIME_TO_WAIT);
             cnt = 0;
           }
         }

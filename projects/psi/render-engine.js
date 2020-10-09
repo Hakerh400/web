@@ -1,5 +1,6 @@
 'use strict';
 
+const path = require('path');
 const Camera = require('./camera');
 const Grid = require('./grid');
 const Tile = require('./tile');
@@ -11,14 +12,10 @@ const Matrix = require('./matrix');
 const DiscreteRay = require('./discrete-ray');
 const Ray = require('./ray');
 const Vector = require('./vector');
+const LS = require('./local-strings');
 
 const cwd = __dirname;
 
-/*
-  This code that loads shaders may seem unnecessary complicated, but it is actually
-  needed to be written exactly like this in order to make it work properly both in
-  browser and Node.js
-*/
 let vsSrc1, fsSrc1;
 if(O.isElectron){
   vsSrc1 = O.rfs(path.join(cwd, './shaders/vs.glsl'), 1);
@@ -400,35 +397,36 @@ class RenderEngine extends O.EventEmitter{
   }
 
   play(){
-    O.await(() => this.disposed || this.initialized && !this.active).then(() => {
+    return O.await(() => this.disposed || this.initialized && !this.active).then(() => {
       if(this.disposed) return;
       this.active = 1;
       this.timePrev = O.now - this.timeDiff;
       this.renderBound();
-    })//.catch(log);
+    });
   }
 
   pause(){
     this.inventoryVisible = 0;
-    O.await(() => this.disposed || this.initialized && this.active && !this.awaitingPause).then(() => {
+
+    return O.await(() => this.disposed || this.initialized && this.active && !this.awaitingPause).then(() => {
       if(this.disposed) return;
       if(this.cursorLocked) O.doc.exitPointerLock();
       this.awaitingPause = 1;
       this.grid.prune();
-    })//.catch(log);
+    });
   }
 
   dispose(){
     this.rels();
 
-    O.await(() => this.initialized).then(() => {
+    return O.await(() => this.initialized).then(() => {
       this.disposed = 1;
 
       Object.reset();
       Shape.reset();
 
       rengSem.signal();
-    })//.catch(log);
+    });
   }
 
   render(){
@@ -559,7 +557,7 @@ class RenderEngine extends O.EventEmitter{
           g.textAlign = 'center';
           g.font = '16px arial';
 
-          const objName = O.glob.LS.simulator.objects[selectedObj.formattedName];
+          const objName = LS.simulator.objects[selectedObj.formattedName];
           const textWidth = g.measureText(objName).width;
 
           g.fillStyle = 'rgba(0, 0, 0, .8)';
