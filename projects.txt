@@ -42,3 +42,5 @@ world-generator
 queue-fractal
 sorter
 encrypted
+ray-tracer
+psi

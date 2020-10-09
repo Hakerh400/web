@@ -3130,43 +3130,51 @@ const O = {
     return O.rfAsync(file);
   },
 
-  async req(path){
+  async req(path, pathPrev=null){
     const {cache} = O.module;
     const pathOrig = path;
 
     let type = 0;
     let data = null;
+    let pathResolved = null;
 
     if(path in cache) return cache[path];
 
+    const load = (path, ...args) => {
+      pathResolved = path;
+      return O.rfAsync(path, ...args);
+    };
+
     if(/\.[^\/]+$/.test(path)){
-      data = await O.rfAsync(path, path.endsWith('.hex'));
-    }else if((data = await O.rfAsync(`${path}.js`)) !== null){
+      data = await load(path, path.endsWith('.hex'));
+    }else if((data = await load(`${path}.js`)) !== null){
       type = 2;
       path += '.js';
       if(path in cache) return cache[path];
-    }else if((data = await O.rfAsync(`${path}/index.js`)) !== null){
+    }else if((data = await load(`${path}/index.js`)) !== null){
       type = 2;
       path += '/index.js';
       if(path in cache) return cache[path];
-    }else if((data = await O.rfAsync(`${path}.json`)) !== null){
+    }else if((data = await load(`${path}.json`)) !== null){
       type = 1;
       path += '.json';
       if(path in cache) return cache[path];
-    }else if((data = await O.rfAsync(`${path}.txt`)) !== null){
+    }else if((data = await load(`${path}.txt`)) !== null){
       path += '.txt';
       if(path in cache) return cache[path];
-    }else if((data = await O.rfAsync(`${path}.md`)) !== null){
+    }else if((data = await load(`${path}.md`)) !== null){
       path += '.md';
       if(path in cache) return cache[path];
-    }else if((data = await O.rfAsync(`${path}.glsl`)) !== null){
+    }else if((data = await load(`${path}.glsl`)) !== null){
       path += '.glsl';
       if(path in cache) return cache[path];
-    }else if((data = await O.rfAsync(`${path}.hex`, 1)) !== null){
+    }else if((data = await load(`${path}.hex`, 1)) !== null){
       path += '.hex';
       if(path in cache) return cache[path];
     }else{
-      throw new Error(`Cannot find ${O.sf(pathOrig)}`);
+      let msg = `Cannot find ${O.sf(pathOrig)}`;
+      if(pathPrev !== null) msg += `\nRequested from ${pathPrev}`;
+      throw new Error(msg);
     }
 
     const pathMatch = path;
@@ -3177,6 +3185,40 @@ const O = {
     const module = {
       get exports(){ return cache[pathOrig]; },
       set exports(val){ cache[pathOrig] = val; }
+    };
+
+    const require = async newPath => {
+      var resolvedPath;
+
+      if(/^(?:\/|https?\:\/\/|[^\.][\s\S]*\/)/.test(newPath)){
+        resolvedPath = newPath;
+      }else if(newPath.startsWith('.')){
+        var oldPath = path.slice();
+
+        newPath.split('/').forEach(dir => {
+          switch(dir){
+            case '.': break;
+            case '..': oldPath.pop(); break;
+            default: oldPath.push(dir); break;
+          }
+        });
+
+        resolvedPath = oldPath.join('/');
+      }else{
+        const mpf = O.modulesPolyfill;
+
+        if(!O.has(mpf, newPath)){
+          let msg = `Unknown native module ${O.sf(newPath)}`;
+          if(pathResolved !== null) msg += `\nRequested from ${pathResolved}`;
+          throw new Error(msg);
+        }
+
+        return mpf[newPath];
+      }
+
+      var exportedModule = await O.req(resolvedPath, pathResolved);
+
+      return exportedModule;
     };
 
     switch(type){
@@ -3234,37 +3276,6 @@ const O = {
     }
 
     return module.exports;
-
-    async function require(newPath){
-      var resolvedPath;
-
-      if(/^(?:\/|https?\:\/\/|[^\.][\s\S]*\/)/.test(newPath)){
-        resolvedPath = newPath;
-      }else if(newPath.startsWith('.')){
-        var oldPath = path.slice();
-
-        newPath.split('/').forEach(dir => {
-          switch(dir){
-            case '.': break;
-            case '..': oldPath.pop(); break;
-            default: oldPath.push(dir); break;
-          }
-        });
-
-        resolvedPath = oldPath.join('/');
-      }else{
-        const mpf = O.modulesPolyfill;
-
-        if(!O.has(mpf, newPath))
-          throw new Error(`Unknown native module ${O.sf(newPath)}`);
-
-        return mpf[newPath];
-      }
-
-      var exportedModule = await O.req(resolvedPath);
-
-      return exportedModule;
-    }
   },
 
   require(script, cb=O.nop){
