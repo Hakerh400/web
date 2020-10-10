@@ -35,7 +35,6 @@ const FAR = 1e3;
 const CURSOR_SPEED = 3;
 const SUNLIGHT_DIR = new Vector(0, -100, 50).norm();
 const TICK_TIME = 1e3;
-const MARGIN_LEFT = 10;
 
 const DISPLAY_FPS = 0;
 const THUMBNAIL_SIZE = 32;
@@ -278,7 +277,7 @@ class RenderEngine extends O.EventEmitter{
       const {cur} = this;
 
       const brect = div.getBoundingClientRect();
-      cur.x = evt.pageX - brect.x - MARGIN_LEFT;
+      cur.x = evt.pageX - brect.x;
       cur.y = evt.pageY - brect.y;
 
       if(!this.cursorLocked) return;
