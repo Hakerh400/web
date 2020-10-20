@@ -104,28 +104,93 @@ game.generate = () => {
     addAdj(x2, y2);
   }
 
+  const n = 0;
+
   while(pending.size !== 0){
-    const [x, y] = O.randElem([...pending]);
-    const d = game.get(x, y);
-    const avail = [];
-    let dir = 0;
+    let mode = O.randf() < n ? 1 : 0;
 
-    adj(x, y, (x, y, d, dir) => {
-      if(d[0] === 0) return;
-      if(d[0] === (15 ^ (1 << (dir + 2 & 3)))) return;
+    if(mode === 0){
+      const [x, y] = O.randElem([...pending]);
+      const d = game.get(x, y);
+      const avail = [];
+      let dir = 0;
 
-      avail.push([dir, d]);
-    });
+      adj(x, y, (x, y, d, dir) => {
+        if(d[0] === 0) return;
+        if(d[0] === (15 ^ (1 << (dir + 2 & 3)))) return;
 
-    if(avail.length === 0) continue;
-    pending.delete(x, y);
+        avail.push([dir, d]);
+      });
 
-    const [dir1, d1] = O.randElem(avail);
+      if(avail.length === 0) continue;
+      pending.delete(x, y);
 
-    d[0] |= 1 << dir1;
-    d1[0] |= 1 << (dir1 + 2 & 3);
+      const [dir1, d1] = O.randElem(avail);
 
-    addAdj(x, y);
+      d[0] |= 1 << dir1;
+      d1[0] |= 1 << (dir1 + 2 & 3);
+
+      addAdj(x, y);
+    }else{
+      let p = null;
+
+      for(const [x, y] of pending){
+        const d = game.get(x, y);
+        let a = null;
+
+        adj(x, y, (x, y, d, dir) => {
+          if(d[0] === 0) return;
+          if(d[0] === (15 ^ (1 << (dir + 2 & 3)))) return;
+
+          const a1 = (
+            (d[0] & 1 ? 1 : 0) +
+            (d[0] & 2 ? 1 : 0) +
+            (d[0] & 4 ? 1 : 0) +
+            (d[0] & 8 ? 1 : 0)
+          );
+
+          if(a === null || a1 > a)
+            a = a1;
+        });
+
+        if(a === null) continue;
+
+        if(p === null || a[2] > p[2]){
+          p = [x, y, a];
+          continue;
+        }
+      }
+
+      const [x, y] = p;
+      const d = game.get(x, y);
+      let a = null;
+      let dir = 0;
+
+      adj(x, y, (x, y, d, dir) => {
+        if(d[0] === 0) return;
+        if(d[0] === (15 ^ (1 << (dir + 2 & 3)))) return;
+
+        const a1 = [dir, d, (
+          (d[0] & 1 ? 1 : 0) +
+          (d[0] & 2 ? 1 : 0) +
+          (d[0] & 4 ? 1 : 0) +
+          (d[0] & 8 ? 1 : 0)
+        )];
+
+        if(a === null || a1[2] > a[2])
+          a = a1;
+      });
+
+      if(a === null) continue;
+      pending.delete(x, y);
+
+      const [dir1, d1] = a;
+
+      d[0] |= 1 << dir1;
+      d1[0] |= 1 << (dir1 + 2 & 3);
+
+      addAdj(x, y);
+    }
   }
 
   game.iterate((x, y, d) => {  
