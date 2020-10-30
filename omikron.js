@@ -4076,6 +4076,30 @@ const O = {
     return res;
   },
 
+  rec(f, ...args){
+    const stack = [[f(...args), null]];
+
+    while(1){
+      const frame = O.last(stack);
+      const [gen, val] = frame;
+
+      const result = gen.next(val);
+      const {done, value} = result;
+
+      if(done){
+        if(stack.length === 1)
+          return value;
+
+        stack.pop();
+        O.last(stack)[1] = value;
+
+        continue;
+      }
+
+      stack.push([value[0](...value.slice(1)), null]);
+    }
+  },
+
   /*
     Math functions
   */
