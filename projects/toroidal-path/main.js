@@ -7,11 +7,11 @@ const Tile = require('./tile');
 const AUTO = 1;
 const CHECK = 1;
 
-const w = 15;
-const h = 15;
+const w = 21;
+const h = 21;
 const s = 40;
 
-const density = .2;
+const density = .15;
 const speed = 1;
 
 O.enhanceRNG();
