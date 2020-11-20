@@ -7,6 +7,8 @@ const Tile = require('./tile');
 const AUTO = 1;
 const CHECK = 1;
 
+if(O.ih < 1080) return;
+
 const w = 21;
 const h = 21;
 const s = 40;

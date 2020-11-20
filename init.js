@@ -10,17 +10,14 @@
 
       init: function(){
         var noscript = document.querySelector('noscript');
+        var html = noscript.innerHTML;
+
+        noscript.parentNode.removeChild(noscript);
 
         if(CHROME_ONLY && window.navigator.vendor != 'Google Inc.'){
-          var html = noscript.innerHTML.split(/\r\n|\r|\n/);
-          html = html.map(function(a){ return a.trim(); });
-          html = html.filter(function(a){ return a.length; });
-          var msg = html[html.length - 1];
-          O.fatalError(msg);
+          document.write('<!DOCTYPE html>\n' + html.split('&lt;').join('<').split('&gt;').join('>'));
           return;
         }
-
-        noscript.remove();
 
         O.rf('omikron.js', function(status, script){
           if(status != 200) return O.fatalError('Cannot load framework script. Try disabling extensions.');
