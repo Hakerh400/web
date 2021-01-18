@@ -1,0 +1,106 @@
+body{
+  margin: 0px;
+  background: #383838;
+}
+
+.interface{
+  padding: 18px;
+  color: #C0C0C0;
+  font-weight: 600px;
+  font-family: "Exo 2", sans-serif;
+  white-space: nowrap;
+  width: 100%;
+  height: 100%;
+}
+
+.opt-wrap{
+  margin: 12px 0px;
+  display: block;
+}
+
+.opt-lab{
+  display: inline-block;
+  margin-right: 5px;
+}
+
+.btn{
+  width: 120px;
+}
+
+.section{
+  margin: 12px 0px;
+}
+
+.section-header{
+  height: 21px;
+  line-height: 21px;
+  font-size: 16px;
+  user-select: none;
+}
+
+.section-title{
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.section-title-triangle{
+  display: inline-block;
+  width: 25px;
+}
+
+.section-title-text{
+  display: inline-block;
+}
+
+.byte-counter{
+  float: right;
+  display: none;
+}
+
+.expanded .byte-counter{
+  display: inline-block;
+}
+
+.section-msg{
+  margin-top: 12px;
+  color: #aaaa00;
+  font-weight: bold;
+  display: none;
+}
+
+.expanded .section-msg.visible{
+  display: block;
+}
+
+.section-data{
+  margin-top: 12px;
+  border: none;
+  background: #202020;
+  padding: 4px 6px;
+  width: 100%;
+  font-family: 'DejaVu Sans Mono', monospace;
+  resize: none;
+  display: none;
+  font-weight: 400;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.section-data::-webkit-scrollbar{
+  display: none;
+}
+
+.expanded .section-data{
+  display: block;
+}
+
+textarea{
+  color: inherit;
+}
+
+*{
+  box-sizing: border-box;
+  vertical-align: middle;
+  outline: none;
+}

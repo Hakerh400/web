@@ -335,6 +335,76 @@ class Color extends Uint8ClampedArray{
     this.set(r, g, b);
   }
 
+  static from(info){
+    let R, G, B;
+
+    getRgb: {
+      if(typeof info === 'string'){
+        [R, G, B] = O.Color.parse(info);
+        break getRgb;
+      }
+
+      if(Array.isArray(info)){
+        [R, G, B] = info;
+        break getRgb;
+      }
+
+      throw new TypeError(`Invalid color info`);
+    }
+
+    return new O.Color(R, G, B);
+  }
+
+  static parse(str){
+    let colStr;
+
+    tryHsl: {
+      const match = str.match(/^hsl\s*\((\d+),\s*(\d+)\s*%\s*,\s*(\d+)\s*%\s*\)\s*$/);
+      if(match === null) break tryHsl;
+
+      const H = match[1] / 360;
+      const S = match[2] / 100;
+      const L = match[3] / 100;
+      
+      return O.Color.hsl2rgb(H, S, L);
+    }
+
+    throw new TypeError(`Unsupported color format ${O.sf(str)}`);
+  }
+
+  static norm(info){
+    return O.Color.from(info).toString();
+  }
+
+  static hsl2rgb(H, S, L){
+    let R, G, B;
+
+    parse: {
+      if(S === 0){
+        R = G = B = L;
+        break parse;
+      }
+
+      const Q = L < 1 / 2 ? L * (1 + S) : L + S - L * S;
+      const P = L * 2 - Q;
+
+      R = O.Color.hue2rgbComp(P, Q, H + 1 / 3);
+      G = O.Color.hue2rgbComp(P, Q, H);
+      B = O.Color.hue2rgbComp(P, Q, H - 1 / 3);
+    }
+
+    return [round(R * 255), round(G * 255), round(B * 255)];
+  }
+
+  static hue2rgbComp(P, Q, T){
+    if(T < 0) T += 1;
+    if(T > 1) T -= 1;
+    if(T < 1 / 6) return P + (Q - P) * 6 * T;
+    if(T < 1 / 2) return Q;
+    if(T < 2 / 3) return P + (Q - P) * (2 / 3 - T) * 6;
+    return P;
+  }
+
   static getCtx(){
     const ctx = this.#g;
     if(ctx !== null) return ctx;
@@ -384,10 +454,10 @@ class Color extends Uint8ClampedArray{
     return rgb;
   }
 
-  static rgb2col(rgb){
-    return `#${rgb[0].toString(16).padStart(2, '0')
-      }${rgb[1].toString(16).padStart(2, '0')
-      }${rgb[2].toString(16).padStart(2, '0')}`;
+  static rgb2str(R, G, B){
+    return `#${R.toString(16).padStart(2, '0')
+      }${G.toString(16).padStart(2, '0')
+      }${B.toString(16).padStart(2, '0')}`;
   }
 
   static colNorm(col){
@@ -395,10 +465,6 @@ class Color extends Uint8ClampedArray{
     if(!this.isColValid(col)) return null;
     const g = this.getCtx();
     return g.fillStyle;
-  }
-
-  static from(rgb){
-    return new O.Color(rgb[0], rgb[1], rgb[2]);
   }
 
   static hsv(k){
@@ -1447,17 +1513,26 @@ class EnhancedRenderingContext{
 
 class Buffer extends Uint8Array{
   constructor(...params){
+    O.assert(!O.isNode);
+
     if(params.length === 1 && typeof params[0] === 'string')
       params[0] = [...params[0]].map(a => O.cc(a));
 
     super(...params);
   }
 
+  static isBuffer(obj){
+    return obj instanceof O.Buffer;
+  }
+
   static alloc(size){
+    O.assert(!O.isNode);
     return new O.Buffer(size);
   }
 
   static from(data, encoding='utf8', mode=0){
+    O.assert(!O.isNode);
+
     if(data.length === 0)
       return O.Buffer.alloc(0);
 
@@ -1482,6 +1557,8 @@ class Buffer extends Uint8Array{
   }
 
   static concat(arr){
+    O.assert(!O.isNode);
+
     arr = arr.reduce((concatenated, buff) => {
       return [...concatenated, ...buff];
     }, []);
@@ -1535,6 +1612,10 @@ class Buffer extends Uint8Array{
         break;
 
       case 'utf8':
+        return Array.from(this).map(a => String.fromCharCode(a)).join('');
+        break;
+
+      case 'binary':
         return Array.from(this).map(a => String.fromCharCode(a)).join('');
         break;
 
@@ -2199,7 +2280,7 @@ class IO{
     for(let i = 0, j = 0; i !== len; i++, j++){
       buf[i] ^= hash[j];
 
-      if(j === 32){
+      if(j === 31){
         hash = O.sha256(hash);
         j = -1;
       }
@@ -2274,6 +2355,38 @@ class IO{
   }
 }
 
+class IOBit{
+  constructor(input='', pad=1){
+    input = String(input);
+    O.assert(/^[01]*$/.test(input));
+
+    if(pad) input = input.replace(/./g, a => `1${a}`);
+
+    this.input = input;
+    this.output = '';
+  }
+
+  get hasMore(){
+    return this.input.length !== 0;
+  }
+
+  read(){
+    const bit = this.input[0] | 0;
+    this.input = this.input.slice(1);
+    return bit;
+  }
+
+  write(bit){
+    this.output += bit & 1;
+  }
+
+  getOutput(buf=1){
+    let out = this.output;
+    if(buf) out = O.Buffer.from(out);
+    return out;
+  }
+}
+
 class Serializer extends IO{
   static #abuf = new ArrayBuffer(8);
   static #view = new DataView(this.#abuf);
@@ -2282,78 +2395,86 @@ class Serializer extends IO{
     super(buf, checksum);
   }
 
-  write(num, max=1){
-    num |= 0;
-    max |= 0;
-    if(max === 0) return;
+  write(num, max=1n){
+    num = BigInt(num | 0);
+    max = BigInt(max | 0);
+    if(max === 0n) return;
 
-    let mask = 1 << 31 - clz32(max);
+    let mask = 1n;
+    while(mask <= max) mask <<= 1n;
+
     let limit = 1;
 
-    while(mask !== 0){
+    while(mask !== 0n){
       if(!limit || (max & mask)){
         let bit = num & mask ? 1 : 0;
         super.write(bit);
         if(!bit) limit = 0;
       }
-      mask >>= 1;
+
+      mask >>= 1n;
     }
 
     return this;
   }
 
-  read(max=1){
-    max |= 0;
-    if(max === 0) return 0;
+  read(max=1n){
+    max = BigInt(max | 0);
+    if(max === 0n) return;
 
-    let mask = 1 << 31 - clz32(max);
+    let mask = 1n;
+    while(mask <= max) mask <<= 1n;
+
     let limit = 1;
-    let num = 0;
+    let num = 0n;
 
-    while(mask !== 0){
-      num <<= 1;
+    while(mask !== 0n){
+      num <<= 1n;
+
       if(!limit || (max & mask)){
         let bit = super.read();
-        num |= bit;
-        if(!bit) limit = 0;
+        if(bit) num |= 1n;
+        else limit = 0;
       }
-      mask >>= 1;
+
+      mask >>= 1n;
     }
 
     return num;
   }
 
-  writeInt(num, signed=0){
-    const snum = num;
-    num = -~abs(num);
+  writeInt(num, signed=1){
+    num = BigInt(num | 0);
 
-    while(num !== 1){
+    const snum = num;
+    num = -~(num >= -num ? num : -num);
+
+    while(num !== 1n){
       super.write(1);
-      super.write(num & 1);
-      num >>= 1;
+      super.write(num & 1n ? 1 : 0);
+      num >>= 1n;
     }
 
     super.write(0);
 
-    if(signed && snum !== 0)
-      super.write(snum < 0);
+    if(signed && snum !== 0n)
+      super.write(snum < 0n);
 
     return this;
   }
 
   readInt(signed=1){
-    let num = 0;
-    let mask = 1;
-    let len = 0;
+    let num = 0n;
+    let mask = 1n;
 
     while(super.read()){
       if(super.read()) num |= mask;
-      mask <<= 1;
+      mask <<= 1n;
     }
 
     num = ~-(num | mask);
 
-    if(signed && num !== 0 && super.read())
+    if(signed && num !== 0n && super.read())
       num = -num;
 
     return num;
@@ -2393,7 +2514,7 @@ class Serializer extends IO{
   readDouble(){
     const view = this.constructor.#view;
     for(let i = 0; i !== 8; i++)
-      view.setUint8(i, this.read(255));
+      view.setUint8(i, Number(this.read(255)));
     return view.getFloat64(0, 1);
   }
 
@@ -2407,11 +2528,11 @@ class Serializer extends IO{
   }
 
   readBuf(){
-    const len = this.readUint();
+    const len = Number(this.readUint());
     const buf = O.Buffer.alloc(len);
 
     for(let i = 0; i !== len; i++)
-      buf[i] = this.read(255);
+      buf[i] = Number(this.read(255));
 
     return buf;
   }
@@ -2448,6 +2569,70 @@ class Serializable{
   reser(){ return this.deser(new O.Serializer(this.ser().getOutput())); }
 }
 
+class NatSerializer{
+  #stack = [];
+  #input;
+
+  constructor(input=0n){
+    input = BigInt(input);
+    O.assert(input >= 0n);
+    this.#input = input;
+  }
+
+  get input(){ return this.#input; }
+  get stack(){ return this.#stack; }
+
+  get nz(){
+    const nz = this.#input !== 0n;
+    if(nz) this.#input--;
+    return nz;
+  }
+
+  read(mod=2n){
+    mod = BigInt(mod);
+
+    const n = this.#input % mod;
+    this.#input /= mod;
+
+    return n;
+  }
+
+  write(mod, num=null){
+    if(num === null){
+      num = mod;
+      mod = 2n;
+    }
+
+    this.#stack.push(BigInt(mod), BigInt(num));
+  }
+
+  inc(num=1n){
+    this.#stack.push(1n, BigInt(num));
+  }
+
+  get output(){
+    const stack = this.#stack;
+    let n = 0n;
+
+    while(stack.length !== 0){
+      const num = stack.pop();
+      const mod = stack.pop();
+
+      n = n * mod + num;
+    }
+
+    return n;
+  }
+}
+
+class NatSerializable{
+  ser(ser=new O.NatSerializer()){ O.virtual('ser'); }
+  deser(ser){ O.virtual('deser'); }
+
+  static deser(ser){ return new this().deser(ser); }
+  reser(){ return this.deser(new O.NatSerializer(this.ser().getOutput())); }
+}
+
 class Semaphore{
   constructor(s=1){
     this.s = s;
@@ -2481,14 +2666,56 @@ class Semaphore{
   }
 }
 
-class AssertionError extends Error{
+class Process{
   constructor(){
-    super();
-    new Function('debugger')();
+    this.argv = ['', ''];
+  }
+}
+
+class Module{
+  static #main = null;
+
+  static get main(){
+    if(Module.#main === null)
+      Module.#main = this.createMainModule();
+
+    return Module.#main;
   }
 
-  get name(){ return 'AssertionError'; }
+  static createMainModule(){
+    return new Module('');
+  }
+
+  #file;
+  #obj;
+  #key;
+
+  constructor(file, obj, key){
+    this.#file = file;
+    this.#obj = obj;
+    this.#key = key;
+  }
+
+  get exports(){ return this.#obj[this.#key]; }
+  set exports(val){ this.#obj[this.#key] = val; }
+
+  get filename(){ return this.#file; }
 }
+
+class CustomError extends Error{
+  get name(){ return this.constructor.name; }
+}
+
+class AssertionError extends CustomError{
+  constructor(){
+    super();
+    // new Function('debugger')();
+  }
+
+}
+
+class ExitError extends CustomError{}
+class CustomSyntaxError extends CustomError{}
 
 const O = {
   global: null,
@@ -2523,6 +2750,8 @@ const O = {
 
   log: null,
   displayBigIntsAsOrdinaryNumbers: 0,
+  debugRecursiveCalls: 0,
+  adaptedForNode: 0,
 
   // Node modules
 
@@ -2579,10 +2808,18 @@ const O = {
     AsyncAVLNode,
     AsyncAVLTree,
     IO,
+    IOBit,
     Serializer,
     Serializable,
+    NatSerializer,
+    NatSerializable,
     Semaphore,
+    Process,
+    Module,
+    CustomError,
     AssertionError,
+    ExitError,
+    CustomSyntaxError,
   },
 
   init(loadProject=1){
@@ -2599,8 +2836,8 @@ const O = {
     O.env = env;
 
     const isBrowser = O.isBrowser = env === 'browser';
-    const isNode = O.isNode = env === 'node';
     const isElectron = O.isElectron = isBrowser && navigator.userAgent.includes('Electron');
+    const isNode = O.isNode = isElectron || env === 'node';
 
     if(isBrowser){
       if(CHROME_ONLY && global.navigator.vendor !== 'Google Inc.')
@@ -2728,7 +2965,7 @@ const O = {
 
     let logOrig;
 
-    if(O.isNode){
+    if(!O.isBrowser){
       const fs = require('fs');
       const fdOut = process.stdout.fd;
 
@@ -2828,8 +3065,15 @@ const O = {
     return str;
   },
 
-  bion(val){
-    O.displayBigIntsAsOrdinaryNumbers = val;
+  bion(val){ O.displayBigIntsAsOrdinaryNumbers = val; },
+  dbgRec(val){ O.debugRecursiveCalls = val; },
+
+  adaptForNode(){
+    if(O.adaptedForNode) return;
+    const {global} = O;
+
+    global.process = new O.Process();
+    global.Buffer = O.Buffer;
   },
 
   title(title){
@@ -2891,9 +3135,8 @@ const O = {
     URL functions
   */
 
-  get href(){
-    return window.location.href;
-  },
+  get url(){ return location.href; },
+  get href(){ return O.url; },
 
   urlParam(param, defaultVal=null){
     var url = O.href;
@@ -2989,6 +3232,22 @@ const O = {
     input.type = type;
     if(type === 'text') input.autocomplete = 'off';
     return input;
+  },
+
+  ceTa(parent, classNames){
+    const ta = O.ce(parent, 'textarea', classNames);
+    ta.setAttribute('data-gramm_editor','false');
+    ta.setAttribute('spellcheck','false');
+    ta.setAttribute('autocapitalize','none');
+    ta.setAttribute('autocorrect','off');
+    return ta;
+  },
+
+  ceButton(parent, label, classNames, func=null){
+    const btn = O.ce(parent, 'button', classNames);
+    btn.innerText = label;
+    if(func !== null) O.ael(btn, 'click', func);
+    return btn;
   },
 
   ceRadio(parent, name, value, label=null, classNames){
@@ -3099,8 +3358,13 @@ const O = {
       }
     };
 
-    if(file.startsWith('/'))
-      file = `${O.baseURL}${file}`;
+    if(file.startsWith('/')){
+      if(file.startsWith('//')){
+        file = file.slice(1);
+      }else{
+        file = `${O.baseURL}${file}`;
+      }
+    }
 
     xhr.open('GET', O.urlTime(file));
     xhr.setRequestHeader('x-requested-with', 'XMLHttpRequest');
@@ -3181,16 +3445,13 @@ const O = {
     path = path.split('/');
     path.pop();
 
-    cache[pathOrig] = {};
-    const module = {
-      get exports(){ return cache[pathOrig]; },
-      set exports(val){ cache[pathOrig] = val; }
-    };
+    const mpf = O.modulesPolyfill;
+    const module = new O.Module(pathMatch, cache, pathOrig);
 
     const require = async newPath => {
       var resolvedPath;
 
-      if(/^(?:\/|https?\:\/\/|[^\.][\s\S]*\/)/.test(newPath)){
+      if(/^(?:\/|https?\:\/\/|[^\.@][\s\S]*\/)/.test(newPath)){
         resolvedPath = newPath;
       }else if(newPath.startsWith('.')){
         var oldPath = path.slice();
@@ -3204,9 +3465,10 @@ const O = {
         });
 
         resolvedPath = oldPath.join('/');
+      }else if(newPath.startsWith('@hakerh400/')){
+        O.adaptForNode();
+        resolvedPath = `//${newPath.slice(newPath.indexOf('/') + 1)}`;
       }else{
-        const mpf = O.modulesPolyfill;
-
         if(!O.has(mpf, newPath)){
           let msg = `Unknown native module ${O.sf(newPath)}`;
           if(pathResolved !== null) msg += `\nRequested from ${pathResolved}`;
@@ -3221,6 +3483,12 @@ const O = {
       return exportedModule;
     };
 
+    require.resolve = pth => {
+      return mpf.path.join(path.join('/'), pth);
+    };
+
+    require.main = Module.main;
+
     switch(type){
       case 0: // Text
         module.exports = data;
@@ -3233,7 +3501,16 @@ const O = {
       case 2: // JavaScript
         data = data.
           replace(/^const (?:O|debug) = require\(.+\s*/gm, '').
-          replace(/ = require\(/g, ' = await require(');
+          replace(/^const (\S+) = (require|O\.rfs)\(/gm, (a, b, c) => `const ${b} = await ${c}(`);
+
+        detectSuspiciousCalls: {
+          let reg = / const \S+ = (?:require|O\.rfs)\(/m;
+          if(!reg.test(data)) break detectSuspiciousCalls;
+
+          const lines = O.sanl(data);
+          const line = lines.findIndex(line => reg.test(line)) + 1;
+          log(`File ${pathMatch} contains a suspicious require call on line ${line}`);
+        }
 
         let func = null;
 
@@ -3462,7 +3739,7 @@ const O = {
         const i = str.search(/[\r\n]/);
         const s = i !== -1 ? str.slice(0, i) : str;
 
-        if(throwOnError) throw new SyntaxError(`Invalid syntax near ${O.sf(s)}`);
+        if(throwOnError) throw new O.CustomSyntaxError(`Invalid syntax near ${O.sf(s)}`);
 
         return O.last(funcs)(s, []);
       }
@@ -3800,7 +4077,7 @@ const O = {
     g.closePath();
   },
 
-  // Other functions
+  // Assertions
 
   assert(...args){
     const len = args.length;
@@ -3824,6 +4101,16 @@ const O = {
     let msg = `Assertion failed`;
     if(len === 1) msg += ` ---> ${args[0]}`;
     throw new O.AssertionError(msg);
+  },
+
+  // Other functions
+
+  const(val){
+    return () => val;
+  },
+
+  constArr(){
+    return () => [];
   },
 
   repeat(num, func){
@@ -4053,7 +4340,13 @@ const O = {
   keys(obj){ return Reflect.ownKeys(obj); },
   cc(char, index=0){ return char.charCodeAt(index); },
   sfcc(cc){ return String.fromCharCode(cc); },
-  hex(val, bytesNum){ return val.toString(16).toUpperCase().padStart(bytesNum << 1, '0'); },
+
+  hex(val, bytesNum, upper=1){
+    let s = val.toString(16);
+    if(upper) s = s.toUpperCase();
+    return s.padStart(bytesNum << 1, '0');
+  },
+
   hypot(x, y){ return sqrt(x * x + y * y); },
   hypots(x, y){ return x * x + y * y; },
   hypotm(x, y){ return abs(x) + abs(y); },
@@ -4076,8 +4369,91 @@ const O = {
     return res;
   },
 
+  kTco: Symbol('tco'),
+
+  tco(...args){
+    return [O.kTco, ...args];
+  },
+
   rec(f, ...args){
-    const stack = [[f(...args), null]];
+    const {kTco} = O;
+
+    const dbg = O.debugRecursiveCalls;
+    let nameStack = dbg ? [] : null;
+
+    const err = msg => {
+      throw new TypeError(`[O.rec] ${msg}`);
+    };
+
+    const getObjInfo = obj => {
+      let info = null;
+
+      getInfo: {
+        try{
+          const cname = obj.constructor.name;
+          if(typeof cname !== 'string') break getInfo;
+          if(cname.length === 0) break getInfo;
+
+          info = O.sf(cname);
+        }catch{}
+      }
+
+      if(info === null) return 'given';
+      return info;
+    };
+
+    const makeStackFrame = (f, args) => {
+      let func;
+
+      if(typeof f === 'function'){
+        func = f;
+      }else{
+        const errBadArg = msg => {
+          err(`Expected either a function, or a bound method info in the form of an array as the fist argument. ${msg}`);
+        };
+
+        if(!Array.isArray(f))
+          errBadArg(`The received argument is neither a function, nor an array`);
+
+        if(f.length !== 2)
+          errBadArg(`The received argument is an array whose length is ${f.length}, but it must be 2`);
+
+        const obj = f[0];
+
+        if(!obj)
+          err(`Cannot read method name from a non-object value`);
+
+        const methodName = f[1];
+        func = obj[methodName];
+
+        if(!func){
+          if(Array.isArray(obj))
+            err(`Received an array as the target object (you probably added extra brackets)`);
+
+          err(`The ${getObjInfo(obj)} object has no method ${O.sf(methodName)}`);
+        }
+
+        if(typeof func !== 'function')
+          err(`The property ${
+            O.sf(methodName)} of the ${getObjInfo(obj)} object is not a function (its type is ${
+            typeof func})`);
+      }
+
+      if(dbg){
+        const name = func.name || '<unnamed>';
+        nameStack.push(name);
+        log('CALL', name, ...dbg === 2 ? args : []);
+        log.inc();
+      }
+
+      const gen = func === f ?
+        func.apply(null, args) :
+        func.apply(f[0], args)
+
+      return [gen, null];
+    };
+
+    const stack = [makeStackFrame(f, args)];
 
     while(1){
       const frame = O.last(stack);
@@ -4087,6 +4463,11 @@ const O = {
       const {done, value} = result;
 
       if(done){
+        if(dbg){
+          log('RET', nameStack.pop(), ...dbg === 2 ? [value] : []);
+          log.dec();
+        }
+
         if(stack.length === 1)
           return value;
 
@@ -4096,7 +4477,32 @@ const O = {
         continue;
       }
 
-      stack.push([value[0](...value.slice(1)), null]);
+      if(value[0] === kTco){
+        if(dbg){
+          log('TCO', nameStack.pop());
+          log.dec();
+        }
+
+        stack.pop();
+        value.shift();
+      }
+
+      if(!Array.isArray(value)){
+        const e = (msg='') => {
+          err(`The received value is not an array${msg ? '. ' : ''}${msg}`);
+        };
+
+        const GeneratorFunction = (function*(){}).constructor;
+        log(value.constructor)
+        log(GeneratorFunction)
+
+        if(value instanceof GeneratorFunction)
+          e(`You probably need to change "yield obj.method(arg)" to "yield [[obj, 'method'], arg]"`);
+
+        e();
+      }
+
+      stack.push(makeStackFrame(value[0], value.slice(1)));
     }
   },
 
@@ -4185,6 +4591,10 @@ const O = {
     return func;
   },
 
+  raf2(func){
+    O.raf(() => O.raf(func));
+  },
+
   animFrame(){
     const cbs = O.animFrameCbs;
     const cbsCopy = cbs.slice();
@@ -4197,7 +4607,13 @@ const O = {
     Node functions
   */
 
-  rfs(file, str=0){ return O.nm.fs.readFileSync(file, str ? 'utf8' : null); },
+  rfs(file, str=0){
+    if(O.isNode)
+      return O.nm.fs.readFileSync(file, str ? 'utf8' : null);
+    
+    return O.rfAsync(file, !str);
+  },
+
   wfs(file, data){ return O.nm.fs.writeFileSync(file, data); },
   ext(file){ return O.nm.path.parse(file).ext.slice(1); },
 
@@ -4207,6 +4623,7 @@ const O = {
 
   modulesPolyfill: (() => {
     const modules = {
+      fs: {},
       path: {
         normalize(p){
           return p.replace(/[\\]/g, '/');
@@ -4223,6 +4640,8 @@ const O = {
           });
         },
       },
+      assert: O.assert,
+      'child_process': {},
     };
 
     return modules;
@@ -4498,7 +4917,7 @@ const O = {
 
       if(m !== 0){
         str += char(val);
-        if(mode === 0) str += '='.repeat(3 - m);
+        /*if(mode === 0)*/ str += '='.repeat(3 - m);
       }
 
       return str;
@@ -4507,7 +4926,7 @@ const O = {
     const decode = (str, mode=0) => {
       let length = (str.length >> 2) * 3;
 
-      if(mode === 0){
+      /*if(mode === 0)*/{
         const pad = str.match(/\=*$/)[0].length;
         const extraBytes = pad !== 0 ? pad : 0;
         length -= extraBytes;
@@ -4582,8 +5001,12 @@ const O = {
   },
 
   exit(...args){
-    if(!(O.isNode || O.isElectron))
-      throw new TypeError('Only Node.js and Electron processes can be terminated');
+    if(!(O.isNode || O.isElectron)){
+      if(!this.adaptForNode)
+        throw new TypeError('Only Node.js and Electron processes can be terminated');
+
+      throw new O.ExitError(args.join(' '));
+    }
 
     if(args.length !== 0)
       log(...args);

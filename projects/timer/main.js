@@ -9,7 +9,7 @@ g.fillStyle = '#000';
 
 const xOffset = g.measureText(formatTime(0)).width / 2;
 
-let t = parseTime(O.urlParam('time', '00:05:00'));
+let t = parseTime(O.urlParam('t', '00:05:00'));
 let start = null;
 let stage = 0;
 

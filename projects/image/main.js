@@ -1,7 +1,7 @@
 'use strict';
 
 var format = 'png';
-var imageFile = `/projects/${O.project}/1.${format}`;
+var imageFile = `${O.baseURL}/projects/${O.project}/1.${format}`;
 
 var image = null;
 var loaded = 0;
