@@ -3909,6 +3909,10 @@ const O = {
     return O.random() * a;
   },
 
+  randp(a){
+    return O.randf() < a;
+  },
+
   randInt(start=0, prob=.5){
     let num = start;
     while(O.randf() < prob) num++;

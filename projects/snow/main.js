@@ -2,16 +2,29 @@
 
 const {min, max, abs, tanh} = Math;
 
-const SPEED = 1e3;
+const SPEED = 1;
 
 const PROB_HOR = .1;
+const PROB_VAL = .5;
+const PROB_EDGE = .9;
+
 const VAL_INIT = 1;
 const VAL_EDGE = 0;
 const VAL_MULT_LR = 0;
-const VAL_MULT_DLR = .1;
-const VAL_MULT_DW = .9;
+const VAL_MULT_DLR = .35;
+const VAL_MULT_DW = .45;
 
-const {g, w, h, wh, hh} = O.ceCanvas();
+// const {g, w, h, wh, hh} = O.ceCanvas();
+
+O.body.classList.add('has-canvas');
+const canvas = O.ce(O.body, 'canvas');
+const w = canvas.width = 640;
+const h = canvas.height = O.ih;
+const wh = w / 2;
+const hh = h / 2;
+const g = canvas.getContext('2d');
+g.fillStyle = 'black';
+g.fillRect(0, 0, w, h);
 
 const cols = [
   [53,  189, 255],
@@ -38,9 +51,8 @@ function main(){
 
 function initTile(x, y){
   const s = 100;
-  const sh = s / 2;
 
-  if(abs(x - wh) < sh && h - y < s)
+  if(O.dist(x, y, wh, h - s) < s)
     return WALL;
 
   return EMPTY;
@@ -56,13 +68,13 @@ function set(x, y, d){
 
   grid.set(x, y, d);
 
-  if(d[0] !== SNOW){
-    imgd.set(x, y, cols[d[0]]);
+  if(d[0] === SNOW){
+    aux[0] = aux[1] = aux[2] = d[1] * 255;
+    imgd.set(x, y, aux);
     return;
   }
 
-  aux[0] = aux[1] = aux[2] = d[1] * 255;
-  imgd.set(x, y, aux);
+  imgd.set(x, y, cols[d[0]]);
 }
 
 function getType(x, y){
@@ -80,95 +92,135 @@ function getVal(x, y){
 
 function calcValNew(x, y){
   return tanh(
-    (getVal(x - 1, y) + getVal(x + 1, y)) * VAL_MULT_LR +
-    (getVal(x - 1, y + 1) + getVal(x + 1, y + 1)) * VAL_MULT_DLR +
-    getVal(x, y + 1) * VAL_MULT_DW
+    (
+      getVal(x - 1, y) +
+      getVal(x + 1, y)
+    ) * VAL_MULT_LR +
+    (
+      getVal(x - 1, y + 1) +
+      getVal(x + 1, y + 1)
+    ) * VAL_MULT_DLR +
+    (
+      getVal(x, y + 1)
+    ) * VAL_MULT_DW
   );
 }
 
+function calcDir(x, y){
+  const lf = get(x - 1, y);
+  const rg = get(x + 1, y);
+  const lfne = lf !== EMPTY;
+  const rgne = rg !== EMPTY;
+
+  if(lfne) return 1;
+  if(rgne) return -1;
+
+  // const vLeft = calcValNew(x - 1, y);
+  // const vRight = calcValNew(x + 1, y);
+
+  // if(vLeft > vRight) return -1;
+  // if(vRight > vLeft) return 1;
+
+  return O.rand() ? 1 : -1;
+}
+
 function setSnow(x, y){
+  O.assert(get(x, y) === EMPTY);
+
   set(x, y, [SNOW, calcValNew(x, y)]);
 }
 
 function render(){
   iterLoop: for(let i = 0; i !== SPEED; i++){
-    let x = O.rand(w);
-    let y = 0;
+    xLoop: for(let xx = 0; xx !== w; xx++){
+      let x = xx;
+      let y = 0;
 
-    if(get(x, y) !== EMPTY)
-      continue iterLoop;
+      if(get(x, y) !== EMPTY)
+        continue xLoop;
 
-    snowflake: while(1){
-      const lf = get(x - 1, y);
-      const rg = get(x + 1, y);
-      const lfne = lf !== EMPTY;
-      const rgne = rg !== EMPTY;
-      const lrne = lfne && rgne;
+      snowflake: while(1){
+        // if(y === h - 2) continue xLoop;
 
-      horizontal: if(O.randf() < PROB_HOR){
-        if(lrne) break horizontal;
+        const lf = get(x - 1, y);
+        const rg = get(x + 1, y);
+        const lfne = lf !== EMPTY;
+        const rgne = rg !== EMPTY;
+        const lrne = lfne && rgne;
 
-        const dir = (
-          lfne ? 1 :
-          rgne ? -1 :
-          O.rand() ? 1 : -1
-        );
+        horizontal: if(O.randp(PROB_HOR)){
+          if(lrne) break horizontal;
 
-        x += dir;
-
-        continue snowflake;
-      }
-
-      // Vertical
-
-      const dw = get(x, y + 1);
-      const dwne = dw !== EMPTY;
-
-      if(!dwne){
-        y++;
-        continue snowflake;
-      }
-
-      const dl = get(x - 1, y + 1);
-      const dr = get(x + 1, y + 1);
-
-      const dlne = dl !== EMPTY;
-      const drne = dr !== EMPTY;
-
-      if((dlne && drne) || O.randf() < calcValNew(x, y)){
-        setSnow(x, y);
-        continue iterLoop;
-      }
-
-      const dir = (
-        dlne ? 1 :
-        drne ? -1 :
-        O.rand() ? 1 : -1
-      );
-      
-      let x1 = x;
-      let y1 = y + 1;
-
-      hindFreeHor: while(1){
-        if(get(x1, y) !== EMPTY){
-          const x2 = O.rand(min(x, x1), max(x, x1));
-          setSnow(x2, y);
-          continue iterLoop;
-        }
-
-        if(get(x1, y1) === EMPTY){
-          x = x1;
-          y = y1;
+          x += calcDir(x, y);
           continue snowflake;
         }
 
-        x1 += dir;
+        const dw = get(x, y + 1);
+        const dl = get(x - 1, y + 1);
+        const dr = get(x + 1, y + 1);
+        const dwne = dw !== EMPTY;
+        const dlne = dl !== EMPTY;
+        const drne = dr !== EMPTY;
+
+        if(!dwne){
+          // tryEdge: {
+          //   const d1 = grid.get(x - 1, y + 2);
+          //   const d2 = grid.get(x + 1, y + 2);
+
+          //   const a1 = d1 !== EMPTY;
+          //   const a2 = d2 !== EMPTY;
+          // }
+
+          y++;
+          continue snowflake;
+        }
+
+
+        if(dlne && drne){
+          setSnow(x, y);
+          continue xLoop;
+        }
+
+        if(O.randp(calcValNew(x, y) * PROB_VAL)){
+          setSnow(x, y);
+
+          // if(O.randp(PROB_EDGE)){
+          //   const dir = calcDir(x, y);
+          //   setSnow(x + dir, y);
+          // }
+
+          continue xLoop;
+        }
+
+        const dir = calcDir(x, y);
+        
+        let x1 = x;
+        let y1 = y + 1;
+
+        hindFreeHor: while(1){
+          if(get(x1, y) !== EMPTY){
+            x1 -= dir;
+
+            const x2 = O.rand(min(x, x1), max(x, x1));
+            setSnow(x2, y);
+
+            continue xLoop;
+          }
+
+          if(get(x1, y1) === EMPTY){
+            x = x1;
+            y = y1;
+            continue snowflake;
+          }
+
+          x1 += dir;
+        }
+
+        O.assert.fail();
       }
 
       O.assert.fail();
     }
-
-    O.assert.fail();
   }
 
   imgd.put();
