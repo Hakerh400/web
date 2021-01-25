@@ -21,7 +21,7 @@ const {imgd, w, h} = await new Promise((res, rej) => {
 
   img.onerror = rej;
 
-  img.src = O.urlTime(`${O.baseURL}/projects/test/1.png`);
+  img.src = O.urlTime(`${O.baseURL}/projects/${O.project}/1.png`);
 });
 
 const s = 1;
