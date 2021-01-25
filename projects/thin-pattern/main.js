@@ -1,13 +1,26 @@
 'use strict';
 
-const w = 9;
-const h = 9;
-const s = 40;
+const {tanh} = Math;
+
+const w = 150;
+const h = 75;
+const s = 10;
+
+const [wh, hh] = [w, h].map(a => a / 2);
+
+const EXPAND_PROB = .8;
+const COL_BASE = .1;
+const COL_MUL = .1;
 
 const cols = {
   bg: 'darkgray',
   void: 'black',
 };
+
+const shapeCols = [
+  [0, 255, 0],
+  [255, 255, 0],
+];
 
 const {
   g,
@@ -34,8 +47,14 @@ const initGrid = () => {
 
   while(!coll.empty){
     const d = coll.get();
+    const {x, y} = d;
     const pending = new O.Collection([d]);
-    const shape = new Shape();
+
+    const col = O.dist(x + .5, y + .5, wh, hh) < h / 4 ?
+      shapeCols[1] :
+      shapeCols[0];
+    
+    const shape = new Shape(col);
 
     while(!pending.empty){
       const d = pending.get();
@@ -52,7 +71,7 @@ const initGrid = () => {
       if(adj > 1) continue;
 
       shape.add(d);
-      if(O.randp(.1)) break;
+      if(!O.randp(EXPAND_PROB)) break;
 
       grid.adj(x, y, (x, y, d) => {
         if(d === null) return;
@@ -64,13 +83,17 @@ const initGrid = () => {
 };
 
 class Shape{
-  col = O.Color.rand(1);
+  #col = null;
   tiles = new Set();
 
-  constructor(tiles=null){
+  constructor(baseCol, tiles=null){
+    this.baseCol = baseCol;
+
     if(tiles !== null)
       this.addAll(tiles);
   }
+
+  get size(){ return this.tiles.size; }
 
   add(tile){
     this.tiles.add(tile);
@@ -85,7 +108,19 @@ class Shape{
     return this;
   }
 
-  get size(){ return this.tiles.size; }
+  get col(){
+    if(this.#col === null){
+      const fac = tanh(this.size * COL_MUL + COL_BASE);
+
+      const col = Array.from(this.baseCol, a => {
+        return a * fac;
+      });
+
+      this.#col = O.Color.from(col);
+    }
+
+    return this.#col;
+  }
 }
 
 class Tile{
@@ -107,7 +142,7 @@ const render = () => {
 
   g.translate(iwh, ihh);
   g.scale(s);
-  g.translate(-w / 2, -h / 2);
+  g.translate(-wh, -hh);
 
   grid.iter((x, y, d) => {
     g.fillStyle = d.col;
