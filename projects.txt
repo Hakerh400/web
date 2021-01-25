@@ -45,3 +45,4 @@ ray-tracer
 psi
 esolangs
 snow
+thin-pattern

@@ -6,6 +6,10 @@ const {
   atan, atan2, clz32,
 } = Math;
 
+const TypedArray = Object.
+  getPrototypeOf(Uint8Array.prototype).
+  constructor;
+
 class Set2D{
   static #sym = Symbol();
   #d = Set2D.obj();
@@ -326,14 +330,91 @@ class MultidimensionalMap{
   }
 }
 
+class Collection{
+  #arr = [];
+  #map = new Map();
+
+  constructor(iterable=null){
+    if(iterable !== null)
+      this.addAll(iterable);
+  }
+
+  get size(){ return this.#arr.length; }
+  get empty(){ return this.size === 0; }
+
+  add(elem){
+    const arr = this.#arr;
+    const map = this.#map;
+
+    arr.push(elem);
+
+    const num = map.has(elem) ?
+      map.get(elem) : 0;
+
+    map.set(elem, num + 1);
+
+    return this;
+  }
+
+  addm(elem){
+    if(this.has(elem)) return this;
+    return this.add(elem);
+  }
+
+  addAll(iterable){
+    for(const elem of iterable)
+      this.add(elem);
+
+    return this;
+  }
+
+  addmAll(iterable){
+    for(const elem of iterable)
+      this.addm(elem);
+
+    return this;
+  }
+
+  get(remove=1){
+    const arr = this.#arr;
+    const map = this.#map;
+    const len = arr.length;
+    O.assert(len !== 0);
+
+    const index = O.rand(len);
+    const elem = arr[index];
+
+    if(index === len - 1){
+      arr.pop();
+    }else{
+      const last = arr.pop();
+      arr[index] = last;
+    }
+
+    const num = map.get(elem);
+
+    if(num === 1){
+      map.delete(elem);
+    }else{
+      map.set(elem, num - 1);
+    }
+
+    return elem;
+  }
+
+  has(elem){
+    return this.#map.has(elem);
+  }
+
+  count(elem){
+    const map = this.#map;
+    if(map.has(elem)) return map.get(elem);
+    return 0;
+  }
+}
+
 class Color extends Uint8ClampedArray{
   static #g = null;
-
-  constructor(r, g, b){
-    super(3);
-
-    this.set(r, g, b);
-  }
 
   static from(info){
     let R, G, B;
@@ -344,7 +425,7 @@ class Color extends Uint8ClampedArray{
         break getRgb;
       }
 
-      if(Array.isArray(info)){
+      if(O.isArr(info)){
         [R, G, B] = info;
         break getRgb;
       }
@@ -478,6 +559,12 @@ class Color extends Uint8ClampedArray{
     else rgb = O.hsv(O.randf(1));
 
     return O.Color.from(rgb);
+  }
+
+  constructor(r, g, b){
+    super(3);
+
+    this.set(r, g, b);
   }
 
   clone(){
@@ -2789,9 +2876,11 @@ const O = {
   // Constructors
 
   ctors: {
+    TypedArray,
     Set2D,
     AsyncMap2D,
     Map3D,
+    Collection,
     Color,
     AsyncImageData,
     EventEmitter,
@@ -3765,6 +3854,10 @@ const O = {
     Array functions
   */
 
+  isArr(val){
+    return Array.isArray(val) || val instanceof O.TypedArray;
+  },
+
   ca(len, func=O.nop){
     const arr = [];
 
@@ -3845,7 +3938,6 @@ const O = {
   },
 
   fst(set, defaultVal){ return O.first(set, defaultVal); },
-  isArr(val){ return Array.isArray(val); },
 
   /*
     Random number generator
