@@ -46,3 +46,4 @@ psi
 esolangs
 snow
 thin-pattern
+thin-pattern-image
