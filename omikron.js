@@ -2898,7 +2898,7 @@ const O = {
     AsyncAVLTree,
     IO,
     IOBit,
-    // Serializer,
+    Serializer,
     Serializable,
     NatSerializer,
     NatSerializable,
