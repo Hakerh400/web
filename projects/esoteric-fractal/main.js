@@ -1,12 +1,8 @@
 'use strict';
 
-const {sin, cos} = Math;
+const {sin, cos, log2, floor, ceil} = Math;
 
 const {g, w, h, wh, hh} = O.ceCanvas();
-
-const ITERATIONS = 6;
-
-const xOffset = (w - h) / 2;
 
 let k = null;
 
@@ -14,15 +10,33 @@ const main = () => {
   render();
 };
 
+const cols = O.obj();
+
 const func = arg => {
-  g.fillStyle = '#4f8';
+  if(arg === null)
+    arg = [null, 0]
+
+  const [dir, k] = arg;
+
+  if(arg !== null && !(k in cols))
+    cols[k] = O.Color.from(O.hsv(k)).toString();
+
+  g.fillStyle = cols[k];
   g.beginPath();
-  g.rotate(k * O.pi2)
-  const s = .5 + k / 2;
-  const sh = s / 2;
-  g.rect(-sh, -sh, s, s);
+  g.arc(0, 0, .5, 0, O.pi2);
   g.fill();
   g.stroke();
+
+  const kNew = (k + .05) % 1;
+
+  const args = O.ca(4, i => {
+    return [i, kNew];
+  });
+
+  if(dir !== null)
+    args[dir + 2 & 3] = null;
+
+  return args;
 };
 
 const render = () => {
@@ -31,23 +45,30 @@ const render = () => {
   g.fillStyle = '#fff';
   g.fillRect(0, 0, w, h);
 
-  for(let i = 0; i !== ITERATIONS; i++){
-    const n = 2 ** i;
-    const d = h / n;
-    const s = hh / n;
+  const draw = (x, y, w, h, depth=0, arg=null) => {
+    const wh = w / 2;
+    const hh = h / 2;
 
-    for(let y = 0; y !== n; y++){
-      for(let x = 0; x !== n; x++){
-        g.translate(xOffset + d * (x + .5), d * (y + .5));
-        g.scale(s, s);
-        g.lineWidth = 1 / s;
-        func();
-        g.resetTransform();
-      }
-    }
-  }
+    g.translate(x + wh, y + hh);
+    g.scale(wh, hh);
+    g.lineWidth = 1 / wh;
 
-  O.raf(render);
+    const args = func(arg);
+
+    g.resetTransform();
+
+    if(w < 1 || h < 1) return;
+
+    const depthNew = depth + 1;
+    if(args[0] !== null) draw(x, y, wh, hh, depthNew, args[0]);
+    if(args[1] !== null) draw(x + wh, y, wh, hh, depthNew, args[1]);
+    if(args[2] !== null) draw(x + wh, y + hh, wh, hh, depthNew, args[2]);
+    if(args[3] !== null) draw(x, y + hh, wh, hh, depthNew, args[3]);
+  };
+
+  draw((w - h) / 2, 0, h, h);
+
+  // O.raf(render);
 };
 
 main();
