@@ -41,9 +41,14 @@ const aels = () => {
       if(code === 'KeyZ'){
         if(stage !== 0){
           clearArc();
+          return;
         }
 
-        arcs.pop();
+        if(arcs.length !== 0){
+          arcs.pop();
+          return;
+        }
+
         return;
       }
 
@@ -56,6 +61,18 @@ const aels = () => {
       if(evt.button === 0){
         stage = 1;
         arc = [cx, cy, cx, cy, 0];
+        return;
+      }
+
+      return;
+    }
+
+    if(stage === 1){
+      if(evt.button === 0){
+        if(arc[0] === arc[2] && arc[1] === arc[3])
+          arc[0] += 1e-4;
+
+        stage = 2;
         return;
       }
 
@@ -78,17 +95,6 @@ const aels = () => {
     }
   });
 
-  ael('mouseup', evt => {
-    if(stage === 1){
-      if(evt.button === 0){
-        stage = 2;
-        return;
-      }
-
-      return;
-    }
-  });
-
   ael('mousemove', evt => {
     if(stage === 1){
       arc[2] = cx;
@@ -98,6 +104,12 @@ const aels = () => {
 
     if(stage === 2){
       const [ax, ay, bx, by] = arc;
+
+      if(ax === bx){
+        arc[4] = (cx - ax) / (by - ay) * 2;
+        return;
+      }
+
       const rad = O.dist(ax, ay, bx, by) / 2;
       const k = (by - ay) / (bx - ax);
       const dist = abs(cy - k * cx + k * ax - ay) / sqrt(1 + k * k);
