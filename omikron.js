@@ -4558,7 +4558,15 @@ const O = {
       const result = gen.next(val);
       const {done, value} = result;
 
-      if(done){
+      if(Array.isArray(value) && value[0] === kTco){
+        if(dbg){
+          log('TCO', nameStack.pop());
+          log.dec();
+        }
+
+        stack.pop();
+        value.shift();
+      }else if(done){
         if(dbg){
           log('RET', nameStack.pop(), ...dbg === 2 ? [value] : []);
           log.dec();
@@ -4571,16 +4579,6 @@ const O = {
         O.last(stack)[1] = value;
 
         continue;
-      }
-
-      if(value[0] === kTco){
-        if(dbg){
-          log('TCO', nameStack.pop());
-          log.dec();
-        }
-
-        stack.pop();
-        value.shift();
       }
 
       if(!Array.isArray(value)){
@@ -4767,7 +4765,7 @@ const O = {
     return target.removeEventListener(type, func);
   },
 
-  pd(evt, stopPropagation=0){
+  pd(evt, stopPropagation=1){
     evt.preventDefault();
     if(stopPropagation) evt.stopPropagation();
   },

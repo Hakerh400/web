@@ -47,3 +47,4 @@ esolangs
 snow
 thin-pattern
 thin-pattern-image
+arcs
