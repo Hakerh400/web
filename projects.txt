@@ -48,3 +48,4 @@ snow
 thin-pattern
 thin-pattern-image
 arcs
+esoteric-fractal
