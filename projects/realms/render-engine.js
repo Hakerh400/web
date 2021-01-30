@@ -8,6 +8,8 @@ const Event = require('./event');
 const {isElectron} = O;
 const isBrowser = !isElectron;
 
+const SHOW_FPS = 0;
+
 const CAM_FOLLOW_PLAYER = isElectron;
 const EVENT_QUEUE_MAX_LEN = isBrowser ? 2 : Infinity;
 const TICK_DURATION = isBrowser ? 100 : 500;
@@ -263,7 +265,7 @@ class RenderEngine{
 
     grid.draw(g, t, k);
 
-    drawFPS: {
+    if(SHOW_FPS){
       const fontSize = 64;
       const offset = 10;
 

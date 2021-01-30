@@ -7,7 +7,9 @@ const cwd = __dirname;
 const realms = O.obj();
 
 for(const realmName of realmsList){
-  const realm = require(path.join(cwd, realmName));
+//////////
+const realm = require(path.join(cwd, realmName));
+//////////
   realms[realmName] = realm;
 }
 
