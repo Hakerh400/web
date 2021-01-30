@@ -2898,7 +2898,7 @@ const O = {
     AsyncAVLTree,
     IO,
     IOBit,
-    Serializer,
+    // Serializer,
     Serializable,
     NatSerializer,
     NatSerializable,
@@ -3576,7 +3576,7 @@ const O = {
       return mpf.path.join(path.join('/'), pth);
     };
 
-    require.main = Module.main;
+    require.main = O.Module.main;
 
     switch(type){
       case 0: // Text

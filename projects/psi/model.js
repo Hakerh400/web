@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const Serializer = require('./ser');
 
 const LOADING_SPEED = 1e5;
 
@@ -36,11 +37,13 @@ class Model{
         buf1 = O.rfs(file);
       }else{
         const file = path.join('./models', `${name}.hex`);
-        const buf2 = require(file);
+//////////
+const buf2 = require(file);
+//////////
         buf1 = buf2;
       }
       const buf = buf1;
-      const ser = new O.Serializer(buf);
+      const ser = new Serializer(buf);
       const len = ser.readUint();
       const len1 = len - 1;
 

@@ -21,8 +21,10 @@ if(O.isElectron){
   vsSrc1 = O.rfs(path.join(cwd, './shaders/vs.glsl'), 1);
   fsSrc1 = O.rfs(path.join(cwd, './shaders/fs.glsl'), 1);
 }else{
-  const vsSrc2 = require('./shaders/vs.glsl');
-  const fsSrc2 = require('./shaders/fs.glsl');
+//////////
+const vsSrc2 = require('./shaders/vs.glsl');
+const fsSrc2 = require('./shaders/fs.glsl');
+//////////
   vsSrc1 = vsSrc2;
   fsSrc1 = fsSrc2;
 }
