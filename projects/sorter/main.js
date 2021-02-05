@@ -21,7 +21,7 @@ const main = async () => {
 
   render();
 
-  const imgs = await O.caa(27, i => {
+  const imgs = await O.caa(10, i => {
     return new Promise((res, rej) => {
       const label = String(i + 1).padStart(3, '0');
       const img = new window.Image();
