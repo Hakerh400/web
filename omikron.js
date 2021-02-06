@@ -3670,7 +3670,11 @@ const O = {
     });
   },
 
-  rmi(...args){
+  rmiSem: new Semaphore(),
+
+  async rmi(...args){
+    await O.rmiSem.wait();
+
     return new Promise((resolve, reject) => {
       try{
         let host = RMI_HOST;
@@ -3720,7 +3724,7 @@ const O = {
       }catch(err){
         reject(err);
       }
-    });
+    }).finally(() => O.rmiSem.signal());
   },
 
   /*
