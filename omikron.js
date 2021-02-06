@@ -4740,6 +4740,10 @@ const O = {
     return Date.now();
   },
 
+  get date(){
+    return new Date().toGMTString();
+  },
+
   raf(func){
     if(O.isElectron) O.animFrameCbs.push(func);
     else window.requestAnimationFrame(func);
