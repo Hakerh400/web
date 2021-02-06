@@ -4495,6 +4495,7 @@ const O = {
   undupe(arr){ return arr.filter((a, b, c) => c.indexOf(a) === b); },
   obj(proto=null){ return Object.create(proto); },
   keys(obj){ return Reflect.ownKeys(obj); },
+  vals(obj){ return O.keys(obj).map(a => obj[a]); },
   cc(char, index=0){ return char.charCodeAt(index); },
   sfcc(cc){ return String.fromCharCode(cc); },
 
