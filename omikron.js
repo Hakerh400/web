@@ -4270,6 +4270,23 @@ const O = {
     });
   },
 
+  intPair(a, b){
+    const c = a + b;
+    return (c * (c + 1) >> 1) + b;
+  },
+
+  intUnpair(a){
+    const w = floor((sqrt(a * 8 + 1) - 1) / 2);
+    const t = w * (w + 1) >> 1;
+    const y = a - t;
+    const x = w - y;
+
+    return [x, y];
+  },
+
+  intFst(a){ return O.intUnpair(a)[0]; },
+  intSnd(a){ return O.intUnpair(a)[1]; },
+
   const(val){
     return () => val;
   },
