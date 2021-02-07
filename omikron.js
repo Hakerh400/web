@@ -4262,6 +4262,14 @@ const O = {
 
   // Other functions
 
+  get symbols(){
+    return new Proxy(O.obj(), {
+      get(t, key){
+        return Symbol(key);
+      },
+    });
+  },
+
   const(val){
     return () => val;
   },
