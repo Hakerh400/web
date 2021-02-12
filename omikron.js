@@ -4776,8 +4776,20 @@ const O = {
     return func;
   },
 
+  rafa(func){
+    return new Promise((res, rej) => O.raf(() => {
+      (async () => await func())().then(res, rej);
+    }));
+  },
+
   raf2(func){
     O.raf(() => O.raf(func));
+  },
+
+  raf2a(func){
+    return new Promise((res, rej) => O.raf2(() => {
+      (async () => await func())().then(res, rej);
+    }));
   },
 
   animFrame(){
@@ -4827,6 +4839,7 @@ const O = {
       },
       assert: O.assert,
       'child_process': {},
+      'perf_hooks': {},
     };
 
     return modules;

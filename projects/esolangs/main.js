@@ -24,6 +24,8 @@ const Encoding = require('./encoding');
 const UID = 'esolangs';
 const VERSION = '1.0.0';
 
+const sem = new O.Semaphore(1);
+
 const langs = esolangs.getLangs().
   map(a => esolangs.getInfo(a)).
   filter(a => !a.wip && !(a.browserSupport === false));
@@ -91,13 +93,13 @@ parseUrl: {
 }
 
 const sectsInfo = [
-  ['Header', headerText, null],
-  ['Code',   1, Encoding.Ascii],
-  ['Footer', footerText, null],
-  ['Input',  1, null],
-  ['Output', 1, null],
-  ['Debug', 1, null],
-  ['Export', 0, null],
+  ['Header', 1, headerText, null],
+  ['Code', 1, 1, Encoding.Ascii],
+  ['Footer', 1, footerText, null],
+  ['Input', 1, 1, null],
+  ['Output', 0, 1, null],
+  ['Debug', 0, 1, null],
+  ['Export', 0, 0, null],
 ];
 
 const btnRunLabels = [
@@ -122,8 +124,12 @@ const main = async () => {
 };
 
 class Interface{
+  lang = null;
+  info = null;
+
   #sects = O.obj();
   #running = 0;
+  #inputStates = new Map();
 
   constructor(elem){
     this.div = O.ceDiv(elem, 'interface');
@@ -137,45 +143,33 @@ class Interface{
     for(const {name} of langs){
       const item = O.ce(this.langList, 'option');
       item.innerText = name;
-      if(name === firstLang) item.selected = 1;
+
+      if(name === firstLang)
+        item.selected = 1;
     }
 
-    let langCur = null;
-    const sem = new O.Semaphore(1);
-
-    const onLangChange = async () => {
-      return;
-      await sem.wait();
-
-      try{
+    const onLangChange = () => {
+      this.lock(async () => {
         const langNew = this.langList.value;
+        if(langNew === this.lang) return;
 
-        if(langNew === langCur) return;
-        langCur = langNew;
+        this.setLang(langNew);
 
-        const hwProg = await esolangs.getHwProg(langNew);
-
-        this.clear('Input');
-        this.clear('Debug');
-
-        if(hwProg === null){
-          this.clear('Code');
-          this.clear('Output');
-        }else{
-          this.set('Code', hwProg.toString());
-          this.set('Output', hwStr);
-        }
-      }finally{
-        sem.signal();
-      }
+        // this.clear('Input');
+        // this.clear('Debug');
+      });
     };
 
     O.ael(this.langList, 'input', onLangChange);
-    onLangChange();
 
     this.btnRunWrap = O.ceDiv(this.optsElem, 'opt-wrap');
     this.btnRun = O.ceButton(this.btnRunWrap, btnRunLabels[0], 'opt btn', evt => {
       this.run();
+    });
+
+    this.btnHwProgWrap = O.ceDiv(this.optsElem, 'opt-wrap');
+    this.btnHwProg = O.ceButton(this.btnHwProgWrap, 'Hello World', 'opt btn', evt => {
+      this.hwProg();
     });
 
     this.btnExportWrap = O.ceDiv(this.optsElem, 'opt-wrap');
@@ -208,8 +202,56 @@ class Interface{
 
     const sects = this.#sects;
 
-    for(const [name, expanded, encoding] of sectsInfo)
-      sects[name] = new Section(this.sectsElem, name, '', expanded, encoding);
+    for(const info of sectsInfo){
+      const [name, editable, expanded, encoding] = info;
+      sects[name] = new Section(this.sectsElem, name, '', editable, expanded, encoding);
+    }
+
+    onLangChange();
+  }
+
+  lock(func){
+    const enter = async () => {
+      await sem.wait();
+
+      this.saveInputStates();
+      this.disableInputs();
+    };
+
+    const exit = async () => {
+      this.restoreInputStates();
+      sem.signal();
+    };
+
+    handle(enter().then(func).finally(exit));
+  }
+
+  get allInputs(){ return O.qsa('textarea'); }
+
+  saveInputStates(){
+    const states = this.#inputStates;
+    states.clear();
+
+    for(const elem of this.allInputs)
+      states.set(elem, !elem.readOnly);
+  }
+
+  restoreInputStates(){
+    for(const [elem, enabled] of this.#inputStates)
+      elem.readOnly = !enabled;
+  }
+
+  setInputsState(enabled){
+    for(const elem of this.allInputs)
+      elem.readOnly = !enabled;
+  }
+
+  enableInputs(){
+    this.setInputsState(1);
+  }
+
+  disableInputs(){
+    this.setInputsState(0);
   }
 
   run(){
@@ -217,10 +259,10 @@ class Interface{
 
     this.#running = 1;
     this.btnRun.innerText = btnRunLabels[1];
-    this.btnRun.disabled = 1;
+    this.btnRun.readOnly = 1;
 
     O.raf2(() => {
-      (async () => {
+      handle((async () => {
         const lang = this.getLang();
         
         const header = this.get('Header');
@@ -260,17 +302,33 @@ class Interface{
           }
         }
 
-        this.btnRun.disabled = 0;
+        this.btnRun.readOnly = 0;
         this.btnRun.innerText = btnRunLabels[0];
         this.#running = 0;
-      })().catch(log);
+      })());
+    });
+  }
+
+  hasHwProg(){
+    return hasHwProg(this.info);
+  }
+
+  hwProg(){
+    this.lock(async () => {
+      assert(this.hasHwProg());
+
+      const {lang} = this;
+      const hwProg = await esolangs.getHwProg(lang);
+      assert(hwProg !== null);
+
+      this.set('Code', hwProg);
+      O.raf(() => this.run());
     });
   }
 
   export(){
-    const lang = this.getLang();
+    const {lang, info} = this;
     const escapedLang = escape(lang);
-    const info = esolangs.getInfo(lang);
 
     const code = this.get('Code');
 
@@ -316,19 +374,24 @@ class Interface{
     return this.langList.value;
   }
 
-  setLang(name){
+  setLang(lang){
     let found = 0;
 
     for(const item of O.qsa(this.langList, 'option')){
       item.selected = 0;
 
-      if(!found && item.value === name){
+      if(!found && item.value === lang){
         item.selected = 1;
         found = 1;
       }
     }
 
     assert(found);
+
+    this.lang = lang;
+    this.info = esolangs.getInfo(lang);
+
+    this.btnHwProg.disabled = !this.hasHwProg();
   }
 
   showInternalErr(sectName, msg=null){
@@ -388,7 +451,7 @@ class Section{
   #expanded = 0;
   #bytesNum = 0;
 
-  constructor(elem, name, data='', expanded=data, encoding=null){
+  constructor(elem, name, data='', editable=1, expanded=data, encoding=null){
     this.name = name;
 
     this.div = O.ceDiv(elem, 'section');
@@ -402,6 +465,9 @@ class Section{
     this.ta = O.ceTa(this.div, 'section-data');
     this.encoding = encoding;
     this.byteCounter = null;
+
+    if(!editable)
+      this.ta.readOnly = 1;
 
     if(encoding)
       this.byteCounter = O.ceDiv(this.header, 'byte-counter');
@@ -486,6 +552,15 @@ const escape = str => {
     if(/[a-zA-Z0-9]/.test(c)) return c;
     return `&#x${O.hex(O.cc(c), 1)};`;
   }).join('');
+};
+
+const hasHwProg = info => {
+  const key = 'hwProg';
+  return !O.has(info, key) || info[key];
+};
+
+const handle = promise => {
+  promise.catch(log);
 };
 
 main();

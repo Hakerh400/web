@@ -84,7 +84,7 @@ body{
   display: none;
   font-weight: 400;
   font-size: 16px;
-  white-space: nowrap;
+  white-space: pre-wrap;
 }
 
 .section-data::-webkit-scrollbar{
