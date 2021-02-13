@@ -33,6 +33,12 @@ const langs = esolangs.getLangs().
 
 const hwStr = esolangs.getStr('hello-world');
 
+const ioAdapters = [
+  ['Default', ''],
+  ['Padding', 'text'],
+  ['Bijection', 'byte-array'],
+];
+
 let firstLang = 'Text';
 let headerText = '';
 let codeText = '';
@@ -165,17 +171,20 @@ class Interface{
 
     O.ceBr(this.optsElem, 2);
 
-    this.inputAdapterChoice = O.ceDiv(this.optsElem, 'opt-wrap');
-    this.inputAdapterChoiceLabel = O.ceDiv(this.inputAdapterChoice, 'opt-lab');
-    this.inputAdapterChoiceLabel.innerText = 'Input adapter:'
-    this.inputAdapterList = O.ce(this.inputAdapterChoice, 'select', 'opt');
+    for(const type of ['input', 'output']){
+      this[`${type}AdapterChoice`] = O.ceDiv(this.optsElem, 'opt-wrap');
+      this[`${type}AdapterChoiceLabel`] = O.ceDiv(this[`${type}AdapterChoice`], 'opt-lab');
+      this[`${type}AdapterChoiceLabel`].innerText = `${O.cap(type)} adapter:`;
+      const list = this[`${type}AdapterList`] = O.ce(this[`${type}AdapterChoice`], 'select', 'opt');
 
-    for(const fmt of ['Default']){
-      const item = O.ce(this.inputAdapterList, 'option');
-      item.innerText = fmt;
+      for(const [adapter, fmt] of ioAdapters){
+        const item = O.ce(list, 'option');
+        item.innerText = adapter;
+        item.value = fmt;
 
-      if(fmt === 'Default')
-        item.selected = 1;
+        if(adapter === 'Default')
+          item.selected = 1;
+      }
     }
 
     O.ceBr(this.optsElem, 2);
@@ -294,9 +303,12 @@ class Interface{
 
         const input = this.get('Input');
 
+        const inputFormat = this.inputAdapterList.value || info.inputFormat || 'byte-array';
+        const outputFormat = this.outputAdapterList.value || info.outputFormat || 'byte-array';
+
         const opts = {
-          inputFormat: 'text',
-          outputFormat: 'text',
+          inputFormat,
+          outputFormat,
         };
 
         try{
