@@ -14,8 +14,8 @@ body{
 }
 
 .opt-wrap{
-  margin: 12px 0px;
-  display: block;
+  margin-right: 24px;
+  display: inline-block;
 }
 
 .opt-lab{
@@ -84,7 +84,7 @@ body{
   display: none;
   font-weight: 400;
   font-size: 16px;
-  white-space: pre-wrap;
+  white-space: pre;
 }
 
 .section-data::-webkit-scrollbar{
@@ -103,4 +103,8 @@ textarea{
   box-sizing: border-box;
   vertical-align: middle;
   outline: none;
+}
+
+select.opt{
+  max-width: 225px;
 }

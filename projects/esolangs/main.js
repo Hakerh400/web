@@ -1,6 +1,7 @@
 'use strict';
 
 const LOCAL = O.url.startsWith('http://localhost/');
+const RUN_HW_PROG = 0;
 
 const loadingDiv = O.ceDiv(O.body);
 
@@ -11,7 +12,7 @@ if(!LOCAL){
   h1.style.left = '0px';
   h1.style.margin = '18px';
   h1.innerText = 'Loading...';
-  await new Promise(res => O.raf2(res));
+  await O.raf2a(O.nop);
 }
 
 await O.addStyle('style.css');
@@ -45,12 +46,12 @@ parseUrl: {
   const data = O.urlParam('data', null);
   if(data === null) break parseUrl;
 
-  if(!/^[a-zA-Z0-9\-\_]*\=*$/.test(data)){
+  if(!/^[a-zA-Z0-9\+\/]*\=*$/.test(data)){
     errMsg = `Invalid URL`;
     break parseUrl;
   }
 
-  const buf = O.base64.decode(data, 1);
+  const buf = O.base64.decode(data);
   let ser;
 
   try{
@@ -134,8 +135,8 @@ class Interface{
   constructor(elem){
     this.div = O.ceDiv(elem, 'interface');
     this.optsElem = O.ceDiv(this.div, 'options');
-    this.langChoice = O.ceDiv(this.optsElem, 'opt-wrap');
 
+    this.langChoice = O.ceDiv(this.optsElem, 'opt-wrap');
     this.langChoiceLabel = O.ceDiv(this.langChoice, 'opt-lab');
     this.langChoiceLabel.innerText = 'Language:'
     this.langList = O.ce(this.langChoice, 'select', 'opt');
@@ -162,6 +163,23 @@ class Interface{
 
     O.ael(this.langList, 'input', onLangChange);
 
+    O.ceBr(this.optsElem, 2);
+
+    this.inputAdapterChoice = O.ceDiv(this.optsElem, 'opt-wrap');
+    this.inputAdapterChoiceLabel = O.ceDiv(this.inputAdapterChoice, 'opt-lab');
+    this.inputAdapterChoiceLabel.innerText = 'Input adapter:'
+    this.inputAdapterList = O.ce(this.inputAdapterChoice, 'select', 'opt');
+
+    for(const fmt of ['Default']){
+      const item = O.ce(this.inputAdapterList, 'option');
+      item.innerText = fmt;
+
+      if(fmt === 'Default')
+        item.selected = 1;
+    }
+
+    O.ceBr(this.optsElem, 2);
+
     this.btnRunWrap = O.ceDiv(this.optsElem, 'opt-wrap');
     this.btnRun = O.ceButton(this.btnRunWrap, btnRunLabels[0], 'opt btn', evt => {
       this.run();
@@ -169,12 +187,16 @@ class Interface{
 
     this.btnHwProgWrap = O.ceDiv(this.optsElem, 'opt-wrap');
     this.btnHwProg = O.ceButton(this.btnHwProgWrap, 'Hello World', 'opt btn', evt => {
-      this.hwProg();
+      this.lock(async () => {
+        this.hwProg();
+      });
     });
 
     this.btnExportWrap = O.ceDiv(this.optsElem, 'opt-wrap');
     this.btnExport = O.ceButton(this.btnExportWrap, 'Export', 'opt btn', evt => {
-      this.export();
+      this.lock(async () => {
+        this.export();
+      });
     });
 
     O.ael('keydown', evt => {
@@ -259,11 +281,11 @@ class Interface{
 
     this.#running = 1;
     this.btnRun.innerText = btnRunLabels[1];
-    this.btnRun.readOnly = 1;
+    this.btnRun.disabled = 1;
 
     O.raf2(() => {
-      handle((async () => {
-        const lang = this.getLang();
+      this.lock(async () => {
+        const {lang, info} = this;
         
         const header = this.get('Header');
         const code = this.get('Code');
@@ -272,11 +294,16 @@ class Interface{
 
         const input = this.get('Input');
 
+        const opts = {
+          inputFormat: 'text',
+          outputFormat: 'text',
+        };
+
         try{
-          const output = await esolangs.run(lang, fullCode, input, /*{inputFormat: 'padded-bit-array', outputFormat: 'padded-bit-array'}*/);
+          const output = await esolangs.run(lang, fullCode, input, opts);
           this.set('Output', output.toString());
           this.clear('Debug');
-          this.hideInternalErr();
+          this.hideAllInternalErrs();
         }catch(err){
           let internal = 0;
 
@@ -297,15 +324,17 @@ class Interface{
               Internal error!
               This is a bug in the interpreter.
             `));
-          }else{
-            this.hideInternalErr();
-          }
-        }
 
-        this.btnRun.readOnly = 0;
-        this.btnRun.innerText = btnRunLabels[0];
-        this.#running = 0;
-      })());
+            throw err;
+          }
+          
+          this.hideAllInternalErrs();
+        }finally{
+          this.btnRun.disabled = 0;
+          this.btnRun.innerText = btnRunLabels[0];
+          this.#running = 0;
+        }
+      });
     });
   }
 
@@ -322,7 +351,9 @@ class Interface{
       assert(hwProg !== null);
 
       this.set('Code', hwProg);
-      O.raf(() => this.run());
+
+      if(RUN_HW_PROG)
+        O.raf(() => this.run());
     });
   }
 
@@ -352,7 +383,7 @@ class Interface{
       ser.writeStr(this.get('Debug'));
 
       const buf = ser.getOutput(1);
-      return buf.toString('base64', 1);
+      return buf.toString('base64');
     };
 
     const url = `${O.baseURL}/?project=${O.project}&data=${getData()}`;
@@ -368,10 +399,6 @@ class Interface{
 
     this.expand('Export');
     this.set('Export', str);
-  }
-
-  getLang(){
-    return this.langList.value;
   }
 
   setLang(lang){
@@ -403,8 +430,13 @@ class Interface{
     this.#sects[sectName].msg = msg;
   }
 
-  hideInternalErr(){
-    this.#sects['Debug'].msg = '';
+  hideInternalErr(sectName='Debug'){
+    this.#sects[sectName].msg = '';
+  }
+
+  hideAllInternalErrs(){
+    for(const sectName of O.keys(this.#sects))
+      this.hideInternalErr(sectName);
   }
 
   get running(){ return this.#running; }
@@ -560,6 +592,7 @@ const hasHwProg = info => {
 };
 
 const handle = promise => {
+  if(LOCAL) return;
   promise.catch(log);
 };
 
