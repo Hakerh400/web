@@ -1,8 +1,6 @@
 (function(){
   'use strict';
 
-  var CHROME_ONLY = 0;
-
   window.addEventListener('load', function(){
     var O = {
       doc: document,
@@ -18,18 +16,13 @@
           document.write('<!DOCTYPE html>\n' + html.split('&lt;').join('<').split('&gt;').join('>'));
         }
 
-        if(CHROME_ONLY){
-          if(window.navigator.vendor != 'Google Inc.')
-            return err();
-        }else{
-          var ok = 0;
+        var ok = 0;
 
-          try{
-            ok = new Function('class A{#a;constructor(a){this.#a=a};get m(){return this.#a}};return new A(5n).m===5n');
-          }catch(e){}
+        try{
+          ok = new Function('class A{#a;constructor(a){this.#a=a};get m(){return this.#a}};return new A(5n).m===5n');
+        }catch(e){}
 
-          if(!ok) return err();
-        }
+        if(!ok) return err();
 
         O.rf('omikron.js', function(status, script){
           if(status != 200) return O.fatalError('Cannot load framework script. Try disabling extensions.');
