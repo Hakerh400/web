@@ -303,12 +303,12 @@ class Interface{
 
         const input = this.get('Input');
 
-        const inputFormat = this.inputAdapterList.value || info.inputFormat || 'byte-array';
-        const outputFormat = this.outputAdapterList.value || info.outputFormat || 'byte-array';
+        const inputAdapter = this.inputAdapterList.value || null;
+        const outputAdapter = this.outputAdapterList.value || null;
 
         const opts = {
-          inputFormat,
-          outputFormat,
+          inputAdapter,
+          outputAdapter,
         };
 
         try{
@@ -593,7 +593,7 @@ class Section{
 
 const escape = str => {
   return str.split('').map(c => {
-    if(/[a-zA-Z0-9]/.test(c)) return c;
+    if(/[a-zA-Z0-9 ]/.test(c)) return c;
     return `&#x${O.hex(O.cc(c), 1)};`;
   }).join('');
 };

@@ -1,7 +1,7 @@
 (function(){
   'use strict';
 
-  var CHROME_ONLY = 1;
+  var CHROME_ONLY = 0;
 
   window.addEventListener('load', function(){
     var O = {
@@ -14,9 +14,21 @@
 
         noscript.parentNode.removeChild(noscript);
 
-        if(CHROME_ONLY && window.navigator.vendor != 'Google Inc.'){
+        function err(){
           document.write('<!DOCTYPE html>\n' + html.split('&lt;').join('<').split('&gt;').join('>'));
-          return;
+        }
+
+        if(CHROME_ONLY){
+          if(window.navigator.vendor != 'Google Inc.')
+            return err();
+        }else{
+          var ok = 0;
+
+          try{
+            ok = new Function('class A{#a;constructor(a){this.#a=a};get m(){return this.#a}};return new A(5n).m===5n');
+          }catch(e){}
+
+          if(!ok) return err();
         }
 
         O.rf('omikron.js', function(status, script){

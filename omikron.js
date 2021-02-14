@@ -1602,8 +1602,13 @@ class EnhancedRenderingContext{
 }
 
 class Buffer extends Uint8Array{
-  constructor(...params){
+  static #ctorSym = Symbol();
+
+  constructor(ctorSym, ...params){
     O.assert(!O.isNode);
+
+    if(ctorSym !== Buffer.#ctorSym)
+      throw new TypeError(`The \`Buffer\` constructor is deprecated. Use \`Buffer.from\` instead`);
 
     if(params.length === 1 && typeof params[0] === 'string')
       params[0] = [...params[0]].map(a => O.cc(a));
@@ -1617,27 +1622,43 @@ class Buffer extends Uint8Array{
 
   static alloc(size){
     O.assert(!O.isNode);
-    return new O.Buffer(size);
+    return new O.Buffer(Buffer.#ctorSym, size);
   }
 
-  static from(data, encoding='utf8', mode=0){
+  static from(data, encoding=null, mode=0){
     O.assert(!O.isNode);
 
     if(data.length === 0)
       return O.Buffer.alloc(0);
 
+    if(data instanceof ArrayBuffer)
+      data = new Uint8Array(data);
+
+    if(O.isArr(data)){
+      O.assert(encoding === null);
+      return new O.Buffer(Buffer.#ctorSym, data);
+    }
+
+    if(encoding === null)
+      encoding = 'utf8';
+
     switch(encoding){
       case 'hex':
         data = data.match(/[0-9a-f]{2}/gi).map(a => parseInt(a, 16));
-        return new O.Buffer(data);
+        return new O.Buffer(Buffer.#ctorSym, data);
         break;
 
       case 'base64':
         return O.base64.decode(data, mode);
         break;
 
-      case 'utf8':
-        return new O.Buffer(data);
+      case 'utf8': case 'utf-8':
+        O.assert(typeof data === 'string');
+        return new O.Buffer(Buffer.#ctorSym, new TextEncoder().encode(data));
+        break;
+
+      case 'binary':
+        return new O.Buffer(Buffer.#ctorSym, data);
         break;
 
       default:
@@ -1653,7 +1674,15 @@ class Buffer extends Uint8Array{
       return [...concatenated, ...buff];
     }, []);
 
-    return new O.Buffer(arr);
+    return new O.Buffer(Buffer.#ctorSym, arr);
+  }
+
+  static errEnc(encoding){
+    throw new TypeError(`Unsupported encoding ${O.sf(encoding)}`);
+  }
+
+  slice(...args){
+    return Buffer.from(new Uint8Array(this).slice(...args));
   }
 
   equals(buf){
@@ -1701,9 +1730,9 @@ class Buffer extends Uint8Array{
         return O.base64.encode(this, mode);
         break;
 
-      case 'utf8':
-        return Array.from(this).map(a => String.fromCharCode(a)).join('');
-        break;
+      case 'utf8': case 'utf-8': 
+        return new TextDecoder().decode(this);
+      break;
 
       case 'binary':
         return Array.from(this).map(a => String.fromCharCode(a)).join('');
@@ -1713,10 +1742,6 @@ class Buffer extends Uint8Array{
         this.errEnc(encoding);
         break;
     }
-  }
-
-  errEnc(encoding){
-    throw new TypeError(`Unsupported encoding ${O.sf(encoding)}`);
   }
 }
 
@@ -4918,7 +4943,7 @@ const O = {
 
     function slowSha256(buff){
       if(!(buff instanceof O.Buffer))
-        buff = new O.Buffer(buff);
+        buff = O.Buffer.from(buff);
 
       if(hhBase === null){
         hhBase = getArrH();
