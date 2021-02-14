@@ -24,7 +24,7 @@
 
         if(!ok) return err();
 
-        O.rf('omikron.js', function(status, script){
+        O.rf('/omikron/src/omikron/omikron.js?_=1', function(status, script){
           if(status != 200) return O.fatalError('Cannot load framework script. Try disabling extensions.');
           new Function(script)();
         });
