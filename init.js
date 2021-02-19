@@ -19,7 +19,7 @@
         var ok = 0;
 
         try{
-          ok = new Function('class A{#a;constructor(a){this.#a=a};get m(){return this.#a}};return new A(5n).m===5n');
+          ok = new Function('class A{#a;constructor(a){this.#a=a};get m(){return this.#a}};return new A(5n).m===5n')();
         }catch(e){}
 
         if(!ok) return err();
