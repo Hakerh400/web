@@ -51,12 +51,32 @@ let persistInfo = null;
 let growthStage = 0;
 
 const main = () => {
+  newGame();
+  aels();
+  render();
+};
+
+const newGame = () => {
+  anims.length = 0;
+
+  selected = null;
+  persistInfo = null;
+  growthStage = 0;
+
+  grid.iter((x, y, d) => {
+    d.item = null;
+  });
+
   putSmallItems();
   grow();
   putSmallItems();
 
-  aels();
-  render();
+  // grid.iter((x, y, d) => {
+  //   if(x||y){
+  //     d.item = 1;
+  //     d.big = 1;
+  //   }
+  // });
 };
 
 const aels = () => {
@@ -71,6 +91,15 @@ const aels = () => {
     cy = floor(evt.clientY / tileSize + (h - ih / tileSize) / 2);
     has = grid.has(cx, cy);
   };
+
+  O.ael('keydown', evt => {
+    const {code} = evt;
+
+    if(code === 'KeyR'){
+      newGame();
+      return;
+    }
+  });
 
   O.ael('mousedown', evt => {
     if(hasAnims()) return;
@@ -183,6 +212,8 @@ const render = () => {
     g.fill();
     g.stroke();
   }
+
+  let exploded = 0;
 
   animsLoop: for(let i = 0; i !== anims.length; i++){
     const anim = anims[i];
@@ -311,6 +342,7 @@ const render = () => {
 
       if(spOffset === 1){
         tile.item = null;
+        exploded = 1;
         remove();
       }
 
@@ -332,9 +364,10 @@ const render = () => {
 
     checkGrowthStage: if(growthStage !== 0){
       if(growthStage === 1){
-        checkMatches();
         growthStage = 2;
-        break checkGrowthStage;
+        
+        if(checkMatches())
+          break checkGrowthStage;
       }
 
       if(growthStage === 2){
@@ -344,6 +377,25 @@ const render = () => {
       }
 
       assert.fail();
+    }
+
+    addExtraItems: if(exploded){
+      const hasBigItems = grid.some((x, y, d) => {
+        return d.item !== null && d.big;
+      });
+
+      if(hasBigItems)
+        break addExtraItems;
+
+      const hasSmallItems = grid.some((x, y, d) => {
+        return d.item !== null;
+      });
+
+      if(!hasSmallItems)
+        putSmallItems();
+
+      grow();
+      putSmallItems();
     }
   }
 
