@@ -49,3 +49,4 @@ thin-pattern-image
 arcs
 esoteric-fractal
 rmi
+magic-lines

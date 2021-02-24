@@ -21,7 +21,7 @@ const gemsNum = 6;
 const bgsNum = 3;
 
 const cols = formatCols({
-  bg:   [169, 169, 169],
+  bg: [169, 169, 169],
 
   tileBgs: [
     [64, 64, 64],
@@ -498,6 +498,6 @@ function formatCols(cols){
   }
 
   return colsObj;
-};
+}
 
 main();
