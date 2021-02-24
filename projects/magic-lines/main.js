@@ -52,6 +52,7 @@ let growthStage = 0;
 
 const main = () => {
   newGame();
+  resize();
   aels();
   render();
 };
@@ -154,8 +155,12 @@ const aels = () => {
   });
 
   O.ael('resize', evt => {
-    g.resize(O.iw, O.ih);
+    resize();
   });
+};
+
+const resize = () => {
+  g.resize(O.iw, O.ih);
 };
 
 const render = () => {
@@ -169,7 +174,7 @@ const render = () => {
   g.fillStyle = cols.bg;
   g.fillRect(0, 0, iw, ih);
 
-  g.translate(iwh, ihh);
+  g.translate(iwh - 1, ihh - 1);
   g.scale(tileSize);
   g.translate(-w / 2, -h / 2);
 

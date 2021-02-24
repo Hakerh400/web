@@ -18,8 +18,8 @@ a:active{
   outline: none;
 }
 
-/*::-webkit-scrollbar{
+body::-webkit-scrollbar{
   display: none;
   visibility: hidden;
   opacity: 0;
-}*/
+}
