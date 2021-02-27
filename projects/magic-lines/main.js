@@ -14,13 +14,13 @@ const SMALL_ITEMS_PER_MOVE = 3;
 const RADIUS_BIG = .35;
 const RADIUS_SMALL = .1;
 
-const ITEM_MOVE_SPEED = .1;
+const ITEM_MOVE_SPEED = .3;
 const ITEM_GROW_SPEED = .1;
 const ITEM_EXPLODE_SPEED = .08;
 
 const tileSize = 60;
-const w = 9;
-const h = 9;
+const w = O.urlParam('w', 9) | 0;
+const h = O.urlParam('h', 9) | 0;
 
 const {g} = O.ceCanvas(1);
 
@@ -30,12 +30,12 @@ const cols = O.rec(formatCols, {
   selected: [128, 128, 128],
 
   items: [
-    [30, 131, 242],
     [90, 244, 38],
-    [228, 247, 4],
     [255, 48, 33],
     [230, 104, 240],
     [53, 249, 239],
+    [228, 247, 4],
+    [30, 131, 242],
   ],
 });
 
@@ -46,9 +46,9 @@ let time = O.now;
 const grid = createGrid();
 const anims = [];
 
-let selected = null;
-let persistInfo = null;
-let growthStage = 0;
+let selected;
+let persistInfo;
+let growthStage;
 
 const main = () => {
   newGame();
@@ -94,60 +94,73 @@ const aels = () => {
   };
 
   O.ael('keydown', evt => {
-    const {code} = evt;
+    (async () => {
+      const {code} = evt;
 
-    if(code === 'KeyR'){
-      newGame();
-      return;
-    }
+      if(code === 'KeyR'){
+        newGame();
+        return;
+      }
+
+      // await O.await(() => !hasAnims(), 16);
+      if(hasAnims()) return;
+
+      if(code === 'Enter'){
+        afterMove();
+        return;
+      }
+    })().catch(log);
   });
 
   O.ael('mousedown', evt => {
-    if(hasAnims()) return;
-    updateCoords(evt);
+    (async () => {
+      await O.await(() => !hasAnims(), 16);
 
-    const {button} = evt;
+      updateCoords(evt);
 
-    if(button === 0){
-      if(!has){
+      const {button} = evt;
+
+      if(button === 0){
+        if(!has){
+          selected = null;
+          return;
+        }
+
+        const target = grid.get(cx, cy);
+
+        if(target === selected){
+          selected = null;
+          return;
+        }
+
+        if(!target.isEmpty && target.big){
+          selected = target;
+          return;
+        }
+
+        if(selected === null) return;
+
+        const pth = grid.path(selected.x, selected.y, (x, y, d) => {
+          if(d === target) return 2;
+          if(d === null) return 0;
+          if(d.isEmpty) return 1;
+          if(d.big) return 0;
+          return 1;
+        });
+
+        if(pth === null) return;
+
+        addAnim(new Move(time, selected, target, pth));
+        selected = null;
+
+        return;
+      }
+
+      if(button === 2){
         selected = null;
         return;
       }
-
-      const target = grid.get(cx, cy);
-
-      if(target === selected){
-        selected = null;
-        return;
-      }
-
-      if(!target.isEmpty && target.big){
-        selected = target;
-        return;
-      }
-
-      if(selected === null) return;
-
-      const pth = grid.path(selected.x, selected.y, (x, y, d) => {
-        if(d === target) return 2;
-        if(d === null) return 0;
-        if(d.isEmpty) return 1;
-        if(d.big) return 0;
-        return 1;
-      });
-
-      if(pth === null) return;
-
-      addAnim(new Move(time, selected, target, pth));
-      selected = null;
-
-      return;
-    }
-
-    if(button === 2){
-      selected = null;
-      return;
-    }
+    })().catch(log);
   });
 
   O.ael('contextmenu', evt => {
@@ -218,13 +231,15 @@ const render = () => {
     g.stroke();
   }
 
+  let len = anims.length;
   let exploded = 0;
 
-  animsLoop: for(let i = 0; i !== anims.length; i++){
+  animsLoop: for(let i = 0; i !== len; i++){
     const anim = anims[i];
 
     const remove = () => {
       anims.splice(i, 1);
+      len--;
       i--;
     };
 
@@ -265,16 +280,9 @@ const render = () => {
           start.item = null;
         }
 
-        if(checkMatches()){
-          if(item2 !== null)
+        if(afterMove())
+          if(!persistSmallItem && item2 !== null && animsAffect(end, Explode))
             persistInfo = [end, item2];
-
-          renderDefault();
-          continue animsLoop;
-        }
-
-        grow();
-        growthStage = 1;
 
         renderDefault();
         continue animsLoop;
@@ -407,6 +415,16 @@ const render = () => {
   O.raf(render);
 };
 
+const afterMove = () => {
+  if(checkMatches())
+    return 1;
+
+  grow();
+  growthStage = 1;
+
+  return 0;
+};
+
 const setCol = item => {
   assert(typeof item === 'number');
   assert(item === (item | 0));
@@ -423,8 +441,12 @@ const addAnim = anim => {
   anims.push(anim);
 };
 
-const animsAffect = tile => {
-  return anims.some(a => a.affects(tile));
+const animsAffect = (tile, ctor=null) => {
+  return anims.some(anim => {
+    if(!anim.affects(tile)) return 0;
+    if(ctor !== null && !(anim instanceof ctor)) return 0;
+    return 1;
+  });
 };
 
 const checkMatches = () => {
