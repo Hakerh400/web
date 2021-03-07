@@ -1,0 +1,16 @@
+button{
+  display: block;
+  margin-bottom: 8px;
+}
+
+input{
+  margin-bottom: 8px;
+}
+
+.result{
+  display: block;
+  padding: 10px;
+  border: 1px solid;
+  min-height: 18px;
+  white-space: pre;
+}
