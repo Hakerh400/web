@@ -3,14 +3,36 @@ button{
   margin-bottom: 8px;
 }
 
-input{
+.input-wrap{
+  display: block;
   margin-bottom: 8px;
 }
 
+.label{
+  display: inline-block;
+  margin-right: 8px;
+  width: 100px;
+}
+
+input{
+  width: 600px;
+}
+
 .result{
-  display: block;
+  display: inline-block;
   padding: 10px;
   border: 1px solid;
   min-height: 18px;
   white-space: pre;
+  overflow: auto;
+  height: 500px;
+}
+
+.result-left{
+  width: 350px;
+  margin-right: 20px;
+}
+
+.result-right{
+  width: 700px;
 }
