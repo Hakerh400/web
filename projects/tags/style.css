@@ -15,7 +15,7 @@ button{
 }
 
 input{
-  width: 600px;
+  width: 1500px;
 }
 
 .result{
@@ -35,4 +35,8 @@ input{
 
 .result-right{
   width: 700px;
+}
+
+.result-right a{
+  display: block;
 }

@@ -8,7 +8,7 @@ await O.addStyle('style.css');
 const BASE_URL = path.join(O.baseURL, '..');
 const BASE_PTH = 'D:';
 
-const INIT_URL = path.join(BASE_URL, 'Videos/Other/Folder');
+const INIT_URL = path.join(BASE_URL, 'Videos/Other/Folder/');
 
 const sem = new O.Semaphore();
 
@@ -40,13 +40,17 @@ const main = async () => {
     return [...O.qsa('input')];
   };
 
-  const next = () => {
+  const nav = dir => {
     const inputs = getAllInputFields();
+    const len = inputs.length;
     const index = inputs.indexOf(document.activeElement);
-    const indexNew = (index + 1) % inputs.length;
+    const indexNew = ((index + dir) % len + len) % len;
 
     inputs[indexNew].focus();
   };
+
+  const prev = () => nav(-1);
+  const next = () => nav(1);
 
   const ceInput = (label, onInput=null, onTab=null, onEnter=null) => {
     const inputWrap = O.ceDiv(body, 'input-wrap');
@@ -111,6 +115,8 @@ const main = async () => {
   };
 
   const updateFileMatches = async () => {
+    setLinks();
+
     const pth = inputFilePth.value;
     const items = await O.rmi('tags.fs.readdir', url2pth(pth));
 
@@ -131,14 +137,12 @@ const main = async () => {
     const sep = pth.endsWith('/') ? '.' : '..';
 
     await setFilePth(path.join(pth, sep, m));
+  }, async evt => {
+    O.pd(evt);
   });
 
-  inputFilePth.value = `${INIT_URL}/`;
+  inputFilePth.value = INIT_URL;
   inputFilePth.focus();
-
-  ael(inputFilePth, 'blur', async evt => {
-    setLinks();
-  });
 
   const getInputTags = (includeEmpty=1) => {
     let tags = inputTags.value.trim().split(/\s*,\s*/);
@@ -158,16 +162,19 @@ const main = async () => {
     const substr = O.last(tags);
 
     if(substr === ''){
-      let links = await O.rmi('tags.file.search', tags.slice(0, tags.length - 1));
-
-      links = links.map(link => pth2url(link));
+      if(tags.length !== 1){
+        let links = await O.rmi('tags.file.search', tags.slice(0, tags.length - 1));
+        setLinks(links);
+      }else{
+        setLinks();
+      }
 
       setMatches([]);
-      setLinks(links);
     }else{
       const matches = await O.rmi('tags.tag.search', substr);
+      const tags1 = tags.slice(0, tags.length - 1);
 
-      setMatches(matches);
+      setMatches(matches.filter(tag => !tags1.includes(tag)));
       setLinks();
     }
   };
@@ -181,10 +188,15 @@ const main = async () => {
     setInputTags(tags);
     await updateTagList();
   }, async evt => {
+    const pth = inputFilePth.value;
+    const file = url2pth(pth);
     const tags = getInputTags(0);
-    const file = url2pth(inputFilePth.value);
 
     await O.rmi('tags.file.setTags', file, tags);
+
+    inputTags.value = '';
+    inputFilePth.value = `${path.join(pth, '..')}/`;
+    inputFilePth.focus();
   });
 
   const ceBtn = (label, handler) => {
@@ -214,8 +226,15 @@ const main = async () => {
   const setLinks = (links=[]) => {
     resultRight.innerText = '';
 
-    for(const link of links)
-      O.ceLink(resultRight, link, link);
+    for(const link of links){
+      const url = pth2url(link);
+      let label = url;
+
+      if(label.startsWith(INIT_URL))
+        label = label.slice(INIT_URL.length);
+
+      O.ceLink(resultRight, label, url);
+    }
   };
 };
 
