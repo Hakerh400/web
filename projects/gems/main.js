@@ -15,6 +15,8 @@ const FPS = 60;
 const TIME_STEP = 1e3 / FPS;
 const TRANSITION_DURATION = 200;
 
+const w = O.urlParam('w', 9) | 0;
+const h = O.urlParam('h', 9) | 0;
 const tileSize = O.urlParam('s', 60) | 0;
 
 const gemsNum = 6;
@@ -68,8 +70,6 @@ function main(){
 };
 
 function createGrid(){
-  const w = 9;
-  const h = 9;
   const tilesNum = w * h;
   const availAll = O.ca(gemsNum, i => i);
 
