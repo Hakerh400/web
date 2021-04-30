@@ -51,3 +51,4 @@ esoteric-fractal
 rmi
 magic-lines
 tags
+trait
