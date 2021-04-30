@@ -1,5 +1,6 @@
 'use strict';
 
+const World = require('./world');
 const Tile = require('./tile');
 const Entity = require('./entity');
 const Trait = require('./trait');
@@ -17,9 +18,10 @@ for(const key of O.keys(cols))
 
 const {g} = O.ceCanvas(1);
 
-const grid = new O.Grid(w, h, () => new Tile());
+const world = new World(w, h);
+const {grid} = world;
 
-let {iw, ih} = O;
+let iw, ih;
 
 const main = () => {
   grid.iter((x, y, d) => {
@@ -34,7 +36,7 @@ const main = () => {
 
 const onResize = evt => {
   ({iw, ih} = O);
-  
+
   g.resize(iw, ih);
   g.font(24);
 };
@@ -49,8 +51,10 @@ const render = () => {
   g.translate(-w / 2, -h / 2);
 
   grid.iter((x, y, d) => {
-    g.fillStyle = 'black';
-    g.fillText(d.entsNum, x + .5, y + .5);
+    g.save();
+    g.translate(x, y);
+    d.render(g);
+    g.restore();
   });
 
   g.beginPath();

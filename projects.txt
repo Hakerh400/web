@@ -52,3 +52,4 @@ rmi
 magic-lines
 tags
 trait
+circles

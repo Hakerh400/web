@@ -1,35 +1,50 @@
 'use strict';
 
-class Tile{
+const assert = require('assert');
+const WorldElement = require('./world-elem');
+
+class Tile extends WorldElement{
   ents = new Set();
+  traits = new Map();
+  entsNum = 0;
 
-  get entsNum(){
-    return this.ents.size;
+  addEnt(ent){
+    assert(!this.ents.has(ent));
+
+    this.ents.add(ent);
+
+    for(const trait of ent.traits)
+      this.addTrait(trait);
+
+    this.entsNum++;
+    
+    ent.tile = this;
   }
 
-  get traits(){
-    return this.getTraitsGen();
+  removeEnt(ent){
+    assert(this.ents.has(ent));
+
+    this.ents.delete(ent);
+    this.entsNum--;
+
+    ent.tile = null;
   }
 
-  *getTraitsGen(){
-    const traits = new Set();
+  addTrait(trait){
+    const num = this.traits.get(trait) | 0;
 
-    for(const ent of this.ents)
-      for(const trait of ent.traits)
-        yield trait;
+    this.traits.set(num + 1);
+    this.world.addTraitToTile(this, trait);
   }
 
-  getTraitsSet(){
-    return [...this.traits];
-  }
+  removeTrait(trait){
+    const num = this.traits.get(trait) | 0;
+    assert(num !== 0);
 
-  getTraitsObj(){
-    const obj = O.obj();
+    if(num === 1) this.traits.delete(trait);
+    else this.traits.set(num - 1);
 
-    for(const trait of this.traits)
-      obj[trait] = -~obj[trait];
-
-    return obj;
+    this.world.removeTraitFromTile(this, trait);
   }
 }
 
