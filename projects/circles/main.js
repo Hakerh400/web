@@ -71,7 +71,22 @@ const render = () => {
   g.fill();
   g.stroke();
 
-  g.fillStyle = '#ff0';
+  const dists = [
+    [iw * .25, ih * .25],
+    [iw * .75, ih * .25],
+    [iw * .25, ih * .75],
+    [iw * .75, ih * .75],
+    [iw * .5, ih * .5],
+  ].map(([x, y]) => 1 / (1 + O.dists(cx, cy, x, y) ** 2));
+
+  const distsTotal = dists.reduce((a, b) => a + b, 0);
+  const facs = dists.map(a => a / distsTotal);
+
+  const red = (facs[0] + facs[4]) * 255;
+  const green = (facs[1] + facs[2] + facs[4]) * 255;
+  const blue = (facs[2] + facs[3]) * 255;
+
+  g.fillStyle = new O.Color(red, green, blue);
   g.beginPath();
   g.arc(cx, cy, radius, 0, pi2);
   g.fill();
