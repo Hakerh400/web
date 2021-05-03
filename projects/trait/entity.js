@@ -1,19 +1,21 @@
 'use strict';
 
 const assert = require('assert');
-const WorldElement = require('./world-elem');
 
-class Entity extends WorldElement{
-  tile = null;
+class Entity{
   traits = new Set();
+
+  constructor(tile){
+    this.tile = tile;
+  }
+
+  get world(){ return this.tile.world; }
 
   addTrait(trait){
     assert(!this.traits.has(trait));
 
     this.traits.add(trait);
-
-    if(this.tile !== null)
-      this.tile.addTrait(trait);
+    this.tile.addTrait(trait);
     
     trait.setEnt(this);
   }
@@ -22,9 +24,7 @@ class Entity extends WorldElement{
     assert(this.traits.has(trait));
 
     this.traits.delete(trait);
-
-    if(this.tile !== null)
-      this.tile.removeTrait(trait);
+    this.tile.removeTrait(trait);
 
     trait.setEnt(null);
   }

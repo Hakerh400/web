@@ -51,10 +51,10 @@ const render = () => {
   g.translate(-w / 2, -h / 2);
 
   grid.iter((x, y, d) => {
-    g.save();
-    g.translate(x, y);
-    d.render(g);
-    g.restore();
+    // g.save();
+    // g.translate(x, y);
+    // d.render(g);
+    // g.restore();
   });
 
   g.beginPath();

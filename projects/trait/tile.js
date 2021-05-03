@@ -1,12 +1,15 @@
 'use strict';
 
 const assert = require('assert');
-const WorldElement = require('./world-elem');
 
-class Tile extends WorldElement{
+class Tile{
   ents = new Set();
   traits = new Map();
   entsNum = 0;
+
+  constructor(world){
+    this.world = world;
+  }
 
   addEnt(ent){
     assert(!this.ents.has(ent));
