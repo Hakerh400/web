@@ -35,7 +35,7 @@ const onResize = evt => {
   canvas.height = ih;
 
   g.globalCompositeOperation = 'lighten';
-  g.lineWidth = 2;
+  g.lineWidth = 5;
 };
 
 const render = () => {
