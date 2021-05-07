@@ -3,6 +3,8 @@
 const assert = require('assert');
 const Event = require('./event');
 
+const emptySet = new Set();
+
 class Tile{
   handlers = {
     entEnter: O.obj(),
@@ -109,6 +111,32 @@ class Tile{
     }
 
     // this.world.addTraitToTile(this, trait);
+  }
+
+  getTraits(name){
+    const {traits} = this;
+
+    if(!O.has(traits, name))
+      return emptySet;
+
+    return traits[name];
+  }
+
+  countTraits(name){
+    return this.getTraits(name).size;
+  }
+
+  hasTrait(name){
+    return this.countTraits(name) !== 0;
+  }
+
+  getEnts(traitName){
+    const ents = new Set();
+
+    for(const trait of this.getTraits(traitName))
+      ents.add(trait.ent);
+
+    return ents;
   }
 
   nav(dir){

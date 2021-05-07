@@ -152,10 +152,37 @@ class Solid extends Trait{
   }
 
   stop(evt){
-    const {ent} = evt;
+    const {world, tile, ent} = this;
+    const {navTargets} = ent;
 
-    if(!ent.src.hasTrait('solid')) return;
-    ent.remove();
+    let target = null;
+
+    for(const navTarget of navTargets){
+      const {tile} = navTarget
+
+      if(target === null){
+        target = tile;
+        continue;
+      }
+
+      if(tile === target)
+        continue;
+
+      target = null;
+      break;
+    }
+
+    if(target === null)
+      target = tile;
+
+    for(const navTargetEnt of target.getEnts('navTarget')){
+      const {src} = navTargetEnt;
+
+      if(src === ent) continue;
+      if(!src.hasTrait('solid')) continue;
+      
+      world.reqEntRemove(navTargetEnt);
+    }
   }
 };
 

@@ -5,6 +5,7 @@ const assert = require('assert');
 class Entity{
   traits = new Set();
   traitNames = O.obj();
+  navTargets = new Set();
 
   constructor(tile){
     this.tile = tile;
@@ -77,8 +78,19 @@ class NavigationTarget extends Meta{
     super(tile);
 
     this.src = src;
+    src.navTargets.add(this);
 
     Trait.create(this, 'navTarget');
+  }
+
+  remove(){
+    const {src} = this;
+    if(!src.valid) return;
+
+    assert(src.navTargets.has(this));
+    src.navTargets.delete(this);
+    
+    super.remove();
   }
 }
 

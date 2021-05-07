@@ -25,8 +25,13 @@ let iw, ih;
 
 const main = () => {
   global.world = world;
+
   world.createEnt([0, 0], Entity.Player);
-  world.createEnt([2, 2], Entity.Wall);
+  world.createEnt([1, 0], Entity.Player);
+  world.createEnt([2, 0], Entity.Wall);
+
+  // world.createEnt([0, 0], Entity.Player);
+  // world.createEnt([1, 0], Entity.Wall);
 
   O.ael('resize', onResize);
   O.ael('keydown', onKeydown);
