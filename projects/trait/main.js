@@ -25,12 +25,14 @@ let iw, ih;
 
 const main = () => {
   grid.iter((x, y, d) => {
-    
+    if(x === 0 && y === 0)
+      new Entity.Player(d);
   });
 
   O.ael('resize', onResize);
-  onResize();
+  O.ael('keydown', onKeydown);
 
+  onResize();
   render();
 };
 
@@ -41,7 +43,13 @@ const onResize = evt => {
   g.font(24);
 };
 
+const onKeydown = evt => {
+  world.emit('keydown', evt);
+};
+
 const render = () => {
+  world.tick();
+
   g.resetTransform();
   g.fillStyle = cols.bg;
   g.fillRect(0, 0, iw, ih);
@@ -51,10 +59,10 @@ const render = () => {
   g.translate(-w / 2, -h / 2);
 
   grid.iter((x, y, d) => {
-    // g.save();
-    // g.translate(x, y);
-    // d.render(g);
-    // g.restore();
+    g.save();
+    g.translate(x, y);
+    d.render(g);
+    g.restore();
   });
 
   g.beginPath();
