@@ -24,10 +24,9 @@ const {grid} = world;
 let iw, ih;
 
 const main = () => {
-  grid.iter((x, y, d) => {
-    if(x === 0 && y === 0)
-      new Entity.Player(d);
-  });
+  global.world = world;
+  world.createEnt([0, 0], Entity.Player);
+  world.createEnt([2, 2], Entity.Wall);
 
   O.ael('resize', onResize);
   O.ael('keydown', onKeydown);

@@ -25,7 +25,7 @@ class CreateEntity extends Request{
     for(let i = start; i !== end; i++){
       const req = reqs[i];
 
-      new req.entCtor(req.tile, ...req.args);
+      req.tile.createEnt(req.entCtor, ...req.args);
     }
   }
 
@@ -48,7 +48,6 @@ class RemoveEntity extends Request{
 
     for(let i = start; i !== end; i++){
       const req = reqs[i];
-
       req.ent.remove();
     }
   }

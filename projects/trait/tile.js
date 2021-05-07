@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const Event = require('./event');
 
 class Tile{
   handlers = {
@@ -8,7 +9,7 @@ class Tile{
   };
 
   ents = new Set();
-  traits = new Map();
+  traits = O.obj();
   entsNum = 0;
 
   constructor(world, coords){
@@ -16,12 +17,21 @@ class Tile{
     this.coords = coords;
   }
 
+  get valid(){ this.world !== null; }
+
   render(g){
     for(const ent of this.ents)
       ent.render(g);
   }
 
+  createEnt(ctor, ...args){
+    const ent = new ctor(this, ...args);
+    this.addEnt(ent);
+    return ent;
+  }
+
   addEnt(ent){
+    assert(ent.traits.size !== 0);
     assert(!this.ents.has(ent));
 
     const {world, handlers} = this;
@@ -39,9 +49,11 @@ class Tile{
     this.ents.add(ent);
 
     for(const trait of ent.traits){
-      if(O.has(entEnter, trait))
-        for(const handler of entEnter[trait])
-          world.addEvt(handler, getEvt());
+      const {name} = trait;
+
+      if(O.has(entEnter, name))
+        for(const handler of entEnter[name])
+          world.addEvt(new Event(handler, getEvt()));
 
       this.addTrait(trait);
     }
@@ -57,24 +69,46 @@ class Tile{
     this.ents.delete(ent);
     this.entsNum--;
 
+    for(const trait of ent.traits)
+      this.removeTrait(trait);
+
     ent.tile = null;
   }
 
   addTrait(trait){
-    const num = this.traits.get(trait) | 0;
+    assert(trait instanceof Trait);
 
-    this.traits.set(num + 1);
-    this.world.addTraitToTile(this, trait);
+    const {name} = trait;
+    const {traits} = this;
+
+    if(!O.has(traits, name))
+      traits[name] = new Set();
+
+    const set = traits[name];
+    assert(!set.has(trait));
+
+    set.add(trait);
+    // this.world.addTraitToTile(this, trait);
   }
 
   removeTrait(trait){
-    const num = this.traits.get(trait) | 0;
-    assert(num !== 0);
+    assert(trait instanceof Trait);
 
-    if(num === 1) this.traits.delete(trait);
-    else this.traits.set(num - 1);
+    const {name} = trait;
+    const {traits} = this;
 
-    this.world.removeTraitFromTile(this, trait);
+    assert(O.has(traits, name))
+
+    const set = traits[name];
+    assert(set.has(trait));
+
+    if(set.size === 1){
+      delete traits[name];
+    }else{
+      set.delete(trait);
+    }
+
+    // this.world.addTraitToTile(this, trait);
   }
 
   nav(dir){
@@ -112,3 +146,5 @@ class Tile{
 }
 
 module.exports = Tile;
+
+const Trait = require('./trait');

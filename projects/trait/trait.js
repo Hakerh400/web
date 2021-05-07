@@ -1,7 +1,8 @@
 'use strict';
 
 const assert = require('assert');
-const EventHandler = require('./evt-handler');
+const EventHandler = require('./event-handler');
+const Event = require('./event');
 const kName = require('./kname');
 
 const {pi2} = O;
@@ -20,13 +21,15 @@ class Trait{
   }
   
   get name(){ return this.constructor[kName]; }
-
   get world(){ return this.ent.world; }
   get tile(){ return this.ent.tile; }
+  get valid(){ return this.ent !== null; }
 
   render(g){}
-  onAttach(){}
-  onDetach(){}
+
+  onCreate(){}
+  onRemove(){}
+  onMove(from, to){}
 
   handlers = O.obj();
 
@@ -59,6 +62,11 @@ class Trait{
 
     return handler;
   }
+
+  remove(){
+    this.onRemove();
+    this.ent = null;
+  }
 }
 
 class Meta extends Trait{
@@ -72,10 +80,10 @@ class Meta extends Trait{
 class NavigationTarget extends Trait{
   static get [kName](){ return 'navTarget'; }
 
-  onAttach(){
+  onCreate(){
     const {world} = this;
 
-    world.addEvt(this.getHandler('execNavTarget'));
+    world.addEvt(new Event(this.getHandler('execNavTarget')));
   }
 
   exec(){
@@ -94,13 +102,13 @@ class Player extends Trait{
     drawCirc(g, .5, .5, .3, 'white');
   }
 
-  onAttach(){
+  onCreate(){
     const {world} = this;
 
     world.addHandler('keydown', this.getHandler('navigate'));
   }
 
-  onDetach(){
+  onRemove(){
     world.removeHandler('keydown', this.popHandler('navigate'));
   }
 
@@ -123,6 +131,43 @@ class Player extends Trait{
   }
 };
 
+class Solid extends Trait{
+  static get [kName](){ return 'solid'; }
+
+  onCreate(){
+    const {world, tile} = this;
+
+    tile.addEntEnterHandler('navTarget', this.getHandler('stop'));
+  }
+
+  onRemove(){
+    tile.removeEntEnterHandler('navTarget', this.getHandler('stop'));
+  }
+
+  onMove(from, to){
+    const handler = this.getHandler('stop');
+
+    from.removeEntEnterHandler('navTarget', handler);
+    to.addEntEnterHandler('navTarget', handler);
+  }
+
+  stop(evt){
+    const {ent} = evt;
+
+    if(!ent.src.hasTrait('solid')) return;
+    ent.remove();
+  }
+};
+
+class Wall extends Trait{
+  static get [kName](){ return 'wall'; }
+
+  render(g){
+    g.fillStyle = '#444';
+    g.fillRect(0, 0, 1, 1);
+  }
+}
+
 const drawCirc = (g, x, y, r, col=null) => {
   if(col !== null)
     g.fillStyle = col;
@@ -137,6 +182,8 @@ const traitsArr = [
   Meta,
   NavigationTarget,
   Player,
+  Solid,
+  Wall,
 ];
 
 const traitsObj = O.obj();
@@ -146,6 +193,7 @@ for(const traitCtor of traitsArr)
 
 const handlersArrRaw = [
   ['navigate', Player.prototype.navigate],
+  ['stop', Solid.prototype.stop],
   ['execNavTarget', NavigationTarget.prototype.exec],
 ];
 
@@ -167,4 +215,5 @@ module.exports = Object.assign(Trait, {
   handlersObj,
 });
 
+const Tile = require('./tile');
 const Entity = require('./entity');

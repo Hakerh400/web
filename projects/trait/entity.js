@@ -4,12 +4,13 @@ const assert = require('assert');
 
 class Entity{
   traits = new Set();
+  traitNames = O.obj();
 
   constructor(tile){
     this.tile = tile;
-    tile.addEnt(this);
   }
 
+  get valid(){ return this.tile !== null; }
   get world(){ return this.tile.world; }
 
   render(g){
@@ -21,35 +22,45 @@ class Entity{
     assert(!this.traits.has(trait));
 
     this.traits.add(trait);
-    this.tile.addTrait(trait);
+    this.traitNames[trait.name] = trait;
 
-    trait.onAttach(this);
+    // this.tile.addTrait(trait);
+
+    trait.onCreate(this);
   }
 
   removeTrait(trait){
     assert(this.traits.has(trait));
 
     this.traits.delete(trait);
-    this.tile.removeTrait(trait);
+    delete this.traitNames[trait.name];
     
-    trait.onDetach(this);
+    // this.tile.removeTrait(trait);
+    
+    trait.onRemove(this);
+  }
+
+  hasTrait(trait){
+    assert(typeof trait === 'string');
+    return O.has(this.traitNames, trait);
   }
 
   move(tileNew){
-    this.tile.removeEnt(this);
-    tileNew.addEnt(this);
+    const from = this.tile;
+    const to = tileNew;
+
+    from.removeEnt(this);
+    to.addEnt(this);
+
+    for(const trait of this.traits)
+      trait.onMove(from, to);
   }
 
   remove(){
     this.tile.removeEnt(this);
-  }
-}
 
-class Player extends Entity{
-  constructor(tile){
-    super(tile);
-
-    Trait.create(this, 'player');
+    for(const trait of this.traits)
+      trait.remove();
   }
 }
 
@@ -71,9 +82,29 @@ class NavigationTarget extends Meta{
   }
 }
 
+class Player extends Entity{
+  constructor(tile){
+    super(tile);
+
+    Trait.create(this, 'player');
+    Trait.create(this, 'solid');
+  }
+}
+
+class Wall extends Entity{
+  constructor(tile){
+    super(tile);
+
+    Trait.create(this, 'wall');
+    Trait.create(this, 'solid');
+  }
+}
+
 module.exports = Object.assign(Entity, {
-  Player,
+  Meta,
   NavigationTarget,
+  Player,
+  Wall,
 });
 
 const Trait = require('./trait');

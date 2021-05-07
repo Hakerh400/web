@@ -11,7 +11,12 @@ class EventHandler{
     this.func = func;
   }
 
+  get valid(){
+    return this.trait.valid;
+  }
+
   exec(info){
+    assert(this.valid)
     this.func.call(this.trait, info);
   }
 }

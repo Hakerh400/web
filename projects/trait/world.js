@@ -3,6 +3,7 @@
 const assert = require('assert');
 const Tile = require('./tile');
 const Request = require('./request');
+const Event = require('./event');
 
 const {reqsObj} = Request;
 
@@ -27,9 +28,8 @@ class World{
     return grid.get(x, y);
   }
 
-  addTraitToTile(tile, trait){
-
-  }
+  // addTraitToTile(tile, trait){}
+  // removeTraitFromTile(tile, trait){}
 
   addHandler(evtName, handler){
     const {handlers} = this;
@@ -53,8 +53,9 @@ class World{
     handlersSet.delete(handler);
   }
 
-  addEvt(handler, evtInfo=null){
-    this.evtsBuf.push([handler, evtInfo]);
+  addEvt(evt){
+    assert(evt instanceof Event);
+    this.evtsBuf.push(evt);
   }
 
   emit(evtName, evtInfo){
@@ -66,7 +67,7 @@ class World{
     for(const handler of handlers[evtName]){
       if(handler.pri < this.curHandlerPri) continue;
 
-      this.addEvt(handler, evtInfo);
+      this.addEvt(new Event(handler, evtInfo));
     }
   }
 
@@ -76,17 +77,22 @@ class World{
     this.curHandlerPri = 0;
 
     while(evtsBuf.length !== 0){
-      evtsBuf.sort(([h1], [h2]) => h1.pri - h2.pri);
+      evtsBuf.sort((a, b) => a.pri - b.pri);
 
-      const pri = evtsBuf[0][1];
+      const pri = evtsBuf[0].pri;
+      assert(typeof pri === 'number');
+
       this.curHandlerPri = pri;
 
-      while(evtsBuf.length !== 0 && evtsBuf[0][1] === pri){
-        const [handler, info] = evtsBuf.shift();
-        handler.exec(info);
+      while(evtsBuf.length !== 0 && evtsBuf[0].pri === pri){
+        const evt = evtsBuf.shift();
+        if(!evt.valid) continue;
+
+        const {handler, evtInfo} = evt;
+        handler.exec(evtInfo);
       }
 
-      reqsBuf.sort((r1, r2) => r1.pri - r2.pri);
+      reqsBuf.sort((a, b) => a.pri - b.pri);
 
       const reqsNum = reqsBuf.length;
 
@@ -109,6 +115,11 @@ class World{
 
       reqsBuf.length = 0;
     }
+  }
+
+  createEnt(coords, ctor, ...args){
+    const tile = this.getTile(coords);
+    return tile.createEnt(ctor, ...args);
   }
 
   reqEntCreate(tile, entCtor, ...args){
