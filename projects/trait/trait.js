@@ -86,6 +86,10 @@ class NavigationTarget extends Trait{
     world.addEvt(new Event(this.getHandler('execNavTarget')));
   }
 
+  onRemove(){
+    const {world, tile, ent} = this;
+  }
+
   exec(){
     const {world, tile, ent} = this;
     const {src} = ent;
@@ -109,6 +113,8 @@ class Player extends Trait{
   }
 
   onRemove(){
+    const {world} = this;
+
     world.removeHandler('keydown', this.popHandler('navigate'));
   }
 
@@ -141,10 +147,13 @@ class Solid extends Trait{
   }
 
   onRemove(){
+    const {world, tile} = this;
+
     tile.removeEntEnterHandler('navTarget', this.getHandler('stop'));
   }
 
   onMove(from, to){
+    const {tile} = this;
     const handler = this.getHandler('stop');
 
     from.removeEntEnterHandler('navTarget', handler);
@@ -180,7 +189,7 @@ class Solid extends Trait{
 
       if(src === ent) continue;
       if(!src.hasTrait('solid')) continue;
-      
+
       world.reqEntRemove(navTargetEnt);
     }
   }

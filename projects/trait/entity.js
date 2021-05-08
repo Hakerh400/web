@@ -38,7 +38,7 @@ class Entity{
     
     // this.tile.removeTrait(trait);
     
-    trait.onRemove(this);
+    trait.remove(this);
   }
 
   hasTrait(trait){
@@ -89,7 +89,7 @@ class NavigationTarget extends Meta{
 
     assert(src.navTargets.has(this));
     src.navTargets.delete(this);
-    
+
     super.remove();
   }
 }
