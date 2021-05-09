@@ -12,6 +12,8 @@ class Tile{
     this.pos = pos;
   }
 
+  get valid(){ return this.world !== null; }
+
   render(g){
     for(const ent of this.entsSet)
       ent.render(g);

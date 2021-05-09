@@ -12,6 +12,7 @@ class Entity{
   }
 
   get world(){ return this.tile.world; }
+  get valid(){ return this.tile !== null; }
 
   render(g){
     for(const trait of this.traits.vals)

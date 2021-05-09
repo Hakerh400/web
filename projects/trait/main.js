@@ -49,11 +49,33 @@ const onResize = evt => {
 };
 
 const onKeydown = evt => {
-  // world.emit('keydown', evt);
+  const {code} = evt;
+  let dir = null;
+
+  switch(code){
+    case 'ArrowUp':
+      dir = 0;
+      break;
+
+    case 'ArrowRight':
+      dir = 1;
+      break;
+
+    case 'ArrowDown':
+      dir = 2;
+      break;
+
+    case 'ArrowLeft':
+      dir = 3;
+      break;
+  }
+
+  world.evts.nav = dir;
 };
 
 const render = () => {
-  // world.tick();
+  world.tick();
+  world.evts.nav = null;
 
   g.resetTransform();
   g.fillStyle = cols.bg;
