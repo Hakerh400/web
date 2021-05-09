@@ -1,5 +1,6 @@
 'use strict';
 
+const assert = require('assert');
 const World = require('./world');
 const Tile = require('./tile');
 const Entity = require('./entity');
@@ -26,11 +27,11 @@ let iw, ih;
 const main = () => {
   global.world = world;
 
-  world.createEnt([0, 0], Entity.Player);
-  world.createEnt([1, 0], Entity.Player);
-  world.createEnt([2, 0], Entity.Wall);
-
   // world.createEnt([0, 0], Entity.Player);
+  // world.createEnt([1, 0], Entity.Player);
+  // world.createEnt([2, 0], Entity.Wall);
+
+  world.getTile([0, 0]).createEnt(Entity.Player);
   // world.createEnt([1, 0], Entity.Wall);
 
   O.ael('resize', onResize);
@@ -48,11 +49,11 @@ const onResize = evt => {
 };
 
 const onKeydown = evt => {
-  world.emit('keydown', evt);
+  // world.emit('keydown', evt);
 };
 
 const render = () => {
-  world.tick();
+  // world.tick();
 
   g.resetTransform();
   g.fillStyle = cols.bg;

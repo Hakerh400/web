@@ -1,124 +1,39 @@
 'use strict';
 
 const assert = require('assert');
+const Trait = require('./trait');
+const TraitMap = require('./trait-map');
 
 class Entity{
-  traits = new Set();
-  traitNames = O.obj();
-  navTargets = new Set();
+  traits = new TraitMap();
 
   constructor(tile){
     this.tile = tile;
   }
 
-  get valid(){ return this.tile !== null; }
   get world(){ return this.tile.world; }
 
   render(g){
-    for(const trait of this.traits)
+    for(const trait of this.traits.vals)
       trait.render(g);
   }
 
-  addTrait(trait){
-    assert(!this.traits.has(trait));
-
-    this.traits.add(trait);
-    this.traitNames[trait.name] = trait;
-
-    // this.tile.addTrait(trait);
-
-    trait.onCreate(this);
-  }
-
-  removeTrait(trait){
-    assert(this.traits.has(trait));
-
-    this.traits.delete(trait);
-    delete this.traitNames[trait.name];
-    
-    // this.tile.removeTrait(trait);
-    
-    trait.remove(this);
-  }
-
-  hasTrait(trait){
-    assert(typeof trait === 'string');
-    return O.has(this.traitNames, trait);
-  }
-
-  move(tileNew){
-    const from = this.tile;
-    const to = tileNew;
-
-    from.removeEnt(this);
-    to.addEnt(this);
-
-    for(const trait of this.traits)
-      trait.onMove(from, to);
-  }
-
-  remove(){
-    this.tile.removeEnt(this);
-
-    for(const trait of this.traits)
-      trait.remove();
-  }
-}
-
-class Meta extends Entity{
-  constructor(tile){
-    super(tile);
-
-    Trait.create(this, 'meta');
-  }
-}
-
-class NavigationTarget extends Meta{
-  constructor(tile, src){
-    super(tile);
-
-    this.src = src;
-    src.navTargets.add(this);
-
-    Trait.create(this, 'navTarget');
-  }
-
-  remove(){
-    const {src} = this;
-    if(!src.valid) return;
-
-    assert(src.navTargets.has(this));
-    src.navTargets.delete(this);
-
-    super.remove();
-  }
+  // createTrait(ctor, ...args){
+  //   const trait = new ctor(this, ...args);
+  //   this.addTrait(trait);
+  //   return trait;
+  // }
 }
 
 class Player extends Entity{
   constructor(tile){
     super(tile);
 
-    Trait.create(this, 'player');
-    Trait.create(this, 'solid');
-  }
-}
-
-class Wall extends Entity{
-  constructor(tile){
-    super(tile);
-
-    Trait.create(this, 'wall');
-    Trait.create(this, 'solid');
+    this.traits.addTrait(new Trait.Player(this));
+    this.world.updateEnt(this);
   }
 }
 
 module.exports = Object.assign(Entity, {
-  Meta,
-  NavigationTarget,
   Player,
-  Wall,
 });
-
-const Trait = require('./trait');
-
-const {traitsObj} = Trait;
