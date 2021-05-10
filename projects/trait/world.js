@@ -7,6 +7,10 @@ const TraitMap = require('./trait-map');
 class World{
   activeEnts = new TraitMap(0);
 
+  evts = {
+    nav: null,
+  };
+
   constructor(w, h){
     this.w = w;
     this.h = h;
@@ -23,6 +27,10 @@ class World{
 
   updateEnt(ent){
     this.activeEnts.addEnt(ent);
+  }
+
+  tick(){
+    
   }
 }
 

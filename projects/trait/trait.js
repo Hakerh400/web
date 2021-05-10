@@ -47,8 +47,8 @@ const handlersArrRaw = [
 ];
 
 module.exports = Object.assign(Trait, {
-  handlersArr,
-  handlersMap,
+  // handlersArr,
+  // handlersMap,
 
   Player,
 });
