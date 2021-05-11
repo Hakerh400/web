@@ -24,11 +24,13 @@ class Player extends Trait{
   }
 
   navigate(){
-    const dir = this.world.evts.nav;
+    const {world, tile} = this;
+
+    const dir = world.evts.nav;
     if(dir === null) return;
 
-    const tileNew = this.tile.nav(dir);
-    this.move(tileNew);
+    const tileNew = tile.nav(dir);
+    world.reqEntMove(this, tileNew);
   }
 }
 
@@ -43,12 +45,20 @@ const drawCirc = (g, x, y, r, col=null) => {
 };
 
 const handlersArrRaw = [
-  [Player, 'navigate'],
+  [Player, 'navigate', 0],
 ];
 
+const handlersMap = new TraitMap();
+
+const handlersArr = handlersArrRaw.map(([ctor, methodName, repeat], index) => {
+  const method = ctor.prototype[methodName];
+  handlersMap.add(ctor, [method, index, repeat]);
+  return [ctor, method];
+});
+
 module.exports = Object.assign(Trait, {
-  // handlersArr,
-  // handlersMap,
+  handlersArr,
+  handlersMap,
 
   Player,
 });

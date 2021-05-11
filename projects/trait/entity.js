@@ -7,6 +7,8 @@ const TraitMap = require('./trait-map');
 class Entity{
   traits = new TraitMap();
 
+  data = O.obj();
+
   constructor(tile){
     this.tile = tile;
   }
@@ -18,12 +20,6 @@ class Entity{
     for(const trait of this.traits.vals)
       trait.render(g);
   }
-
-  // createTrait(ctor, ...args){
-  //   const trait = new ctor(this, ...args);
-  //   this.addTrait(trait);
-  //   return trait;
-  // }
 }
 
 class Player extends Entity{
@@ -31,7 +27,6 @@ class Player extends Entity{
     super(tile);
 
     this.traits.addTrait(new Trait.Player(this));
-    this.world.updateEnt(this);
   }
 }
 

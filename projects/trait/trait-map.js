@@ -7,13 +7,13 @@ class TraitMap extends O.MapSet{
     super(null, strict);
   }
 
-  addEnt(ent){
-    for(const traitCtor of ent.traits.keys)
-      super.add(traitCtor, ent);
-  }
-
   addTrait(trait){
     super.add(trait.ctor, trait);
+  }
+
+  addEnt(ent){
+    for(const trait of ent.traits.vals)
+      this.addTrait(trait);
   }
 }
 

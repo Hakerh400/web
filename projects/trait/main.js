@@ -31,7 +31,8 @@ const main = () => {
   // world.createEnt([1, 0], Entity.Player);
   // world.createEnt([2, 0], Entity.Wall);
 
-  world.getTile([0, 0]).createEnt(Entity.Player);
+  world.reqEntCreate(world.getTile([0, 0]), Entity.Player);
+  world.tick();
   // world.createEnt([1, 0], Entity.Wall);
 
   O.ael('resize', onResize);
@@ -70,13 +71,14 @@ const onKeydown = evt => {
       break;
   }
 
-  world.evts.nav = dir;
+  if(dir !== null){
+    world.evts.nav = dir;
+    world.tick();
+    world.evts.nav = null;
+  }
 };
 
 const render = () => {
-  world.tick();
-  world.evts.nav = null;
-
   g.resetTransform();
   g.fillStyle = cols.bg;
   g.fillRect(0, 0, iw, ih);
