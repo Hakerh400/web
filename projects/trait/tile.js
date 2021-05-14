@@ -45,7 +45,7 @@ class Tile{
     this.notify();
   }
 
-  nav(dir){
+  adj(dir){
     let [x, y] = this.pos;
 
     if(dir === 0) y--;
@@ -59,7 +59,7 @@ class Tile{
 
   iterAdj(func){
     for(let dir = 0; dir !== 4; dir++){
-      const adj = this.nav(dir);
+      const adj = this.adj(dir);
       if(adj === null) continue;
 
       func(adj, dir);

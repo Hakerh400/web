@@ -73,10 +73,28 @@ class MoveEntity extends Request{
   }
 }
 
+class RemoveEntity extends Request{
+  static exec(reqs){
+    const removed = new Set();
+
+    for(const req of reqs){
+      const {ent} = req;
+      if(removed.has(ent)) continue;
+
+      ent.remove();
+    }
+  }
+
+  constructor(world, ent){
+    super(world);
+    this.ent = ent;
+  }
+}
+
 const reqsArr = [
   CreateEntity,
   MoveEntity,
-  // RemoveEntty,
+  RemoveEntity,
 ];
 
 module.exports = Object.assign(Request, {
@@ -84,4 +102,5 @@ module.exports = Object.assign(Request, {
 
   CreateEntity,
   MoveEntity,
+  RemoveEntity,
 });

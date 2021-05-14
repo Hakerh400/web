@@ -3,6 +3,7 @@
 const assert = require('assert');
 const Request = require('./request');
 const Tile = require('./tile');
+const Entity = require('./entity');
 const Trait = require('./trait');
 const CtorMap = require('./ctor-map');
 
@@ -10,7 +11,7 @@ const {handlersArr, handlersMap} = Trait;
 const {reqsArr} = Request;
 
 class World{
-  activeEnts = new Map();
+  activeTraits = new Set();
   notifiedTiles = new Set();
   reqs = new CtorMap();
 
@@ -36,33 +37,16 @@ class World{
     return this.grid.get(x, y);
   }
 
-  addActiveEnt(ent){
-    const {activeEnts} = this;
-
-    if(!activeEnts.has(ent)){
-      activeEnts.set(ent, 1);
-      return;
-    }
-
-    const n = activeEnts.get(ent);
-    assert(n > 0);
-
-    activeEnts.set(ent, n + 1);
+  addActiveTrait(trait){
+    const {activeTraits} = this;
+    assert(!activeTraits.has(trait));
+    activeTraits.add(trait);
   }
 
-  removeActiveEnt(ent){
-    const {activeEnts} = this;
-    assert(activeEnts.has(ent));
-
-    const n = activeEnts.get(ent);
-    assert(n > 0);
-
-    if(n === 1){
-      activeEnts.delete(ent);
-      return;
-    }
-
-    activeEnts.set(ent, n - 1);
+  removeActiveEnt(trait){
+    const {activeTraits} = this;
+    assert(activeTraits.has(trait));
+    activeTraits.delete(trait);
   }
 
   markTileAsNotified(tile){
@@ -74,14 +58,14 @@ class World{
 
     this.#tickId = O.obj();
 
-    for(const ent of this.activeEnts.keys()){
-      assert(ent.valid);
-      ent.tile.notify();
+    for(const trait of this.activeTraits){
+      assert(trait.valid);
+      trait.tile.notify();
     }
 
     for(const [traitCtor, handler, once] of handlersArr){
       const executed = once ? new Set() : null;
-      
+
       do{
         for(const reqCtor of reqsArr){
           const reqsSet = reqs.get(reqCtor);
@@ -114,6 +98,10 @@ class World{
 
   reqMoveEnt(ent, tileNew){
     this.reqs.add(new Request.MoveEntity(this, ent, ent.tile, tileNew));
+  }
+
+  reqRemoveEnt(ent){
+    this.reqs.add(new Request.RemoveEntity(this, ent, ent));
   }
 }
 
