@@ -31,7 +31,7 @@ const main = () => {
   // world.createEnt([1, 0], Entity.Player);
   // world.createEnt([2, 0], Entity.Wall);
 
-  world.reqEntCreate(world.getTile([0, 0]), Entity.Player);
+  world.reqCreateEnt(world.getTile([0, 0]), Entity.Player);
   world.tick();
   // world.createEnt([1, 0], Entity.Wall);
 

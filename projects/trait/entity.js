@@ -2,10 +2,10 @@
 
 const assert = require('assert');
 const Trait = require('./trait');
-const TraitMap = require('./trait-map');
+const CtorMap = require('./ctor-map');
 
 class Entity{
-  traits = new TraitMap();
+  traits = new CtorMap();
 
   data = O.obj();
 
@@ -19,6 +19,13 @@ class Entity{
   render(g){
     for(const trait of this.traits.vals)
       trait.render(g);
+  }
+
+  remove(){
+    for(const trait of this.traits.vals)
+      trait.remove();
+
+    this.tile = null;
   }
 }
 

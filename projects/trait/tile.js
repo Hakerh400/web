@@ -1,11 +1,12 @@
 'use strict';
 
 const assert = require('assert');
+const Entity = require('./entity');
 const Trait = require('./trait');
-const TraitMap = require('./trait-map');
+const CtorMap = require('./ctor-map');
 
 class Tile{
-  traits = new TraitMap();
+  traits = new CtorMap();
   entsSet = new Set();
 
   constructor(world, pos){
@@ -27,12 +28,18 @@ class Tile{
   }
 
   addEnt(ent){
+    assert(ent instanceof Entity);
+    assert(ent.tile === this);
+
     this.traits.addEnt(ent);
     this.entsSet.add(ent);
     this.notify();
   }
 
   removeEnt(ent){
+    assert(ent instanceof Entity);
+    assert(ent.tile === this);
+
     this.traits.removeEnt(ent);
     this.entsSet.delete(ent);
     this.notify();
