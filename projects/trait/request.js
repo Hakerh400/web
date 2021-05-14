@@ -1,6 +1,9 @@
 'use strict';
 
 const assert = require('assert');
+const Tile = require('./tile');
+const Entity = require('./entity');
+const Trait = require('./trait');
 const CtorMap = require('./ctor-map');
 
 class Request{

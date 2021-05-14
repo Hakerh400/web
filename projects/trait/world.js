@@ -96,6 +96,11 @@ class World{
     this.reqs.add(new Request.CreateEntity(this, tile, entCtor, args));
   }
 
+  reqCreateEntAtPos(pos, entCtor, ...args){
+    const tile = this.getTile(pos);
+    this.reqs.add(new Request.CreateEntity(this, tile, entCtor, args));
+  }
+
   reqMoveEnt(ent, tileNew){
     this.reqs.add(new Request.MoveEntity(this, ent, ent.tile, tileNew));
   }

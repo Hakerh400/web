@@ -27,13 +27,17 @@ let iw, ih;
 const main = () => {
   global.world = world;
 
-  // world.createEnt([0, 0], Entity.Player);
-  // world.createEnt([1, 0], Entity.Player);
-  // world.createEnt([2, 0], Entity.Wall);
+  for(let y = 0; y !== 3; y++){
+    for(let x = 0; x !== 3; x++)
+      world.reqCreateEntAtPos([x, y], Entity.Player);
 
-  world.reqCreateEnt(world.getTile([0, 0]), Entity.Player);
+    for(let i = 0; i !== y; i++)
+      world.reqCreateEntAtPos([3 + i, y], Entity.Box);
+
+    world.reqCreateEntAtPos([5, y], Entity.Wall);
+  }
+
   world.tick();
-  // world.createEnt([1, 0], Entity.Wall);
 
   O.ael('resize', onResize);
   O.ael('keydown', onKeydown);

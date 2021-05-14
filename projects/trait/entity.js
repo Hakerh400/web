@@ -62,15 +62,6 @@ class Entity{
   }
 }
 
-class Player extends Entity{
-  constructor(tile){
-    super(tile);
-
-    this.traits.addTrait(new Trait.Player(this));
-    this.traits.addTrait(new Trait.Solid(this));
-  }
-}
-
 class NavigationTarget extends Entity{
   constructor(tile, src){
     super(tile);
@@ -80,9 +71,39 @@ class NavigationTarget extends Entity{
   }
 }
 
+class Player extends Entity{
+  constructor(tile){
+    super(tile);
+
+    this.traits.addTrait(new Trait.Player(this));
+    this.traits.addTrait(new Trait.Solid(this));
+  }
+}
+
+class Wall extends Entity{
+  constructor(tile){
+    super(tile);
+
+    this.traits.addTrait(new Trait.Wall(this));
+    this.traits.addTrait(new Trait.Solid(this));
+  }
+}
+
+class Box extends Entity{
+  constructor(tile){
+    super(tile);
+
+    this.traits.addTrait(new Trait.Box(this));
+    this.traits.addTrait(new Trait.Solid(this));
+    this.traits.addTrait(new Trait.Pushable(this));
+  }
+}
+
 module.exports = Object.assign(Entity, {
-  Player,
   NavigationTarget,
+  Player,
+  Wall,
+  Box,
 });
 
 const Trait = require('./trait');

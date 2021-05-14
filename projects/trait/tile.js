@@ -57,6 +57,14 @@ class Tile{
     return this.world.getTile([x, y]);
   }
 
+  adj2dir(adj){
+    for(let dir = 0; dir !== 4; dir++)
+      if(this.adj(dir) === adj)
+        return dir;
+
+    return null;
+  }
+
   iterAdj(func){
     for(let dir = 0; dir !== 4; dir++){
       const adj = this.adj(dir);
