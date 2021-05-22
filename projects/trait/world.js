@@ -6,6 +6,7 @@ const Tile = require('./tile');
 const Entity = require('./entity');
 const Trait = require('./trait');
 const CtorMap = require('./ctor-map');
+const inspect = require('./inspect');
 
 const {handlersArr, handlersMap} = Trait;
 const {reqsArr} = Request;

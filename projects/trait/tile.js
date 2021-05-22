@@ -4,12 +4,21 @@ const assert = require('assert');
 const Entity = require('./entity');
 const Trait = require('./trait');
 const CtorMap = require('./ctor-map');
+const inspect = require('./inspect');
+const info = require('./info');
 
-class Tile{
+const {
+  BasicInfo,
+  DetailedInfo,
+} = info;
+
+class Tile extends inspect.Inspectable{
   traits = new CtorMap();
   entsSet = new Set();
 
   constructor(world, pos){
+    super();
+    
     this.world = world;
     this.pos = pos;
   }
@@ -82,6 +91,18 @@ class Tile{
     this.iterAdj(adj => {
       world.markTileAsNotified(adj);
     });
+  }
+
+  *inspect(){
+    return new DetailedInfo('tile :: Tile', [
+      new DetailedInfo('pos :: Position', [
+        new BasicInfo(`x = ${this.pos[0]} :: Int`),
+        new BasicInfo(`y = ${this.pos[1]} :: Int`),
+      ]),
+      new DetailedInfo('ents :: Set Entity', yield [O.mapr, this.entsSet, function*(ent){
+        return O.tco([ent, 'inspect']);
+      }]),
+    ]);
   }
 }
 

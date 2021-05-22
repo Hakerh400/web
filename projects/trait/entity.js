@@ -2,13 +2,22 @@
 
 const assert = require('assert');
 const CtorMap = require('./ctor-map');
+const inspect = require('./inspect');
+const info = require('./info');
 
-class Entity{
+const {
+  BasicInfo,
+  DetailedInfo,
+} = info;
+
+class Entity extends inspect.Inspectable{
   traits = new CtorMap();
   globData = new Map();
   locData = new WeakMap();
 
   constructor(tile){
+    super();
+    
     this.tile = tile;
   }
 
@@ -59,6 +68,14 @@ class Entity{
       trait.onRemove();
 
     this.tile = null;
+  }
+
+  *inspect(){
+    return new DetailedInfo('ent :: Entity', [
+      new DetailedInfo('traits :: Set Trait', yield [O.mapr, this.traits.vals, function*(trait){
+        return O.tco([trait, 'inspect']);
+      }]),
+    ]);
   }
 }
 

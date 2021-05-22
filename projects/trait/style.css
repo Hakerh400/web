@@ -1,0 +1,22 @@
+details{
+  padding-left: 17px;
+}
+
+summary{
+  margin-left: -17px;
+}
+
+.info{
+  margin: 8px;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+
+.info-elem{
+  display: block;
+}
+
+.info-elem-empty{
+  font-style: italic;
+}

@@ -2,11 +2,21 @@
 
 const assert = require('assert');
 const CtorMap = require('./ctor-map');
+const inspect = require('./inspect');
+const info = require('./info');
 
+const {
+  BasicInfo,
+  DetailedInfo,
+} = info;
+
+const {min, max} = Math;
 const {pi, pih, pi2} = O;
 
-class Trait{
+class Trait extends inspect.Inspectable{
   constructor(ent){
+    super();
+
     this.ent = ent;
     this.onCreate();
   }
@@ -26,6 +36,10 @@ class Trait{
   remove(){
     this.onRemove();
     this.ent = null;
+  }
+
+  *inspect(){
+    return new BasicInfo(`trait :: ${this.ctor.name}`);
   }
 }
 
@@ -141,33 +155,73 @@ class Solid extends Trait{
 
 class Wall extends Trait{
   render(g){
-    g.save();
-    g.scale(1.02, 1.02);
-    g.fillStyle = '#222';
-    g.beginPath();
-    g.rect(-.5, -.5, 1, 1);
-    g.fill();
-    g.restore();
+    const s = 1 / g.s;
 
-    g.fillStyle = '#444'
-    g.save();
-    g.scale(.9, .9);
-    g.beginPath();
-    g.rect(-.5, -.5, 1, 1);
-    g.fill();
-    g.restore();
+    g.fillStyle = '#888';
+    g.fillRect(-.5, -.5, 1, 1);
+
+    g.fillStyle = '#444';
+
+    const w = .45;
+    const h = .20;
+    const space = .05;
+
+    // const A = +(1 / (w + space)).toFixed(3);
+    // const B = +(1 / (h + space)).toFixed(3);
+    //
+    // const check = a => {
+    //   if(a !== (a | 0)) return 0;
+    //   if(a & 1) return 0;
+    //   return 1;
+    // };
+    //
+    // if(!(check(A) && check(B))){
+    //   log(A);
+    //   log(B);
+    //   assert.fail();
+    // }
+
+    const dx = w + space;
+    const dy = h + space;
+
+    const x1 = -.5 - dx / 2;
+    const y1 = -.5 - dy / 2;
+
+    let i = 0;
+
+    for(let yy = y1; yy < .5; yy += dy, i++){
+      const offset = dx / 2 * (i % 2);
+
+      for(let xx = x1 + offset; xx < .5; xx += dx){
+        const x = max(xx, -.5)
+        const y = max(yy, -.5);
+        const x2 = min(xx + w, .5);
+        const y2 = min(yy + h, .5);
+        const ax = x2 - x;
+        const ay = y2 - y;
+
+        if(w - x2 < space / 5){
+          g.fillRect(x, y, w + s - x, ay);
+          continue;
+        }
+        
+        g.fillRect(x, y, ax, ay);
+      }
+    }
   }
 }
 
 class Box extends Trait{
   render(g){
+    const s = 1 / g.s;
+
     const s1 = .3;
     const s2 = .215;
     const s3 = .075;
 
     g.fillStyle = '#ff0';
     g.beginPath();
-    g.rect(-s1, -s1, s1 * 2, s1 * 2);
+    g.rect(-s1, -s1, s1 * (2 - s), s1 * (2 - s));
     g.fill();
     g.stroke();
 

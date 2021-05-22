@@ -5,6 +5,12 @@ const World = require('./world');
 const Tile = require('./tile');
 const Entity = require('./entity');
 const Trait = require('./trait');
+const CtorMap = require('./ctor-map');
+const inspect = require('./inspect');
+
+const {floor} = Math;
+
+await O.addStyle('style');
 
 const w = 9;
 const h = 9;
@@ -22,15 +28,17 @@ const {g} = O.ceCanvas(1);
 const world = new World(w, h);
 const {grid} = world;
 
+const infoContainer = O.ceDiv(O.body, 'info');
+
 let iw, ih;
+let ctrl = 0;
 
 const main = () => {
   global.world = world;
 
-  for(let y = 0; y !== 3; y++){
-    for(let x = 0; x !== 3; x++)
-      world.reqCreateEntAtPos([x, y], Entity.Player);
+  world.reqCreateEntAtPos([0, 0], Entity.Player);
 
+  for(let y = 0; y !== 3; y++){
     for(let i = 0; i !== y; i++)
       world.reqCreateEntAtPos([3 + i, y], Entity.Box);
 
@@ -40,10 +48,13 @@ const main = () => {
   world.tick();
 
   O.ael('resize', onResize);
-  O.ael('keydown', onKeydown);
+  O.ael('keydown', onKeyDown);
+  O.ael('keyup', onKeyUp);
+  O.ael('mousedown', onMouseDown);
+  O.ael('contextmenu', onContextMenu);
+  O.ael('blur', onBlur);
 
   onResize();
-  render();
 };
 
 const onResize = evt => {
@@ -51,9 +62,13 @@ const onResize = evt => {
 
   g.resize(iw, ih);
   g.font(24);
+
+  render();
 };
 
-const onKeydown = evt => {
+const onKeyDown = evt => {
+  ctrl = evt.ctrlKey;
+
   const {code} = evt;
   let dir = null;
 
@@ -76,10 +91,47 @@ const onKeydown = evt => {
   }
 
   if(dir !== null){
+    clearInfo();
     world.evts.nav = dir;
     world.tick();
     world.evts.nav = null;
+    render();
   }
+};
+
+const onKeyUp = evt => {
+  ctrl = evt.ctrlKey;
+};
+
+const onMouseDown = evt => {
+  if(evt.detail > 1){
+    O.pd(evt);
+    return;
+  }
+
+  if(ctrl){
+    clearInfo();
+
+    const x = floor((evt.clientX - iw / 2) / s + w / 2);
+    const y = floor((evt.clientY - ih / 2) / s + h / 2);
+
+    const tile = world.getTile([x, y]);
+    if(tile === null) return;
+
+    const info = O.rec([tile, 'inspect']);
+
+    setInfo(O.rec([info, 'toDOM']));
+
+    return;
+  }
+};
+
+const onContextMenu = evt => {
+  O.pd(evt);
+};
+
+const onBlur = evt => {
+  ctrl = 0;
 };
 
 const render = () => {
@@ -108,8 +160,15 @@ const render = () => {
     g.lineTo(w, i);
   }
   g.stroke();
+};
 
-  O.raf(render);
+const setInfo = info => {
+  clearInfo();
+  infoContainer.appendChild(info);
+};
+
+const clearInfo = () => {
+  infoContainer.innerText = '';
 };
 
 main();
