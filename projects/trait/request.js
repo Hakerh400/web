@@ -22,7 +22,7 @@ class SimpleRequest extends Request{
       req.simpleExec();
   }
 
-  simpleExec(){ O.virtual('SimpleRequest'); }
+  simpleExec(){ O.virtual('simpleExec'); }
 }
 
 class CreateEntity extends SimpleRequest{

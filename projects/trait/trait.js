@@ -3,7 +3,7 @@
 const assert = require('assert');
 const CtorMap = require('./ctor-map');
 
-const {pi2} = O;
+const {pi, pih, pi2} = O;
 
 class Trait{
   constructor(ent){
@@ -85,7 +85,33 @@ class NavigationTarget extends Trait{
 
 class Player extends ActiveTrait{
   render(g){
-    drawCirc(g, .5, .5, .3, 'white');
+    g.fillStyle = 'white';
+    g.beginPath();
+    drawCirc(g, 0, 0, .4);
+    g.fill();
+    g.stroke();
+
+    g.fillStyle = 'white';
+    g.beginPath();
+    drawCirc(g, -.2, -.05, .1);
+    g.fill();
+    g.stroke();
+    g.beginPath();
+    drawCirc(g, .2, -.05, .1);
+    g.fill();
+    g.stroke();
+
+    g.fillStyle = 'black';
+    g.beginPath();
+    drawCirc(g, -.2, -.05, .035);
+    g.fill();
+    g.beginPath();
+    drawCirc(g, .2, -.05, .035);
+    g.fill();
+
+    g.beginPath();
+    g.arc(0, 0, .2, pi / 4, pi * 3 / 4);
+    g.stroke();
   }
 
   navigate(){
@@ -115,16 +141,61 @@ class Solid extends Trait{
 
 class Wall extends Trait{
   render(g){
-    g.fillStyle = '#444';
-    g.fillRect(0, 0, 1, 1);
+    g.save();
+    g.scale(1.02, 1.02);
+    g.fillStyle = '#222';
+    g.beginPath();
+    g.rect(-.5, -.5, 1, 1);
+    g.fill();
+    g.restore();
+
+    g.fillStyle = '#444'
+    g.save();
+    g.scale(.9, .9);
+    g.beginPath();
+    g.rect(-.5, -.5, 1, 1);
+    g.fill();
+    g.restore();
   }
 }
 
 class Box extends Trait{
   render(g){
+    const s1 = .3;
+    const s2 = .215;
+    const s3 = .075;
+
+    g.fillStyle = '#ff0';
+    g.beginPath();
+    g.rect(-s1, -s1, s1 * 2, s1 * 2);
+    g.fill();
+    g.stroke();
+
     g.fillStyle = '#880';
     g.beginPath();
-    g.rect(.25, .25, .5, .5);
+    g.rect(-s2, -s2, s2 * 2, s2 * 2);
+    g.fill();
+    g.stroke();
+
+    g.fillStyle = '#ff0';
+    g.beginPath();
+    g.moveTo(s2 - s3, -s2);
+    g.lineTo(s2, -s2);
+    g.lineTo(s2, -s2 + s3);
+    g.lineTo(-s2 + s3, s2);
+    g.lineTo(-s2, s2);
+    g.lineTo(-s2, s2 - s3);
+    g.closePath();
+    g.fill();
+    g.stroke();
+    g.beginPath();
+    g.moveTo(-s2 + s3, -s2);
+    g.lineTo(-s2, -s2);
+    g.lineTo(-s2, -s2 + s3);
+    g.lineTo(s2 - s3, s2);
+    g.lineTo(s2, s2);
+    g.lineTo(s2, s2 - s3);
+    g.closePath();
     g.fill();
     g.stroke();
   }

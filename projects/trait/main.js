@@ -93,7 +93,7 @@ const render = () => {
 
   grid.iter((x, y, d) => {
     g.save();
-    g.translate(x, y);
+    g.translate(x + .5, y + .5);
     d.render(g);
     g.restore();
   });
