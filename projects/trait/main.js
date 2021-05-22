@@ -10,7 +10,7 @@ const inspect = require('./inspect');
 
 const {floor} = Math;
 
-await O.addStyle('style');
+await O.addStyle('style.css');
 
 const w = 9;
 const h = 9;
