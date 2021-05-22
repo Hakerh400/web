@@ -11,6 +11,8 @@ const inspect = require('./inspect');
 const {handlersArr, handlersMap} = Trait;
 const {reqsArr} = Request;
 
+const reqCtorsNum = reqsArr.length;
+
 class World{
   activeTraits = new Set();
   notifiedTiles = new Set();
@@ -55,8 +57,9 @@ class World{
   }
 
   tick(){
-    const {notifiedTiles, reqs} = this;
+    const {notifiedTiles, executedTraits, reqs} = this;
 
+    // O.logb();
     this.#tickId = O.obj();
 
     for(const trait of this.activeTraits){
@@ -64,25 +67,45 @@ class World{
       trait.tile.notify();
     }
 
-    for(const [traitCtor, handler, once] of handlersArr){
-      const executed = once ? new Set() : null;
+    for(const [traitCtor, handler] of handlersArr){
+      const traitsExecNum = new Map();
 
       do{
-        for(const reqCtor of reqsArr){
+        // if(reqs.nempty){
+        //   log(...reqs.vals);
+        //   log();
+        // }
+
+        for(let pri = 0; pri !== reqCtorsNum;){
+          this.baseReqPri = pri + 1;
+
+          const reqCtor = reqsArr[pri];
           const reqsSet = reqs.get(reqCtor);
-          reqCtor.exec(reqsSet);
+
+          reqs.map.delete(reqCtor);
+
+          if(reqsSet.size !== 0)
+            reqCtor.exec(reqsSet);
+
+          if(this.baseReqPri <= pri){
+            pri = this.baseReqPri;
+            continue;
+          }
+
+          pri++;
         }
 
-        reqs.clear();
-
+        // reqs.clear();
+        
         for(const tile of notifiedTiles){
           for(const trait of tile.traits.get(traitCtor)){
-            if(once){
-              if(executed.has(trait)) continue;
-              executed.add(trait);
-            }
+            if(!traitsExecNum.has(trait))
+              traitsExecNum.set(trait, 0);
 
-            handler.call(trait);
+            const n = traitsExecNum.get(trait);
+            handler.call(trait, n);
+
+            traitsExecNum.set(trait, n + 1);
           }
         }
       }while(reqs.nempty);
@@ -93,21 +116,32 @@ class World{
     this.#tickId = null;
   }
 
+  addReq(req){
+    this.reqs.add(req);
+
+    if(req.pri < this.baseReqPri)
+      this.baseReqPri = req.pri;
+  }
+
+  reqModifyEntGlobData(ent, traitCtor, action){
+    this.addReq(new Request.ModifyEntGlobData(this, ent, traitCtor, action));
+  }
+
   reqCreateEnt(tile, entCtor, ...args){
-    this.reqs.add(new Request.CreateEntity(this, tile, entCtor, args));
+    this.addReq(new Request.CreateEntity(this, tile, entCtor, args));
   }
 
   reqCreateEntAtPos(pos, entCtor, ...args){
     const tile = this.getTile(pos);
-    this.reqs.add(new Request.CreateEntity(this, tile, entCtor, args));
+    this.addReq(new Request.CreateEntity(this, tile, entCtor, args));
   }
 
   reqMoveEnt(ent, tileNew){
-    this.reqs.add(new Request.MoveEntity(this, ent, ent.tile, tileNew));
+    this.addReq(new Request.MoveEntity(this, ent, ent.tile, tileNew));
   }
 
   reqRemoveEnt(ent){
-    this.reqs.add(new Request.RemoveEntity(this, ent, ent));
+    this.addReq(new Request.RemoveEntity(this, ent, ent));
   }
 }
 

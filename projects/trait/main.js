@@ -40,7 +40,7 @@ const main = () => {
 
   for(let y = 0; y !== 3; y++){
     for(let i = 0; i !== y; i++)
-      world.reqCreateEntAtPos([3 + i, y], Entity.Box);
+      world.reqCreateEntAtPos([3 + i, y], Entity.Box, i === 0 && y === 1);
 
     world.reqCreateEntAtPos([5, y], Entity.Wall);
   }

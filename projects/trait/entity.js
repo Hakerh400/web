@@ -24,6 +24,10 @@ class Entity extends inspect.Inspectable{
   get world(){ return this.tile.world; }
   get valid(){ return this.tile !== null; }
 
+  hasTrait(traitCtor){
+    return this.traits.hasKey(traitCtor);
+  }
+
   getGlobData(traitCtor){
     const {globData} = this;
 
@@ -107,12 +111,15 @@ class Wall extends Entity{
 }
 
 class Box extends Entity{
-  constructor(tile){
+  constructor(tile, heavy=0){
     super(tile);
 
     this.traits.addTrait(new Trait.Box(this));
     this.traits.addTrait(new Trait.Solid(this));
     this.traits.addTrait(new Trait.Pushable(this));
+
+    if(heavy)
+      this.traits.addTrait(new Trait.Heavy(this));
   }
 }
 

@@ -40,6 +40,9 @@ class Tile extends inspect.Inspectable{
     assert(ent instanceof Entity);
     assert(ent.tile === this);
 
+    // if(this.entsSet.size === 3)
+    //   assert.fail();
+
     this.traits.addEnt(ent);
     this.entsSet.add(ent);
     this.notify();

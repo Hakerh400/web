@@ -29,6 +29,8 @@ class Trait extends inspect.Inspectable{
   getGlobData(){ return this.ent.getGlobData(this.ctor); }
   getLocData(){ return this.ent.getLocData(this); }
 
+  entHasTrait(traitCtor){ return this.ent.hasTrait(traitCtor); }
+
   render(g){}
   onCreate(){}
   onRemove(){}
@@ -69,16 +71,12 @@ class NavigationTarget extends Trait{
     this.src = src;
 
     const ctor = NavigationTarget;
-    const data = src.getGlobData(ctor);
 
-    if(data === null){
-      src.setGlobData(ctor, new Set([this]));
-    }else{
-      data.add(this);
-    }
+    world.reqModifyEntGlobData(src, ctor, ['set.insert', [this]]);
   }
 
-  navigate(){
+  navigate(n){
+    if(n) return;
     const {world, tile, ent: navTargetEnt, src} = this;
 
     world.reqMoveEnt(src, tile);
@@ -88,12 +86,8 @@ class NavigationTarget extends Trait{
   onRemove(){
     const {src} = this;
     const ctor = NavigationTarget;
-    const data = src.getGlobData(ctor);
 
-    assert(data !== null);
-    assert(data.has(this));
-
-    data.delete(this);
+    world.reqModifyEntGlobData(src, ctor, ['set.remove', [this]]);
   }
 }
 
@@ -128,7 +122,8 @@ class Player extends ActiveTrait{
     g.stroke();
   }
 
-  navigate(){
+  navigate(n){
+    if(n) return;
     const {world, tile, ent} = this;
 
     const dir = world.evts.nav;
@@ -215,48 +210,59 @@ class Box extends Trait{
   render(g){
     const s = 1 / g.s;
 
-    const s1 = .3;
-    const s2 = .215;
-    const s3 = .075;
+    if(this.entHasTrait(Heavy)){
+      const s1 = .3;
+      const s2 = .215;
+      const s3 = .075;
+
+      g.fillStyle = '#ff0';
+      g.beginPath();
+      g.rect(-s1, -s1, s1 * (2 - s), s1 * (2 - s));
+      g.fill();
+      g.stroke();
+
+      g.fillStyle = '#880';
+      g.beginPath();
+      g.rect(-s2, -s2, s2 * 2, s2 * 2);
+      g.fill();
+      g.stroke();
+
+      g.fillStyle = '#ff0';
+      g.beginPath();
+      g.moveTo(s2 - s3, -s2);
+      g.lineTo(s2, -s2);
+      g.lineTo(s2, -s2 + s3);
+      g.lineTo(-s2 + s3, s2);
+      g.lineTo(-s2, s2);
+      g.lineTo(-s2, s2 - s3);
+      g.closePath();
+      g.fill();
+      g.stroke();
+      g.beginPath();
+      g.moveTo(-s2 + s3, -s2);
+      g.lineTo(-s2, -s2);
+      g.lineTo(-s2, -s2 + s3);
+      g.lineTo(s2 - s3, s2);
+      g.lineTo(s2, s2);
+      g.lineTo(s2, s2 - s3);
+      g.closePath();
+      g.fill();
+      g.stroke();
+
+      return;
+    }
 
     g.fillStyle = '#ff0';
     g.beginPath();
-    g.rect(-s1, -s1, s1 * (2 - s), s1 * (2 - s));
-    g.fill();
-    g.stroke();
-
-    g.fillStyle = '#880';
-    g.beginPath();
-    g.rect(-s2, -s2, s2 * 2, s2 * 2);
-    g.fill();
-    g.stroke();
-
-    g.fillStyle = '#ff0';
-    g.beginPath();
-    g.moveTo(s2 - s3, -s2);
-    g.lineTo(s2, -s2);
-    g.lineTo(s2, -s2 + s3);
-    g.lineTo(-s2 + s3, s2);
-    g.lineTo(-s2, s2);
-    g.lineTo(-s2, s2 - s3);
-    g.closePath();
-    g.fill();
-    g.stroke();
-    g.beginPath();
-    g.moveTo(-s2 + s3, -s2);
-    g.lineTo(-s2, -s2);
-    g.lineTo(-s2, -s2 + s3);
-    g.lineTo(s2 - s3, s2);
-    g.lineTo(s2, s2);
-    g.lineTo(s2, s2 - s3);
-    g.closePath();
+    g.rect(-.25, -.25, .5, .5);
     g.fill();
     g.stroke();
   }
 }
 
 class Pushable extends Trait{
-  push(){
+  push(n){
+    if(n && this.entHasTrait(Heavy)) return;
     const {world, tile, ent} = this;
 
     if(calcTargetTile(ent) !== tile) return;
@@ -288,6 +294,10 @@ class Pushable extends Trait{
   }
 }
 
+class Heavy extends Trait{
+  
+}
+
 const reqMoveEnt = (world, ent, tileNew) => {
   assert(ent instanceof Entity);
   world.reqCreateEnt(tileNew, Entity.NavigationTarget, ent);
@@ -313,20 +323,20 @@ const drawCirc = (g, x, y, r, col=null) => {
 };
 
 const handlersArr = [
-  [Player, 'navigate', 1],
+  [Player, 'navigate'],
   [Pushable, 'push'],
   [Solid, 'stop'],
-  [NavigationTarget, 'navigate', 1],
+  [NavigationTarget, 'navigate'],
 ];
 
 const handlersMap = new CtorMap();
 
 for(const info of handlersArr){
-  const [ctor, methodName, once=0] = info;
+  const [ctor, methodName] = info;
   const method = ctor.prototype[methodName];
 
   info[1] = method;
-  handlersMap.add(ctor, [method, once]);
+  handlersMap.add(ctor, method);
 }
 
 module.exports = Object.assign(Trait, {
@@ -346,6 +356,7 @@ module.exports = Object.assign(Trait, {
   Wall,
   Box,
   Pushable,
+  Heavy,
 });
 
 const Entity = require('./entity');
