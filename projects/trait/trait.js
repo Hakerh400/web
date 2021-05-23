@@ -41,14 +41,14 @@ class Trait extends inspect.Inspectable{
   }
 
   *inspect(){
-    return new BasicInfo(`trait :: ${this.ctor.name}`);
+    return new BasicInfo(this.ctor.name);
   }
 }
 
 class Meta extends Trait{
   render(g){
-    g.fillStyle = 'red';
-    g.fillRect(.25, .25, .5, .5);
+    g.fillStyle = '#f00';
+    g.fillRect(-.5, -.5, 1, 1);
   }
 }
 
@@ -65,10 +65,12 @@ class ActiveTrait extends Trait{
 }
 
 class NavigationTarget extends Trait{
-  constructor(ent, src){
+  constructor(ent, src, direct=0, strong=0){
     super(ent);
 
     this.src = src;
+    this.direct = direct;
+    this.strong = strong;
 
     const ctor = NavigationTarget;
 
@@ -132,7 +134,7 @@ class Player extends ActiveTrait{
     const tileNew = tile.adj(dir);
     if(tileNew === null) return;
 
-    reqMoveEnt(world, ent, tileNew);
+    reqMoveEnt(world, ent, tileNew, 1, 1);
   }
 }
 
@@ -262,14 +264,18 @@ class Box extends Trait{
 
 class Pushable extends Trait{
   push(n){
-    if(n && this.entHasTrait(Heavy)) return;
     const {world, tile, ent} = this;
+    const heavy = this.entHasTrait(Heavy);
 
     if(calcTargetTile(ent) !== tile) return;
 
     let srcTile = null;
+    let strong = 0;
 
     for(const trait of tile.traits.get(NavigationTarget)){
+      if(!trait.strong) continue;
+      if(heavy && !trait.direct) continue;
+
       const tile = trait.src.tile;
 
       if(srcTile === null){
@@ -290,17 +296,15 @@ class Pushable extends Trait{
     const tileNew = tile.adj(dir);
     if(tileNew === null) return;
 
-    reqMoveEnt(world, ent, tileNew);
+    reqMoveEnt(world, ent, tileNew, 0, heavy ? 0 : 1);
   }
 }
 
-class Heavy extends Trait{
-  
-}
+class Heavy extends Trait{}
 
-const reqMoveEnt = (world, ent, tileNew) => {
+const reqMoveEnt = (world, ent, tileNew, direct=0, strong=0) => {
   assert(ent instanceof Entity);
-  world.reqCreateEnt(tileNew, Entity.NavigationTarget, ent);
+  world.reqCreateEnt(tileNew, Entity.NavigationTarget, ent, direct, strong);
 };
 
 const calcTargetTile = ent => {

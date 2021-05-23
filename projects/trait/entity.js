@@ -84,11 +84,11 @@ class Entity extends inspect.Inspectable{
 }
 
 class NavigationTarget extends Entity{
-  constructor(tile, src){
+  constructor(tile, src, direct=0, strong=0){
     super(tile);
 
     this.traits.addTrait(new Trait.Meta(this));
-    this.traits.addTrait(new Trait.NavigationTarget(this, src));
+    this.traits.addTrait(new Trait.NavigationTarget(this, src, direct, strong));
   }
 }
 

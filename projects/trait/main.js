@@ -37,13 +37,11 @@ const main = () => {
   global.world = world;
 
   world.reqCreateEntAtPos([0, 0], Entity.Player);
-
-  for(let y = 0; y !== 3; y++){
-    for(let i = 0; i !== y; i++)
-      world.reqCreateEntAtPos([3 + i, y], Entity.Box, i === 0 && y === 1);
-
-    world.reqCreateEntAtPos([5, y], Entity.Wall);
-  }
+  world.reqCreateEntAtPos([1, 1], Entity.Box, 0);
+  world.reqCreateEntAtPos([3, 1], Entity.Box, 0);
+  world.reqCreateEntAtPos([1, 3], Entity.Box, 1);
+  world.reqCreateEntAtPos([3, 3], Entity.Box, 1);
+  world.reqCreateEntAtPos([5, 2], Entity.Wall);
 
   world.tick();
 
