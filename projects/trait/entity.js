@@ -24,8 +24,22 @@ class Entity extends inspect.Inspectable{
   get world(){ return this.tile.world; }
   get valid(){ return this.tile !== null; }
 
+  get layer(){
+    let layer = O.N;
+
+    for(const trait of this.traits.vals)
+      if(trait.layer < layer)
+        layer = trait.layer;
+
+    return layer;
+  }
+
   hasTrait(traitCtor){
     return this.traits.hasKey(traitCtor);
+  }
+
+  addTrait(trait){
+    this.traits.add(trait);
   }
 
   getGlobData(traitCtor){
@@ -87,8 +101,8 @@ class NavigationTarget extends Entity{
   constructor(tile, src, direct=0, strong=0){
     super(tile);
 
-    this.traits.addTrait(new Trait.Meta(this));
-    this.traits.addTrait(new Trait.NavigationTarget(this, src, direct, strong));
+    this.addTrait(new Trait.Meta(this));
+    this.addTrait(new Trait.NavigationTarget(this, src, direct, strong));
   }
 }
 
@@ -96,8 +110,8 @@ class Player extends Entity{
   constructor(tile){
     super(tile);
 
-    this.traits.addTrait(new Trait.Player(this));
-    this.traits.addTrait(new Trait.Solid(this));
+    this.addTrait(new Trait.Player(this));
+    this.addTrait(new Trait.Solid(this));
   }
 }
 
@@ -105,8 +119,8 @@ class Wall extends Entity{
   constructor(tile){
     super(tile);
 
-    this.traits.addTrait(new Trait.Wall(this));
-    this.traits.addTrait(new Trait.Solid(this));
+    this.addTrait(new Trait.Wall(this));
+    this.addTrait(new Trait.Solid(this));
   }
 }
 
@@ -114,12 +128,30 @@ class Box extends Entity{
   constructor(tile, heavy=0){
     super(tile);
 
-    this.traits.addTrait(new Trait.Box(this));
-    this.traits.addTrait(new Trait.Solid(this));
-    this.traits.addTrait(new Trait.Pushable(this));
+    this.addTrait(new Trait.Box(this));
+    this.addTrait(new Trait.Solid(this));
+    this.addTrait(new Trait.Pushable(this));
 
     if(heavy)
-      this.traits.addTrait(new Trait.Heavy(this));
+      this.addTrait(new Trait.Heavy(this));
+  }
+}
+
+class Diamond extends Entity{
+  constructor(tile){
+    super(tile);
+
+    this.addTrait(new Trait.Diamond(this));
+    this.addTrait(new Trait.Item(this));
+  }
+}
+
+class Concrete extends Entity{
+  constructor(tile){
+    super(tile);
+
+    this.addTrait(new Trait.Concrete(this));
+    this.addTrait(new Trait.Floor(this));
   }
 }
 
@@ -128,6 +160,8 @@ module.exports = Object.assign(Entity, {
   Player,
   Wall,
   Box,
+  Diamond,
+  Concrete,
 });
 
 const Trait = require('./trait');

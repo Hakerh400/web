@@ -4,6 +4,7 @@ const assert = require('assert');
 const CtorMap = require('./ctor-map');
 const inspect = require('./inspect');
 const info = require('./info');
+const layers = require('./layers');
 
 const {
   BasicInfo,
@@ -13,7 +14,11 @@ const {
 const {min, max} = Math;
 const {pi, pih, pi2} = O;
 
+const layerMax = 1e3;
+
 class Trait extends inspect.Inspectable{
+  layer = layerMax;
+
   constructor(ent){
     super();
 
@@ -40,8 +45,22 @@ class Trait extends inspect.Inspectable{
     this.ent = null;
   }
 
+  *inspectData(){
+    return [];
+  }
+
   *inspect(){
-    return new BasicInfo(this.ctor.name);
+    const {layer} = this;
+
+    const layerInfo = new BasicInfo(
+      `layer = ${layer !== layerMax ?
+        `Just ${this.layer}` :
+        `Nothing`} :: Maybe Int`);
+
+    return new DetailedInfo(`trait :: ${this.ctor.name}`, [
+      layerInfo,
+      new DetailedInfo('data :: TraitData', yield [[this, 'inspectData']]),
+    ]);
   }
 }
 
@@ -91,9 +110,18 @@ class NavigationTarget extends Trait{
 
     world.reqModifyEntGlobData(src, ctor, ['set.remove', [this]]);
   }
+
+  *inspectData(){
+    return [
+      new BasicInfo(`direct = ${inspectBool(this.direct)} :: Bool`),
+      new BasicInfo(`strong = ${inspectBool(this.strong)} :: Bool`),
+    ];
+  }
 }
 
 class Player extends ActiveTrait{
+  layer = layers.Object;
+
   render(g){
     g.fillStyle = 'white';
     g.beginPath();
@@ -151,6 +179,8 @@ class Solid extends Trait{
 }
 
 class Wall extends Trait{
+  layer = layers.Wall;
+
   render(g){
     const s = 1 / g.s;
 
@@ -209,6 +239,8 @@ class Wall extends Trait{
 }
 
 class Box extends Trait{
+  layer = layers.Object;
+
   render(g){
     const s = 1 / g.s;
 
@@ -302,6 +334,65 @@ class Pushable extends Trait{
 
 class Heavy extends Trait{}
 
+class Item extends Trait{
+  layer = layers.Item;
+}
+
+class Diamond extends Trait{
+  render(g){
+    g.fillStyle = '#08f';
+    g.beginPath();
+    g.moveTo(.5 - .5, .14 - .5);
+    g.lineTo(.7 - .5, .38 - .5);
+    g.lineTo(.5 - .5, .86 - .5);
+    g.lineTo(.3 - .5, .38 - .5);
+    g.closePath();
+    g.stroke();
+    g.fill();
+    g.beginPath();
+    g.moveTo(.5 - .5, .14 - .5);
+    g.lineTo(.38 - .5, .44 - .5);
+    g.lineTo(.5 - .5, .86 - .5);
+    g.moveTo(.5 - .5, .14 - .5);
+    g.lineTo(.62 - .5, .44 - .5);
+    g.lineTo(.5 - .5, .86 - .5);
+    g.moveTo(.3 - .5, .38 - .5);
+    g.lineTo(.38 - .5, .44 - .5);
+    g.lineTo(.62 - .5, .44 - .5);
+    g.lineTo(.7 - .5, .38 - .5);
+    g.stroke();
+  }
+}
+
+class Floor extends Trait{
+  layer = layers.Ground;
+}
+
+class Concrete extends Trait{
+  render(g){
+    g.fillStyle = '#808080';
+    g.fillRect(-.5, -.5, 1, 1);
+  }
+}
+
+class Text extends Trait{
+  constructor(ent, val){
+    super(ent);
+    this.val = String(val);
+  }
+
+  render(g){
+    g.fillStyle = '#000';
+    g.fillText(this.val, 0, 0);
+  }
+
+  *inspectData(){
+    return [
+      new BasicInfo(`val = ${O.sf(this.val)} :: String`),
+    ];
+  }
+}
+
 const reqMoveEnt = (world, ent, tileNew, direct=0, strong=0) => {
   assert(ent instanceof Entity);
   world.reqCreateEnt(tileNew, Entity.NavigationTarget, ent, direct, strong);
@@ -314,6 +405,10 @@ const calcTargetTile = ent => {
     return ent.tile;
 
   return O.fst(targets).tile;
+};
+
+const inspectBool = val => {
+  return val ? 'True' : 'False';
 };
 
 const drawCirc = (g, x, y, r, col=null) => {
@@ -361,6 +456,11 @@ module.exports = Object.assign(Trait, {
   Box,
   Pushable,
   Heavy,
+  Item,
+  Diamond,
+  Floor,
+  Concrete,
+  Text,
 });
 
 const Entity = require('./entity');

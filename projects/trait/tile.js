@@ -26,7 +26,14 @@ class Tile extends inspect.Inspectable{
   get valid(){ return this.world !== null; }
 
   render(g){
-    for(const ent of this.entsSet)
+    const ents = [...this.entsSet].sort((e1, e2) => {
+      const layer1 = e1.layer;
+      const layer2 = e2.layer;
+
+      return layer1 - layer2;
+    });
+
+    for(const ent of ents)
       ent.render(g);
   }
 

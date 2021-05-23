@@ -42,8 +42,25 @@ const main = () => {
   world.reqCreateEntAtPos([1, 3], Entity.Box, 1);
   world.reqCreateEntAtPos([3, 3], Entity.Box, 1);
   world.reqCreateEntAtPos([5, 2], Entity.Wall);
+  world.reqCreateEntAtPos([5, 0], Entity.Diamond);
+
+  for(let y = 0; y !== h; y++){
+    for(let x = 0; x !== w; x++){
+      const ent = world.reqCreateEntAtPos([x, y], Entity.Concrete);
+    }
+  }
 
   world.tick();
+
+  const ent = O.fst(world.getTile([1, 0]).traits.get(Trait.Concrete)).ent;
+  ent.addTrait(new Trait.Text(ent, `L`));
+
+  // for(let y = 0; y !== h; y++){
+  //   for(let x = 0; x !== w; x++){
+  //     const ent = O.fst(world.getTile([x, y]).traits.get(Trait.Concrete)).ent;
+  //     ent.addTrait(new Trait.Text(ent, `${x}${y}`));
+  //   }
+  // }
 
   O.ael('resize', onResize);
   O.ael('keydown', onKeyDown);
@@ -140,6 +157,9 @@ const render = () => {
   g.translate(iw / 2, ih / 2);
   g.scale(s);
   g.translate(-w / 2, -h / 2);
+
+  g.fillStyle = '#000';
+  g.fillRect(0, 0, w, h);
 
   grid.iter((x, y, d) => {
     g.save();
