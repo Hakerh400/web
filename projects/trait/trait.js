@@ -93,7 +93,7 @@ class NavigationTarget extends Trait{
 
     const ctor = NavigationTarget;
 
-    world.reqModifyEntGlobData(src, ctor, ['set.insert', [this]]);
+    this.world.reqModifyEntGlobData(src, ctor, ['set.insert', [this]]);
   }
 
   navigate(n){
@@ -105,7 +105,7 @@ class NavigationTarget extends Trait{
   }
 
   onRemove(){
-    const {src} = this;
+    const {world, src} = this;
     const ctor = NavigationTarget;
 
     world.reqModifyEntGlobData(src, ctor, ['set.remove', [this]]);
