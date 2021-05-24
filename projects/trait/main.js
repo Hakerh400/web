@@ -12,8 +12,8 @@ const {floor} = Math;
 
 await O.addStyle('style.css');
 
-const w = 9;
-const h = 9;
+const w = 10;
+const h = 12;
 const s = 40;
 
 const cols = {
@@ -28,21 +28,19 @@ const {g} = O.ceCanvas(1);
 const world = new World(w, h);
 const {grid} = world;
 
-const infoContainer = O.ceDiv(O.body, 'info');
+const infoContainer = O.ceDiv(O.body, 'info hidden');
 
 let iw, ih;
 let ctrl = 0;
 
 const main = () => {
-  global.world = world;
-
-  world.reqCreateEntAtPos([0, 0], Entity.Player);
-  world.reqCreateEntAtPos([1, 1], Entity.Box, 0);
-  world.reqCreateEntAtPos([3, 1], Entity.Box, 0);
-  world.reqCreateEntAtPos([1, 3], Entity.Box, 1);
-  world.reqCreateEntAtPos([3, 3], Entity.Box, 1);
-  world.reqCreateEntAtPos([5, 2], Entity.Wall);
-  world.reqCreateEntAtPos([5, 0], Entity.Diamond);
+  world.reqCreateEntAtPos([0, 2], Entity.Player);
+  world.reqCreateEntAtPos([1, 3], Entity.Box, 0);
+  world.reqCreateEntAtPos([3, 3], Entity.Box, 0);
+  world.reqCreateEntAtPos([1, 5], Entity.Box, 1);
+  world.reqCreateEntAtPos([3, 5], Entity.Box, 1);
+  world.reqCreateEntAtPos([5, 4], Entity.Wall);
+  world.reqCreateEntAtPos([5, 2], Entity.Diamond);
 
   for(let y = 0; y !== h; y++){
     for(let x = 0; x !== w; x++){
@@ -52,8 +50,18 @@ const main = () => {
 
   world.tick();
 
-  const ent = O.fst(world.getTile([1, 0]).traits.get(Trait.Concrete)).ent;
-  ent.addTrait(new Trait.Text(ent, `L`));
+  const putStr = (str, x, y, traitCtor) => {
+    for(const c of str){
+      const tile = world.getTile([x, y]);
+      const trait = O.fst(tile.traits.get(traitCtor));
+      const ent = trait.ent;
+
+      ent.addTrait(new Trait.Text(ent, c));
+      x++;
+    }
+  };
+
+  putStr('Levels', 2, 0, Trait.Concrete);
 
   // for(let y = 0; y !== h; y++){
   //   for(let x = 0; x !== w; x++){
@@ -182,11 +190,14 @@ const render = () => {
 
 const setInfo = info => {
   clearInfo();
+  
   infoContainer.appendChild(info);
+  infoContainer.classList.remove('hidden');
 };
 
 const clearInfo = () => {
   infoContainer.innerText = '';
+  infoContainer.classList.add('hidden');
 };
 
 main();

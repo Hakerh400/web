@@ -8,12 +8,13 @@ summary{
 
 .info{
   font-family: monospace;
-  margin: 8px;
+  padding: 8px;
   position: absolute;
   top: 0px;
   left: 0px;
   cursor: default;
   user-select: none;
+  background: rgba(255, 255, 255, .5);
 }
 
 .info-elem{
@@ -22,4 +23,8 @@ summary{
 
 .info-elem-empty{
   font-style: italic;
+}
+
+.hidden{
+  visibility: hidden;
 }
