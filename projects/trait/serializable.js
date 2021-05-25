@@ -70,7 +70,7 @@ class Serializable extends SerializableBase{
 
   static *deserCtor(ser){
     assert(ser);
-    
+
     const {ctorsArr} = this;
     const pri = yield [[this, 'deserPri'], ser];
 
@@ -97,6 +97,7 @@ class Serializable extends SerializableBase{
 
   get ctor(){ return this.constructor; }
   get baseCtor(){ return this.ctor.baseCtor; }
+  get pri(){ return this.ctor.pri; }
   
   serialize(){
     const {baseCtor} = this;

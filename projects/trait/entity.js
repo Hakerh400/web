@@ -84,7 +84,20 @@ class Entity extends inspect.Inspectable{
   }
 
   render(g){
-    for(const trait of this.traits.vals)
+    const traits = [...this.traits.vals].sort((t1, t2) => {
+      const layer1 = t1.layer;
+      const layer2 = t2.layer;
+
+      if(layer1 !== layer2){
+        if(layer1 === null) return 1;
+        if(layer2 === null) return -1;
+        return layer1 - layer2;
+      }
+
+      return t1.pri - t2.pri;
+    });
+
+    for(const trait of traits)
       trait.render(g);
   }
 

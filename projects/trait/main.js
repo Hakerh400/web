@@ -37,7 +37,7 @@ let iw, ih;
 let ctrl = 0;
 
 const main = () => {
-  if(!O.has(O.lst, project)){
+  if(!O.has(O.lst, project)|1){
     initRoom();
     saveRoom();
   }else{
@@ -99,7 +99,7 @@ const initRoom = () => {
 
   // for(let y = 0; y !== h; y++){
   //   for(let x = 0; x !== w; x++){
-  //     const ent = O.fst(room.getTile([x, y]).traits.get(Trait.Concrete)).ent;
+  //     const ent = O.fst(room.getTile(p(x, y)).traits.get(Trait.Concrete)).ent;
   //     ent.addTrait(new Trait.Text(ent, `${x}${y}`));
   //   }
   // }
