@@ -12,6 +12,7 @@ const inspect = require('./inspect');
 const serializer = require('./serializer');
 
 const {floor} = Math;
+const {project} = O;
 
 await O.addStyle('style.css');
 
@@ -30,12 +31,37 @@ const {g} = O.ceCanvas(1);
 
 const infoContainer = O.ceDiv(O.body, 'info hidden');
 
-let room = new Room(new Grid.Rectangle(w, h));
+let room = null;
 
 let iw, ih;
 let ctrl = 0;
 
 const main = () => {
+  if(!O.has(O.lst, project)){
+    initRoom();
+    saveRoom();
+  }else{
+    loadRoom();
+  }
+
+  aels();
+};
+
+const aels = () => {
+  O.ael('resize', onResize);
+  O.ael('keydown', onKeyDown);
+  O.ael('keyup', onKeyUp);
+  O.ael('mousedown', onMouseDown);
+  O.ael('contextmenu', onContextMenu);
+  O.ael('blur', onBlur);
+  O.ael('beforeunload', onBeforeUnload);
+
+  onResize();
+};
+
+const initRoom = () => {
+  room = new Room(new Grid.Rectangle(w, h));;
+
   const p = (x, y) => {
     return new Position.Rectangle(x, y);
   };
@@ -77,15 +103,14 @@ const main = () => {
   //     ent.addTrait(new Trait.Text(ent, `${x}${y}`));
   //   }
   // }
+};
 
-  O.ael('resize', onResize);
-  O.ael('keydown', onKeyDown);
-  O.ael('keyup', onKeyUp);
-  O.ael('mousedown', onMouseDown);
-  O.ael('contextmenu', onContextMenu);
-  O.ael('blur', onBlur);
+const saveRoom = () => {
+  O.lst[project] = room.serialize().toString('base64');
+};
 
-  onResize();
+const loadRoom = () => {
+  room = Room.deserialize(O.Buffer.from(O.lst[project], 'base64'));
 };
 
 const onResize = evt => {
@@ -168,6 +193,10 @@ const onContextMenu = evt => {
 
 const onBlur = evt => {
   ctrl = 0;
+};
+
+const onBeforeUnload = evt => {
+  saveRoom();
 };
 
 const render = () => {
