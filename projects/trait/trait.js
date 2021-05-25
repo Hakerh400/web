@@ -27,7 +27,7 @@ class Trait extends inspect.Inspectable{
   }
 
   get ctor(){ return this.constructor; }
-  get world(){ return this.ent.world; }
+  get room(){ return this.ent.room; }
   get tile(){ return this.ent.tile; }
   get valid(){ return this.ent !== null; }
 
@@ -74,11 +74,11 @@ class Meta extends Trait{
 class ActiveTrait extends Trait{
   constructor(ent, ...args){
     super(ent, ...args);
-    this.world.addActiveTrait(this);
+    this.room.addActiveTrait(this);
   }
 
   remove(){
-    this.world.removeActiveTrait(this);
+    this.room.removeActiveTrait(this);
     super.remove();
   }
 }
@@ -93,22 +93,22 @@ class NavigationTarget extends Trait{
 
     const ctor = NavigationTarget;
 
-    this.world.reqModifyEntGlobData(src, ctor, ['set.insert', [this]]);
+    this.room.reqModifyEntGlobData(src, ctor, ['set.insert', [this]]);
   }
 
   navigate(n){
     if(n) return;
-    const {world, tile, ent: navTargetEnt, src} = this;
+    const {room, tile, ent: navTargetEnt, src} = this;
 
-    world.reqMoveEnt(src, tile);
-    world.reqRemoveEnt(navTargetEnt);
+    room.reqMoveEnt(src, tile);
+    room.reqRemoveEnt(navTargetEnt);
   }
 
   onRemove(){
-    const {world, src} = this;
+    const {room, src} = this;
     const ctor = NavigationTarget;
 
-    world.reqModifyEntGlobData(src, ctor, ['set.remove', [this]]);
+    room.reqModifyEntGlobData(src, ctor, ['set.remove', [this]]);
   }
 
   *inspectData(){
@@ -154,26 +154,26 @@ class Player extends ActiveTrait{
 
   navigate(n){
     if(n) return;
-    const {world, tile, ent} = this;
+    const {room, tile, ent} = this;
 
-    const dir = world.evts.nav;
+    const dir = room.evts.nav;
     if(dir === null) return;
 
     const tileNew = tile.adj(dir);
     if(tileNew === null) return;
 
-    reqMoveEnt(world, ent, tileNew, 1, 1);
+    reqMoveEnt(room, ent, tileNew, 1, 1);
   }
 }
 
 class Solid extends Trait{
   stop(){
-    const {world, tile, ent} = this;
+    const {room, tile, ent} = this;
     const targetTile = calcTargetTile(ent);
 
     for(const trait of targetTile.traits.get(NavigationTarget)){
       if(trait.src === ent) continue;
-      world.reqRemoveEnt(trait.ent);
+      room.reqRemoveEnt(trait.ent);
     }
   }
 }
@@ -296,7 +296,7 @@ class Box extends Trait{
 
 class Pushable extends Trait{
   push(n){
-    const {world, tile, ent} = this;
+    const {room, tile, ent} = this;
     const heavy = this.entHasTrait(Heavy);
 
     if(calcTargetTile(ent) !== tile) return;
@@ -328,7 +328,7 @@ class Pushable extends Trait{
     const tileNew = tile.adj(dir);
     if(tileNew === null) return;
 
-    reqMoveEnt(world, ent, tileNew, 0, heavy ? 0 : 1);
+    reqMoveEnt(room, ent, tileNew, 0, heavy ? 0 : 1);
   }
 }
 
@@ -393,9 +393,9 @@ class Text extends Trait{
   }
 }
 
-const reqMoveEnt = (world, ent, tileNew, direct=0, strong=0) => {
+const reqMoveEnt = (room, ent, tileNew, direct=0, strong=0) => {
   assert(ent instanceof Entity);
-  world.reqCreateEnt(tileNew, Entity.NavigationTarget, ent, direct, strong);
+  room.reqCreateEnt(tileNew, Entity.NavigationTarget, ent, direct, strong);
 };
 
 const calcTargetTile = ent => {

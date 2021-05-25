@@ -13,7 +13,7 @@ const {reqsArr} = Request;
 
 const reqCtorsNum = reqsArr.length;
 
-class World{
+class Room{
   activeTraits = new Set();
   notifiedTiles = new Set();
   reqs = new CtorMap();
@@ -145,4 +145,4 @@ class World{
   }
 }
 
-module.exports = World;
+module.exports = Room;

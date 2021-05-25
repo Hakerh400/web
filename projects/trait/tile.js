@@ -16,14 +16,14 @@ class Tile extends inspect.Inspectable{
   traits = new CtorMap();
   entsSet = new Set();
 
-  constructor(world, pos){
+  constructor(room, pos){
     super();
     
-    this.world = world;
+    this.room = room;
     this.pos = pos;
   }
 
-  get valid(){ return this.world !== null; }
+  get valid(){ return this.room !== null; }
 
   render(g){
     const ents = [...this.entsSet].sort((e1, e2) => {
@@ -73,7 +73,7 @@ class Tile extends inspect.Inspectable{
     else if(dir === 3) x--;
     else assert.fail();
 
-    return this.world.getTile([x, y]);
+    return this.room.getTile([x, y]);
   }
 
   adj2dir(adj){
@@ -94,12 +94,12 @@ class Tile extends inspect.Inspectable{
   }
 
   notify(){
-    const {world} = this;
+    const {room} = this;
 
-    world.markTileAsNotified(this);
+    room.markTileAsNotified(this);
 
     this.iterAdj(adj => {
-      world.markTileAsNotified(adj);
+      room.markTileAsNotified(adj);
     });
   }
 

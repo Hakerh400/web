@@ -9,8 +9,8 @@ const CtorMap = require('./ctor-map');
 class Request{
   static exec(reqs){ O.virtual('exec', 1); }
 
-  constructor(world){
-    this.world = world;
+  constructor(room){
+    this.room = room;
   }
 
   get ctor(){ return this.constructor; }
@@ -71,8 +71,8 @@ class ModifyEntGlobData extends Request{
     }
   }
 
-  constructor(world, ent, traitCtor, action){
-    super(world);
+  constructor(room, ent, traitCtor, action){
+    super(room);
 
     this.ent = ent;
     this.traitCtor = traitCtor;
@@ -81,8 +81,8 @@ class ModifyEntGlobData extends Request{
 }
 
 class CreateEntity extends SimpleRequest{
-  constructor(world, tile, entCtor, args){
-    super(world);
+  constructor(room, tile, entCtor, args){
+    super(room);
 
     this.tile = tile;
     this.entCtor = entCtor;
@@ -122,8 +122,8 @@ class MoveEntity extends Request{
     }
   }
 
-  constructor(world, ent, tileFrom, tileTo){
-    super(world);
+  constructor(room, ent, tileFrom, tileTo){
+    super(room);
 
     this.ent = ent;
     this.tileFrom = tileFrom;
@@ -143,8 +143,8 @@ class RemoveEntity extends Request{
     }
   }
 
-  constructor(world, ent){
-    super(world);
+  constructor(room, ent){
+    super(room);
     this.ent = ent;
   }
 }

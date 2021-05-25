@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const World = require('./world');
+const Room = require('./room');
 const Tile = require('./tile');
 const Entity = require('./entity');
 const Trait = require('./trait');
@@ -25,8 +25,8 @@ for(const key of O.keys(cols))
 
 const {g} = O.ceCanvas(1);
 
-const world = new World(w, h);
-const {grid} = world;
+const room = new Room(w, h);
+const {grid} = room;
 
 const infoContainer = O.ceDiv(O.body, 'info hidden');
 
@@ -34,25 +34,25 @@ let iw, ih;
 let ctrl = 0;
 
 const main = () => {
-  world.reqCreateEntAtPos([0, 2], Entity.Player);
-  world.reqCreateEntAtPos([1, 3], Entity.Box, 0);
-  world.reqCreateEntAtPos([3, 3], Entity.Box, 0);
-  world.reqCreateEntAtPos([1, 5], Entity.Box, 1);
-  world.reqCreateEntAtPos([3, 5], Entity.Box, 1);
-  world.reqCreateEntAtPos([5, 4], Entity.Wall);
-  world.reqCreateEntAtPos([5, 2], Entity.Diamond);
+  room.reqCreateEntAtPos([0, 2], Entity.Player);
+  room.reqCreateEntAtPos([1, 3], Entity.Box, 0);
+  room.reqCreateEntAtPos([3, 3], Entity.Box, 0);
+  room.reqCreateEntAtPos([1, 5], Entity.Box, 1);
+  room.reqCreateEntAtPos([3, 5], Entity.Box, 1);
+  room.reqCreateEntAtPos([5, 4], Entity.Wall);
+  room.reqCreateEntAtPos([5, 2], Entity.Diamond);
 
   for(let y = 0; y !== h; y++){
     for(let x = 0; x !== w; x++){
-      const ent = world.reqCreateEntAtPos([x, y], Entity.Concrete);
+      const ent = room.reqCreateEntAtPos([x, y], Entity.Concrete);
     }
   }
 
-  world.tick();
+  room.tick();
 
   const putStr = (str, x, y, traitCtor) => {
     for(const c of str){
-      const tile = world.getTile([x, y]);
+      const tile = room.getTile([x, y]);
       const trait = O.fst(tile.traits.get(traitCtor));
       const ent = trait.ent;
 
@@ -65,7 +65,7 @@ const main = () => {
 
   // for(let y = 0; y !== h; y++){
   //   for(let x = 0; x !== w; x++){
-  //     const ent = O.fst(world.getTile([x, y]).traits.get(Trait.Concrete)).ent;
+  //     const ent = O.fst(room.getTile([x, y]).traits.get(Trait.Concrete)).ent;
   //     ent.addTrait(new Trait.Text(ent, `${x}${y}`));
   //   }
   // }
@@ -115,9 +115,9 @@ const onKeyDown = evt => {
 
   if(dir !== null){
     clearInfo();
-    world.evts.nav = dir;
-    world.tick();
-    world.evts.nav = null;
+    room.evts.nav = dir;
+    room.tick();
+    room.evts.nav = null;
     render();
   }
 };
@@ -138,7 +138,7 @@ const onMouseDown = evt => {
     const x = floor((evt.clientX - iw / 2) / s + w / 2);
     const y = floor((evt.clientY - ih / 2) / s + h / 2);
 
-    const tile = world.getTile([x, y]);
+    const tile = room.getTile([x, y]);
     if(tile === null) return;
 
     const info = O.rec([tile, 'inspect']);
@@ -190,7 +190,7 @@ const render = () => {
 
 const setInfo = info => {
   clearInfo();
-  
+
   infoContainer.appendChild(info);
   infoContainer.classList.remove('hidden');
 };
