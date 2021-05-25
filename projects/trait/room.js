@@ -2,42 +2,44 @@
 
 const assert = require('assert');
 const Request = require('./request');
+const Grid = require('./grid');
 const Tile = require('./tile');
 const Entity = require('./entity');
 const Trait = require('./trait');
-const CtorMap = require('./ctor-map');
+const CtorsMap = require('./ctors-map');
 const inspect = require('./inspect');
+const Serializable = require('./serializable');
 
 const {handlersArr, handlersMap} = Trait;
 const {reqsArr} = Request;
 
 const reqCtorsNum = reqsArr.length;
 
-class Room{
-  activeTraits = new Set();
-  notifiedTiles = new Set();
-  reqs = new CtorMap();
+class Room extends Serializable{
+  init(){
+    super.init();
 
-  evts = {
-    nav: null,
-  };
+    this.activeTraits = new Set();
+    this.notifiedTiles = new Set();
+    this.reqs = new CtorsMap();
 
-  #tickId = null;
+    this.evts = {
+      nav: null,
+    };
 
-  constructor(w, h){
-    this.w = w;
-    this.h = h;
-
-    this.grid = new O.Grid(w, h, (x, y) => {
-      return new Tile(this, [x, y]);
-    });
+    this.tickId = null;
+    this.baseReqPri = null;
   }
 
-  get tickId(){ return this.#tickId; }
+  new(grid){
+    super.new();
+
+    this.grid = grid;
+    grid.room = this;
+  }
 
   getTile(pos){
-    const [x, y] = pos;
-    return this.grid.get(x, y);
+    return this.grid.get(pos);
   }
 
   addActiveTrait(trait){
@@ -60,7 +62,7 @@ class Room{
     const {notifiedTiles, executedTraits, reqs} = this;
 
     // O.logb();
-    this.#tickId = O.obj();
+    this.tickId = O.obj();
 
     for(const trait of this.activeTraits){
       assert(trait.valid);
@@ -113,7 +115,8 @@ class Room{
 
     notifiedTiles.clear();
 
-    this.#tickId = null;
+    this.tickId = null;
+    this.baseReqPri = null;
   }
 
   addReq(req){
@@ -142,6 +145,28 @@ class Room{
 
   reqRemoveEnt(ent){
     this.addReq(new Request.RemoveEntity(this, ent, ent));
+  }
+
+  *ser(ser){
+    assert(this.evts.nav === null);
+    assert(this.notifiedTiles.size === 0);
+    assert(this.reqs.empty);
+    assert(this.tickId === null);
+    assert(this.baseReqPri === null);
+
+    yield [[this.grid, 'serm'], ser];
+    yield [[ser, 'writeSet'], this.activeTraits, Trait];
+  }
+
+  static *deser(ser){
+    const room = Room.new();
+
+    const grid = room.grid = yield [[Grid, 'deserm'], ser];
+    const activeTraits = room.activeTraits = yield [[ser, 'readSet'], Trait];
+
+    grid.room = room;
+
+    return room;
   }
 }
 

@@ -1,6 +1,8 @@
 'use strict';
 
-class Inspectable{
+const Serializable = require('./serializable');
+
+class Inspectable extends Serializable{
   *inspect(){ O.virtual('inspect'); }
 }
 

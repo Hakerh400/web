@@ -1,10 +1,12 @@
 'use strict';
 
 const assert = require('assert');
-const CtorMap = require('./ctor-map');
+const CtorsMap = require('./ctors-map');
 const inspect = require('./inspect');
 const info = require('./info');
 const layers = require('./layers');
+const Serializable = require('./serializable');
+const ctorsPri = require('./ctors-pri');
 
 const {
   BasicInfo,
@@ -14,19 +16,26 @@ const {
 const {min, max} = Math;
 const {pi, pih, pi2} = O;
 
-const layerMax = 1e3;
+const layersNum = O.keys(layers).length >> 1;
 
 class Trait extends inspect.Inspectable{
-  layer = layerMax;
+  static get baseCtor(){ return Trait; }
 
-  constructor(ent){
-    super();
+  init(){
+    super.init();
+
+    this.locDataEnts = new Set();
+    this.layer = null;
+  }
+
+  new(ent){
+    super.new();
 
     this.ent = ent;
+
     this.onCreate();
   }
 
-  get ctor(){ return this.constructor; }
   get room(){ return this.ent.room; }
   get tile(){ return this.ent.tile; }
   get valid(){ return this.ent !== null; }
@@ -42,8 +51,48 @@ class Trait extends inspect.Inspectable{
 
   remove(){
     this.onRemove();
+
+    for(const ent of this.locDataEnts)
+      ent.locData.delete(this);
+
     this.ent = null;
   }
+
+  *ser(ser){
+    const {layer} = this;
+
+    yield [[this, 'serCtor'], ser];
+
+    if(layer === null){
+      ser.write(0);
+    }else{
+      ser.write(1);
+      ser.write(layer, layersNum);
+    }
+
+    yield [[this, 'serData'], ser];
+  }
+
+  static *deser(ser){
+    const ctor = yield [[this, 'deserCtor'], ser];
+    const trait = ctor.new();
+
+    const layer = ctor.layer = ser.read() ?
+      ser.read(layersNum) : null;
+
+    yield [[trait, 'deserData'], ser];
+
+    return trait;
+  }
+
+  *serData(ser){}
+  *deserData(ser){}
+
+  static *serEntGlobData(ser, data){ O.virtual('serEntGlobData'); }
+  static *deserEntGlobData(ser, data){ O.virtual('deserEntGlobData'); }
+
+  *serEntLocData(ser, data){ O.virtual('serEntLocData'); }
+  *deserEntLocData(ser, data){ O.virtual('deserEntLocData'); }
 
   *inspectData(){
     return [];
@@ -53,7 +102,7 @@ class Trait extends inspect.Inspectable{
     const {layer} = this;
 
     const layerInfo = new BasicInfo(
-      `layer = ${layer !== layerMax ?
+      `layer = ${layer !== null ?
         `Just ${this.layer}` :
         `Nothing`} :: Maybe Int`);
 
@@ -72,8 +121,8 @@ class Meta extends Trait{
 }
 
 class ActiveTrait extends Trait{
-  constructor(ent, ...args){
-    super(ent, ...args);
+  new(ent, ...args){
+    super.new(ent, ...args);
     this.room.addActiveTrait(this);
   }
 
@@ -84,8 +133,8 @@ class ActiveTrait extends Trait{
 }
 
 class NavigationTarget extends Trait{
-  constructor(ent, src, direct=0, strong=0){
-    super(ent);
+  new(ent, src, direct=0, strong=0){
+    super.new(ent);
 
     this.src = src;
     this.direct = direct;
@@ -111,6 +160,15 @@ class NavigationTarget extends Trait{
     room.reqModifyEntGlobData(src, ctor, ['set.remove', [this]]);
   }
 
+  static *serEntGlobData(ser, data){
+    const set = data !== null ? data : new Set();
+    yield [[ser, 'writeSet'], set];
+  }
+
+  static *deserEntGlobData(ser){
+    return O.tco([ser, 'readSet'], Entity);
+  }
+
   *inspectData(){
     return [
       new BasicInfo(`direct = ${inspectBool(this.direct)} :: Bool`),
@@ -120,7 +178,11 @@ class NavigationTarget extends Trait{
 }
 
 class Player extends ActiveTrait{
-  layer = layers.Object;
+  init(){
+    super.init();
+
+    this.layer = layers.Object;
+  }
 
   render(g){
     g.fillStyle = 'white';
@@ -179,7 +241,11 @@ class Solid extends Trait{
 }
 
 class Wall extends Trait{
-  layer = layers.Wall;
+  init(){
+    super.init();
+
+    this.layer = layers.Wall;
+  }
 
   render(g){
     const s = 1 / g.s;
@@ -239,7 +305,11 @@ class Wall extends Trait{
 }
 
 class Box extends Trait{
-  layer = layers.Object;
+  init(){
+    super.init();
+
+    this.layer = layers.Object;
+  }
 
   render(g){
     const s = 1 / g.s;
@@ -335,7 +405,11 @@ class Pushable extends Trait{
 class Heavy extends Trait{}
 
 class Item extends Trait{
-  layer = layers.Item;
+  init(){
+    super.init();
+
+    this.layer = layers.Item;
+  }
 }
 
 class Diamond extends Trait{
@@ -365,7 +439,11 @@ class Diamond extends Trait{
 }
 
 class Floor extends Trait{
-  layer = layers.Ground;
+  init(){
+    super.init();
+
+    this.layer = layers.Ground;
+  }
 }
 
 class Concrete extends Trait{
@@ -376,14 +454,22 @@ class Concrete extends Trait{
 }
 
 class Text extends Trait{
-  constructor(ent, val){
-    super(ent);
+  new(ent, val){
+    super.new(ent);
     this.val = String(val);
   }
 
   render(g){
     g.fillStyle = '#000';
     g.fillText(this.val, 0, 0);
+  }
+
+  *serData(ser){
+    ser.writeStr(this.val);
+  }
+
+  *deserData(ser){
+    this.val = ser.readStr();
   }
 
   *inspectData(){
@@ -428,7 +514,7 @@ const handlersArr = [
   [NavigationTarget, 'navigate'],
 ];
 
-const handlersMap = new CtorMap();
+const handlersMap = new CtorsMap();
 
 for(const info of handlersArr){
   const [ctor, methodName] = info;
@@ -438,18 +524,12 @@ for(const info of handlersArr){
   handlersMap.add(ctor, method);
 }
 
-module.exports = Object.assign(Trait, {
-  handlersArr,
-  handlersMap,
-
-  // Abstract traits
+const ctorsArr = [
   ActiveTrait,
 
-  // Meta traits
   Meta,
   NavigationTarget,
 
-  // Concrete traits
   Player,
   Solid,
   Wall,
@@ -461,6 +541,16 @@ module.exports = Object.assign(Trait, {
   Floor,
   Concrete,
   Text,
+];
+
+const ctorsObj = ctorsPri(ctorsArr);
+
+module.exports = Object.assign(Trait, {
+  handlersArr,
+  handlersMap,
+
+  ctorsArr,
+  ...ctorsObj,
 });
 
 const Entity = require('./entity');

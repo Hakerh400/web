@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 
-class CtorMap extends O.SetMap{
+class CtorsMap extends O.SetMap{
   constructor(strict=1){
     super(null, strict);
   }
@@ -34,4 +34,4 @@ class CtorMap extends O.SetMap{
   }
 }
 
-module.exports = CtorMap;
+module.exports = CtorsMap;

@@ -1,11 +1,14 @@
 'use strict';
 
 const assert = require('assert');
+const Position = require('./position');
 const Entity = require('./entity');
 const Trait = require('./trait');
-const CtorMap = require('./ctor-map');
+const CtorsMap = require('./ctors-map');
 const inspect = require('./inspect');
 const info = require('./info');
+const Serializable = require('./serializable');
+const ctorsPri = require('./ctors-pri');
 
 const {
   BasicInfo,
@@ -13,22 +16,32 @@ const {
 } = info;
 
 class Tile extends inspect.Inspectable{
-  traits = new CtorMap();
-  entsSet = new Set();
+  static get baseCtor(){ return Tile; }
 
-  constructor(room, pos){
-    super();
+  init(){
+    super.init();
+
+    this.traits = new CtorsMap();
+    this.ents = new Set();
+  }
+
+  new(grid, pos){
+    super.new();
     
-    this.room = room;
+    this.grid = grid;
     this.pos = pos;
   }
 
-  get valid(){ return this.room !== null; }
+  get valid(){ return this.grid !== null; }
+  get room(){ return this.grid.room; }
 
   render(g){
-    const ents = [...this.entsSet].sort((e1, e2) => {
+    const ents = [...this.ents].sort((e1, e2) => {
       const layer1 = e1.layer;
       const layer2 = e2.layer;
+
+      assert(layer1 !== null);
+      assert(layer2 !== null);
 
       return layer1 - layer2;
     });
@@ -47,11 +60,11 @@ class Tile extends inspect.Inspectable{
     assert(ent instanceof Entity);
     assert(ent.tile === this);
 
-    // if(this.entsSet.size === 3)
+    // if(this.ents.size === 3)
     //   assert.fail();
 
     this.traits.addEnt(ent);
-    this.entsSet.add(ent);
+    this.ents.add(ent);
     this.notify();
   }
 
@@ -60,12 +73,55 @@ class Tile extends inspect.Inspectable{
     assert(ent.tile === this);
 
     this.traits.removeEnt(ent);
-    this.entsSet.delete(ent);
+    this.ents.delete(ent);
     this.notify();
   }
 
+  notify(){
+    const {room} = this;
+
+    room.markTileAsNotified(this);
+
+    this.iterAdj(adj => {
+      room.markTileAsNotified(adj);
+    });
+  }
+
+  *ser(ser){
+    yield [[this, 'serCtor'], ser];
+
+    // yield [[this.pos, 'serm'], ser];
+    yield [[ser, 'writeSet'], this.ents];
+  }
+
+  static *deser(ser){
+    const ctor = yield [[this, 'deserCtor'], ser];
+    const tile = ctor.new();
+
+    const ents = tile.ents = yield [[ser, 'readSet'], Entity];
+    const traits = tile.traits = new CtorsMap();
+
+    for(const ent of ents){
+      ent.tile = tile;
+      traits.addEnt(ent);
+    }
+
+    return tile;
+  }
+
+  *inspect(){
+    return new DetailedInfo('tile :: Tile', [
+      yield [[this.pos, 'inspect']],
+      new DetailedInfo('ents :: Set Entity', yield [O.mapr, this.ents, function*(ent){
+        return O.tco([ent, 'inspect']);
+      }]),
+    ]);
+  }
+}
+
+class Rectangle extends Tile{
   adj(dir){
-    let [x, y] = this.pos;
+    let {x, y} = this.pos;
 
     if(dir === 0) y--;
     else if(dir === 1) x++;
@@ -73,7 +129,7 @@ class Tile extends inspect.Inspectable{
     else if(dir === 3) x--;
     else assert.fail();
 
-    return this.room.getTile([x, y]);
+    return this.room.getTile(new Position.Rectangle(x, y));
   }
 
   adj2dir(adj){
@@ -92,28 +148,15 @@ class Tile extends inspect.Inspectable{
       func(adj, dir);
     }
   }
-
-  notify(){
-    const {room} = this;
-
-    room.markTileAsNotified(this);
-
-    this.iterAdj(adj => {
-      room.markTileAsNotified(adj);
-    });
-  }
-
-  *inspect(){
-    return new DetailedInfo('tile :: Tile', [
-      new DetailedInfo('pos :: Position', [
-        new BasicInfo(`x = ${this.pos[0]} :: Int`),
-        new BasicInfo(`y = ${this.pos[1]} :: Int`),
-      ]),
-      new DetailedInfo('ents :: Set Entity', yield [O.mapr, this.entsSet, function*(ent){
-        return O.tco([ent, 'inspect']);
-      }]),
-    ]);
-  }
 }
 
-module.exports = Tile;
+const ctorsArr = [
+  Rectangle,
+];
+
+const ctorsObj = ctorsPri(ctorsArr);
+
+module.exports = Object.assign(Tile, {
+  ctorsArr,
+  ...ctorsObj,
+});
