@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 const CtorsMap = require('./ctors-map');
-const inspect = require('./inspect');
+const Inspectable = require('./inspectable');
 const info = require('./info');
 const layers = require('./layers');
 const Serializable = require('./serializable');
@@ -18,7 +18,7 @@ const {pi, pih, pi2} = O;
 
 const layersNum = O.keys(layers).length >> 1;
 
-class Trait extends inspect.Inspectable{
+class Trait extends Inspectable{
   static get baseCtor(){ return Trait; }
 
   init(){
@@ -419,6 +419,13 @@ class Item extends Trait{
 }
 
 class Diamond extends Trait{
+  new(ent, level){
+    super.new(ent);
+
+    assert(typeof level === 'number');
+    this.level = level;
+  }
+
   render(g){
     g.fillStyle = '#08f';
     g.beginPath();
@@ -442,6 +449,44 @@ class Diamond extends Trait{
     g.lineTo(.7, .38);
     g.stroke();
   }
+
+  collect(n){
+    if(n) return;
+
+    const {world, tile, level} = this;
+    if(!tile.hasTrait(Player)) return;
+
+    world.reqPopRoom(grid => {
+      const nextLevel = level + 1;
+      const x = nextLevel % 10;
+      const y = 2 + nextLevel / 10 | 0;
+
+      const tile = grid.getp(x, y);
+      if(tile === null) return;
+
+      const locks = [...tile.getEnts(Lock)];
+      if(locks.length !== 1) return;
+
+      const lock = locks[0];
+
+      world.reqRemoveEnt(lock);
+      world.reqCreateEnt(tile, Entity.Button, `${y - 2}${x}`, new Action.OpenLevel());
+    });
+  }
+
+  *serData(ser){
+    ser.writeInt(this.level);
+  }
+
+  *deserData(ser){
+    this.level = ser.readInt();
+  }
+
+  *inspectData(){
+    return [
+      new BasicInfo(`level = ${this.level} :: Int`),
+    ];
+  }
 }
 
 class Floor extends Trait{
@@ -459,30 +504,30 @@ class Concrete extends Trait{
 }
 
 class Text extends Trait{
-  new(ent, val){
+  new(ent, str){
     super.new(ent);
 
-    this.val = String(val);
+    this.str = String(str);
   }
 
   render(g){
     const {gs} = g;
 
     g.fillStyle = '#000';
-    g.fillText(this.val, .5 - gs, .5 + gs);
+    g.fillText(this.str, .5 - gs, .5 + gs);
   }
 
   *serData(ser){
-    ser.writeStr(this.val);
+    ser.writeStr(this.str);
   }
 
   *deserData(ser){
-    this.val = ser.readStr();
+    this.str = ser.readStr();
   }
 
   *inspectData(){
     return [
-      new BasicInfo(`val = ${O.sf(this.val)} :: String`),
+      new BasicInfo(`str = ${O.sf(this.str)} :: String`),
     ];
   }
 }
@@ -492,6 +537,12 @@ class Button extends Trait{
     super.init();
 
     this.layer = layers.FloorObj;
+  }
+
+  new(ent, action=null){
+    super.new(ent);
+
+    this.action = action;
   }
 
   render(g){
@@ -529,11 +580,50 @@ class Button extends Trait{
     g.stroke();
   }
 
-  click(){
-    const {world, tile, ent} = this;
-    if(world.evts.lmb !== tile) return;
+  click(n){
+    if(n) return;
 
-    log('clicked');
+    const {world, tile, ent, action} = this;
+
+    if(world.evts.lmb !== tile) return;
+    if(action === null) return;
+
+    const labs = [...O.mapg(ent.getTraits(Text), trait => {
+      return trait.str;
+    })];
+
+    action.exec(this, labs);
+  }
+
+  *serData(ser){
+    const {action} = this;
+
+    if(action === null){
+      ser.write(0);
+      return;
+    }
+
+    ser.write(1);
+    yield [[action, 'serm'], ser];
+  }
+
+  *deserData(ser){
+    this.action = ser.read() ?
+      yield [[Action, 'deserm'], ser] :
+      null;
+  }
+
+  *inspectData(){
+    const {action} = this;
+
+    const actionStr = action !== null ?
+      `Just ${action.ctor.name}` : 'Nothing';
+
+    return [
+      new DetailedInfo(`action = ${actionStr} :: Maybe Action`,
+        action !== null ? yield [[action, 'inspectData']]: [],
+      ),
+    ];
   }
 }
 
@@ -614,6 +704,7 @@ const handlersArr = [
   [Pushable, 'push'],
   [Solid, 'stop'],
   [NavigationTarget, 'navigate'],
+  [Diamond, 'collect'],
 ];
 
 const handlersMap = new CtorsMap();
@@ -657,4 +748,6 @@ module.exports = Object.assign(Trait, {
   ...ctorsObj,
 });
 
+const Grid = require('./grid');
 const Entity = require('./entity');
+const Action = require('./action');

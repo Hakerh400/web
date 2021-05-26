@@ -2,10 +2,8 @@
 
 const assert = require('assert');
 const Position = require('./position');
-const Entity = require('./entity');
-const Trait = require('./trait');
 const CtorsMap = require('./ctors-map');
-const inspect = require('./inspect');
+const Inspectable = require('./inspectable');
 const info = require('./info');
 const Serializable = require('./serializable');
 const ctorsPri = require('./ctors-pri');
@@ -15,7 +13,7 @@ const {
   DetailedInfo,
 } = info;
 
-class Tile extends inspect.Inspectable{
+class Tile extends Inspectable{
   static get baseCtor(){ return Tile; }
 
   init(){
@@ -51,6 +49,10 @@ class Tile extends inspect.Inspectable{
       ent.render(g);
   }
 
+  hasTrait(traitCtor){
+    return this.traits.hasKey(traitCtor);
+  }
+
   createEnt(ctor, ...args){
     const ent = new ctor(this, ...args);
     this.addEnt(ent);
@@ -76,6 +78,24 @@ class Tile extends inspect.Inspectable{
     this.traits.removeEnt(ent);
     this.ents.delete(ent);
     this.notify();
+  }
+
+  getEnts(traitCtor){
+    return O.mapg(this.getTraits(traitCtor), trait => {
+      return trait.ent;
+    });
+  }
+
+  getEnt(traitCtor){
+    return O.fst(this.getEnts(traitCtor));
+  }
+
+  getTraits(traitCtor){
+    return this.traits.get(traitCtor);
+  }
+
+  getTrait(traitCtor){
+    return O.fst(this.getEnts(traitCtor));
   }
 
   notify(){
@@ -162,3 +182,6 @@ module.exports = Object.assign(Tile, {
   ctorsArr,
   ...ctorsObj,
 });
+
+const Entity = require('./entity');
+const Trait = require('./trait');

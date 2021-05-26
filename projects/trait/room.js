@@ -7,7 +7,6 @@ const Tile = require('./tile');
 const Entity = require('./entity');
 const Trait = require('./trait');
 const CtorsMap = require('./ctors-map');
-const inspect = require('./inspect');
 const Serializable = require('./serializable');
 
 class Room extends Serializable{

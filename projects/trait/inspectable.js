@@ -6,6 +6,4 @@ class Inspectable extends Serializable{
   *inspect(){ O.virtual('inspect'); }
 }
 
-module.exports = {
-  Inspectable,
-};
+module.exports = Inspectable;

@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const inspect = require('./inspect');
+const Inspectable = require('./inspectable');
 const Serializable = require('./serializable');
 const info = require('./info');
 const ctorsPri = require('./ctors-pri');
@@ -11,7 +11,7 @@ const {
   DetailedInfo,
 } = info;
 
-class Position extends inspect.Inspectable{
+class Position extends Inspectable{
   new(grid=null){
     super.new();
     this.grid = grid;

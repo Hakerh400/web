@@ -9,7 +9,6 @@ const Tile = require('./tile');
 const Entity = require('./entity');
 const Trait = require('./trait');
 const CtorsMap = require('./ctors-map');
-const inspect = require('./inspect');
 const serializer = require('./serializer');
 const worldBuilder = require('./world-builder');
 
@@ -91,7 +90,7 @@ const onKeyDown = evt => {
     world.evts.nav = dir;
     world.tick();
 
-    worldBuilder.saveWorld(world);
+    // worldBuilder.saveWorld(world);
 
     // const ctorsArr = [];
     // const buf = room.serialize();
@@ -106,12 +105,16 @@ const onKeyUp = evt => {
 };
 
 const onMouseDown = evt => {
-  if(evt.detail > 1 && evt.target !== g.canvas){
-    O.pd(evt);
+  const isCanvas = evt.target === g.canvas;
+
+  if(!isCanvas){
+    if(evt.detail > 1 || ctrl) O.pd(evt);
     return;
   }
 
-  if(ctrl) clearInfo();
+  clearInfo();
+  
+  const isInspect = isCanvas && ctrl;
 
   const room = world.selectedRoom;
   if(room === null) return;
@@ -125,14 +128,16 @@ const onMouseDown = evt => {
   const tile = grid.get(pos(x, y));
   if(tile === null) return;
 
-  if(ctrl){
+  if(isInspect){
     const info = O.rec([tile, 'inspect']);
     setInfo(O.rec([info, 'toDOM']));
     return;
   }
 
+  clearInfo();
   world.evts.lmb = tile;
   world.tick();
+  render();
 };
 
 const onContextMenu = evt => {

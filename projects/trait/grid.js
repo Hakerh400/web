@@ -1,7 +1,6 @@
 'use strict';
 
 const assert = require('assert');
-const Tile = require('./tile');
 const Position = require('./position');
 const Serializable = require('./serializable');
 const ctorsPri = require('./ctors-pri');
@@ -136,3 +135,5 @@ module.exports = Object.assign(Grid, {
   ctorsArr,
   ...ctorsObj,
 });
+
+const Tile = require('./tile');

@@ -214,6 +214,27 @@ class Serializer extends SerializerBase{
     map.set(obj, map.size);
   }
 
+  *writeArr(arr){
+    this.writeInt(arr.length);
+
+    for(const elem of arr)
+      yield [[elem, 'serm'], this];
+
+    return this;
+  }
+
+  *readArr(ctor){
+    assert(ctor);
+
+    const len = this.readInt();
+    const arr = [];
+
+    for(let i = 0; i !== len; i++)
+      arr.push(yield [[ctor, 'deserm'], this]);
+
+    return arr;
+  }
+
   *writeSet(set){
     this.writeInt(set.size);
 

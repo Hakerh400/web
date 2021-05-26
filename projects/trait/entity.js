@@ -2,7 +2,7 @@
 
 const assert = require('assert');
 const CtorsMap = require('./ctors-map');
-const inspect = require('./inspect');
+const Inspectable = require('./inspectable');
 const info = require('./info');
 const Serializable = require('./serializable');
 
@@ -11,7 +11,7 @@ const {
   DetailedInfo,
 } = info;
 
-class Entity extends inspect.Inspectable{
+class Entity extends Inspectable{
   static get baseCtor(){ return Entity; }
 
   init(){
@@ -50,8 +50,20 @@ class Entity extends inspect.Inspectable{
     return this.traits.hasKey(traitCtor);
   }
 
+  getTraits(traitCtor){
+    return this.traits.get(traitCtor);
+  }
+
+  getTrait(traitCtor){
+    return O.fst(this.getTraits(traitCtor));
+  }
+
   addTrait(trait){
     this.traits.add(trait);
+  }
+
+  createTrait(traitCtor, ...args){
+    this.addTrait(new traitCtor(this, ...args));
   }
 
   getGlobData(traitCtor){
@@ -181,8 +193,8 @@ class NavigationTarget extends Entity{
   new(tile, src, direct=0, strong=0){
     super.new(tile);
 
-    this.addTrait(new Trait.Meta(this));
-    this.addTrait(new Trait.NavigationTarget(this, src, direct, strong));
+    this.createTrait(Trait.Meta);
+    this.createTrait(Trait.NavigationTarget, src, direct, strong);
   }
 }
 
@@ -190,8 +202,8 @@ class Player extends Entity{
   new(tile){
     super.new(tile);
 
-    this.addTrait(new Trait.Player(this));
-    this.addTrait(new Trait.Solid(this));
+    this.createTrait(Trait.Player);
+    this.createTrait(Trait.Solid);
   }
 }
 
@@ -199,8 +211,8 @@ class Wall extends Entity{
   new(tile){
     super.new(tile);
 
-    this.addTrait(new Trait.Wall(this));
-    this.addTrait(new Trait.Solid(this));
+    this.createTrait(Trait.Wall);
+    this.createTrait(Trait.Solid);
   }
 }
 
@@ -208,21 +220,21 @@ class Box extends Entity{
   new(tile, heavy=0){
     super.new(tile);
 
-    this.addTrait(new Trait.Box(this));
-    this.addTrait(new Trait.Solid(this));
-    this.addTrait(new Trait.Pushable(this));
+    this.createTrait(Trait.Box);
+    this.createTrait(Trait.Solid);
+    this.createTrait(Trait.Pushable);
 
     if(heavy)
-      this.addTrait(new Trait.Heavy(this));
+      this.createTrait(Trait.Heavy);
   }
 }
 
 class Diamond extends Entity{
-  new(tile){
+  new(tile, level){
     super.new(tile);
 
-    this.addTrait(new Trait.Diamond(this));
-    this.addTrait(new Trait.Item(this));
+    this.createTrait(Trait.Diamond, level);
+    this.createTrait(Trait.Item);
   }
 }
 
@@ -230,19 +242,19 @@ class Concrete extends Entity{
   new(tile){
     super.new(tile);
 
-    this.addTrait(new Trait.Concrete(this));
-    this.addTrait(new Trait.Floor(this));
+    this.createTrait(Trait.Concrete);
+    this.createTrait(Trait.Floor);
   }
 }
 
 class Button extends Entity{
-  new(tile, label=null){
+  new(tile, label=null, action=null){
     super.new(tile);
 
-    this.addTrait(new Trait.Button(this));
+    this.createTrait(Trait.Button, action);
 
     if(label !== null)
-      this.addTrait(new Trait.Text(this, label));
+      this.createTrait(Trait.Text, label);
   }
 }
 
@@ -250,8 +262,8 @@ class Lock extends Entity{
   new(tile){
     super.new(tile);
 
-    this.addTrait(new Trait.Lock(this));
-    this.addTrait(new Trait.Solid(this));
+    this.createTrait(Trait.Lock);
+    this.createTrait(Trait.Solid);
   }
 }
 

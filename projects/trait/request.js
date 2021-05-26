@@ -5,12 +5,13 @@ const Tile = require('./tile');
 const Entity = require('./entity');
 const Trait = require('./trait');
 const CtorsMap = require('./ctors-map');
+const ctorsPri = require('./ctors-pri');
 
 class Request{
   static exec(reqs){ O.virtual('exec', 1); }
 
-  constructor(room){
-    this.room = room;
+  constructor(world){
+    this.world = world;
   }
 
   get ctor(){ return this.constructor; }
@@ -71,8 +72,8 @@ class ModifyEntGlobData extends Request{
     }
   }
 
-  constructor(room, ent, traitCtor, action){
-    super(room);
+  constructor(world, ent, traitCtor, action){
+    super(world);
 
     this.ent = ent;
     this.traitCtor = traitCtor;
@@ -81,8 +82,8 @@ class ModifyEntGlobData extends Request{
 }
 
 class CreateEntity extends SimpleRequest{
-  constructor(room, tile, entCtor, args){
-    super(room);
+  constructor(world, tile, entCtor, args){
+    super(world);
 
     this.tile = tile;
     this.entCtor = entCtor;
@@ -122,8 +123,8 @@ class MoveEntity extends Request{
     }
   }
 
-  constructor(room, ent, tileFrom, tileTo){
-    super(room);
+  constructor(world, ent, tileFrom, tileTo){
+    super(world);
 
     this.ent = ent;
     this.tileFrom = tileFrom;
@@ -143,28 +144,67 @@ class RemoveEntity extends Request{
     }
   }
 
-  constructor(room, ent){
-    super(room);
+  constructor(world, ent){
+    super(world);
     this.ent = ent;
   }
 }
 
-const reqsArr = [
+class PushRoom extends Request{
+  static exec(reqs){
+    if(reqs.size !== 1) O.noimpl();
+
+    const req = O.fst(reqs);
+    const {world, gridCtor, gridCtorArgs, builder} = req;
+
+    world.pushRoom(gridCtor, gridCtorArgs, builder);
+  }
+
+  constructor(world, gridCtor, gridCtorArgs, builder){
+    super(world);
+
+    this.gridCtor = gridCtor;
+    this.gridCtorArgs = gridCtorArgs;
+    this.builder = builder;
+  }
+}
+
+class PopRoom extends Request{
+  static exec(reqs){
+    if(reqs.size !== 1) O.noimpl();
+
+    const req = O.fst(reqs);
+    const {world, cb} = req;
+
+    world.popRoom();
+
+    if(cb !== null){
+      const {selectedRoom} = world;
+      const {grid} = selectedRoom;
+
+      cb(grid);
+    }
+  }
+
+  constructor(world, cb=null){
+    super(world);
+
+    this.cb = cb;
+  }
+}
+
+const ctorsArr = [
   ModifyEntGlobData,
   CreateEntity,
   MoveEntity,
   RemoveEntity,
+  PushRoom,
+  PopRoom,
 ];
 
-reqsArr.forEach((ctor, pri) => {
-  ctor.pri = pri;
-});
+const ctorsObj = ctorsPri(ctorsArr);
 
 module.exports = Object.assign(Request, {
-  reqsArr,
-
-  ModifyEntGlobData,
-  CreateEntity,
-  MoveEntity,
-  RemoveEntity,
+  ctorsArr,
+  ...ctorsObj,
 });
