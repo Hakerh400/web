@@ -14,7 +14,7 @@ summary{
   left: 0px;
   cursor: default;
   user-select: none;
-  background: rgba(255, 255, 255, .5);
+  background: rgba(255, 255, 255, .75);
 }
 
 .info-elem{

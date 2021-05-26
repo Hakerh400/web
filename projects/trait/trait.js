@@ -36,9 +36,10 @@ class Trait extends inspect.Inspectable{
     this.onCreate();
   }
 
-  get room(){ return this.ent.room; }
-  get tile(){ return this.ent.tile; }
   get valid(){ return this.ent !== null; }
+  get tile(){ return this.ent.tile; }
+  get room(){ return this.ent.room; }
+  get world(){ return this.ent.world; }
 
   getGlobData(){ return this.ent.getGlobData(this.ctor); }
   getLocData(){ return this.ent.getLocData(this); }
@@ -142,22 +143,22 @@ class NavigationTarget extends Trait{
 
     const ctor = NavigationTarget;
 
-    this.room.reqModifyEntGlobData(src, ctor, ['set.insert', [this]]);
+    this.world.reqModifyEntGlobData(src, ctor, ['set.insert', [this]]);
   }
 
   navigate(n){
     if(n) return;
-    const {room, tile, ent: navTargetEnt, src} = this;
+    const {world, tile, ent: navTargetEnt, src} = this;
 
-    room.reqMoveEnt(src, tile);
-    room.reqRemoveEnt(navTargetEnt);
+    world.reqMoveEnt(src, tile);
+    world.reqRemoveEnt(navTargetEnt);
   }
 
   onRemove(){
-    const {room, src} = this;
+    const {world, src} = this;
     const ctor = NavigationTarget;
 
-    room.reqModifyEntGlobData(src, ctor, ['set.remove', [this]]);
+    world.reqModifyEntGlobData(src, ctor, ['set.remove', [this]]);
   }
 
   static *serEntGlobData(ser, data){
@@ -216,26 +217,26 @@ class Player extends ActiveTrait{
 
   navigate(n){
     if(n) return;
-    const {room, tile, ent} = this;
+    const {world, room, tile, ent} = this;
 
-    const dir = room.evts.nav;
+    const dir = world.evts.nav;
     if(dir === null) return;
 
     const tileNew = tile.adj(dir);
     if(tileNew === null) return;
 
-    reqMoveEnt(room, ent, tileNew, 1, 1);
+    reqMoveEnt(world, ent, tileNew, 1, 1);
   }
 }
 
 class Solid extends Trait{
   stop(){
-    const {room, tile, ent} = this;
+    const {world, tile, ent} = this;
     const targetTile = calcTargetTile(ent);
 
     for(const trait of targetTile.traits.get(NavigationTarget)){
       if(trait.src === ent) continue;
-      room.reqRemoveEnt(trait.ent);
+      world.reqRemoveEnt(trait.ent);
     }
   }
 }
@@ -278,7 +279,7 @@ class Wall extends Trait{
     const dy = h + space;
 
     const x1 = -.5 - dx / 2;
-    const y1 = -.5 - dy / 2;
+    const y1 = -.5 - dy / 2 + s;
 
     let i = 0;
 
@@ -366,7 +367,7 @@ class Box extends Trait{
 
 class Pushable extends Trait{
   push(n){
-    const {room, tile, ent} = this;
+    const {world, room, tile, ent} = this;
     const heavy = this.entHasTrait(Heavy);
 
     if(calcTargetTile(ent) !== tile) return;
@@ -398,7 +399,7 @@ class Pushable extends Trait{
     const tileNew = tile.adj(dir);
     if(tileNew === null) return;
 
-    reqMoveEnt(room, ent, tileNew, 0, heavy ? 0 : 1);
+    reqMoveEnt(world, ent, tileNew, 0, heavy ? 0 : 1);
   }
 }
 
@@ -479,9 +480,9 @@ class Text extends Trait{
   }
 }
 
-const reqMoveEnt = (room, ent, tileNew, direct=0, strong=0) => {
+const reqMoveEnt = (world, ent, tileNew, direct=0, strong=0) => {
   assert(ent instanceof Entity);
-  room.reqCreateEnt(tileNew, Entity.NavigationTarget, ent, direct, strong);
+  world.reqCreateEnt(tileNew, Entity.NavigationTarget, ent, direct, strong);
 };
 
 const calcTargetTile = ent => {

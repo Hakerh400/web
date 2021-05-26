@@ -28,8 +28,9 @@ class Entity extends inspect.Inspectable{
     this.tile = tile;
   }
 
-  get room(){ return this.tile.room; }
   get valid(){ return this.tile !== null; }
+  get room(){ return this.tile.room; }
+  get world(){ return this.tile.world; }
 
   get layer(){
     let layer = O.N;

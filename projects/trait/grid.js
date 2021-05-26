@@ -1,5 +1,6 @@
 'use strict';
 
+const assert = require('assert');
 const Tile = require('./tile');
 const Position = require('./position');
 const Serializable = require('./serializable');
@@ -8,9 +9,26 @@ const ctorsPri = require('./ctors-pri');
 class Grid extends Serializable{
   static get baseCtor(){ return Grid; }
 
+  init(){
+    this.buildMode = 0;
+  }
+
   new(room=null){
     super.new();
     this.room = room;
+  }
+
+  get valid(){ return this.room !== null; }
+  get world(){ return this.room.world; }
+
+  enterBuildMode(){
+    assert(!this.buildMode);
+    this.buildMode = 1;
+  }
+
+  exitBuildMode(){
+    assert(this.buildMode);
+    this.buildMode = 0;
   }
 
   has(pos){ O.virtual('has'); }
@@ -63,6 +81,15 @@ class Rectangle extends Grid{
       for(const row of grid.tilesRaw)
         yield* row;
     }();
+  }
+
+  getp(x, y){
+    return this.tilesRaw[y][x];
+  }
+
+  createEnt(x, y, entCtor, ...args){
+    const tile = this.getp(x, y);
+    return tile.createEnt(entCtor, ...args);
   }
 
   *ser(ser){

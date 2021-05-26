@@ -34,6 +34,7 @@ class Tile extends inspect.Inspectable{
 
   get valid(){ return this.grid !== null; }
   get room(){ return this.grid.room; }
+  get world(){ return this.grid.world; }
 
   render(g){
     const ents = [...this.ents].sort((e1, e2) => {
@@ -78,7 +79,8 @@ class Tile extends inspect.Inspectable{
   }
 
   notify(){
-    const {room} = this;
+    const {room, grid} = this;
+    if(grid.buildMode) return;
 
     room.markTileAsNotified(this);
 

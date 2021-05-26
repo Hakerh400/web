@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const World = require('./world');
 const Room = require('./room');
 const Grid = require('./grid');
 const Position = require('./position');
@@ -10,14 +11,13 @@ const Trait = require('./trait');
 const CtorsMap = require('./ctors-map');
 const inspect = require('./inspect');
 const serializer = require('./serializer');
+const worldBuilder = require('./world-builder');
 
 const {floor} = Math;
 const {project} = O;
 
 await O.addStyle('style.css');
 
-const w = 10;
-const h = 12;
 const s = 40;
 
 const cols = {
@@ -31,19 +31,12 @@ const {g} = O.ceCanvas(1);
 
 const infoContainer = O.ceDiv(O.body, 'info hidden');
 
-let room = null;
+const world = worldBuilder.getWorld();
 
 let iw, ih;
 let ctrl = 0;
 
 const main = () => {
-  if(!O.has(O.lst, project)|1){
-    initRoom();
-    saveRoom();
-  }else{
-    loadRoom();
-  }
-
   aels();
 };
 
@@ -57,60 +50,6 @@ const aels = () => {
   O.ael('beforeunload', onBeforeUnload);
 
   onResize();
-};
-
-const initRoom = () => {
-  room = new Room(new Grid.Rectangle(w, h));;
-
-  const p = (x, y) => {
-    return new Position.Rectangle(x, y);
-  };
-
-  room.reqCreateEntAtPos(p(0, 2), Entity.Player);
-  room.reqCreateEntAtPos(p(1, 3), Entity.Box, 0);
-  room.reqCreateEntAtPos(p(3, 3), Entity.Box, 0);
-  room.reqCreateEntAtPos(p(1, 5), Entity.Box, 1);
-  room.reqCreateEntAtPos(p(3, 5), Entity.Box, 1);
-  room.reqCreateEntAtPos(p(5, 4), Entity.Wall);
-  room.reqCreateEntAtPos(p(5, 2), Entity.Diamond);
-
-  for(let y = 0; y !== h; y++){
-    for(let x = 0; x !== w; x++){
-      const ent = room.reqCreateEntAtPos(p(x, y), Entity.Concrete);
-    }
-  }
-
-  room.tick();
-
-  const putStr = (str, x, y, traitCtor, upper=0) => {
-    if(upper) str = str.toUpperCase();
-
-    for(const c of str){
-      const tile = room.getTile(p(x, y));
-      const trait = O.fst(tile.traits.get(traitCtor));
-      const ent = trait.ent;
-
-      ent.addTrait(new Trait.Text(ent, c));
-      x++;
-    }
-  };
-
-  putStr('Levels', 2, 0, Trait.Concrete, 1);
-
-  // for(let y = 0; y !== h; y++){
-  //   for(let x = 0; x !== w; x++){
-  //     const ent = O.fst(room.getTile(p(x, y)).traits.get(Trait.Concrete)).ent;
-  //     ent.addTrait(new Trait.Text(ent, `${x}${y}`));
-  //   }
-  // }
-};
-
-const saveRoom = () => {
-  O.lst[project] = room.serialize().toString('base64');
-};
-
-const loadRoom = () => {
-  room = Room.deserialize(O.Buffer.from(O.lst[project], 'base64'));
 };
 
 const onResize = evt => {
@@ -148,9 +87,12 @@ const onKeyDown = evt => {
 
   if(dir !== null){
     clearInfo();
-    room.evts.nav = dir;
-    room.tick();
-    room.evts.nav = null;
+
+    world.evts.nav = dir;
+    world.tick();
+    world.evts.nav = null;
+
+    worldBuilder.saveWorld(world);
 
     // const ctorsArr = [];
     // const buf = room.serialize();
@@ -170,13 +112,19 @@ const onMouseDown = evt => {
     return;
   }
 
+  const room = world.selectedRoom;
+  if(room === null) return;
+
+  const {grid} = room;
+  const {w, h} = grid;
+
   if(ctrl){
     clearInfo();
 
     const x = floor((evt.clientX - iw / 2) / s + w / 2);
     const y = floor((evt.clientY - ih / 2) / s + h / 2);
 
-    const tile = room.getTile(new Position.Rectangle(x, y));
+    const tile = grid.get(pos(x, y));
     if(tile === null) return;
 
     const info = O.rec([tile, 'inspect']);
@@ -196,11 +144,15 @@ const onBlur = evt => {
 };
 
 const onBeforeUnload = evt => {
-  saveRoom();
+  worldBuilder.saveWorld(world);
 };
 
 const render = () => {
+  const room = world.selectedRoom
+  assert(room !== null);
+
   const {grid} = room;
+  const {w, h} = grid;
 
   g.resetTransform();
   g.fillStyle = cols.bg;
@@ -234,6 +186,10 @@ const render = () => {
     g.lineTo(w + s1, i);
   }
   g.stroke();
+};
+
+const pos = (x, y) => {
+  return new Position.Rectangle(x, y);
 };
 
 const setInfo = info => {
