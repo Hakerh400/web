@@ -564,16 +564,17 @@ class Lock extends Trait{
 
     g.fillStyle = 'rgb(249,174,87)';
     g.beginPath();
-    g.rect(.2, y, .6 - gs, h);
+    g.rect(.2, y, .6, h);
     g.fill();
     g.stroke();
 
     g.fillStyle = 'black';
     drawCirc(g, .5, ym - .025, r);
     g.beginPath();
-    g.moveTo(.5, ym);
+    g.moveTo(.5 + gs, ym - gs * 2);
     g.lineTo(.5 + r2 + gs, ym + r3);
     g.lineTo(.5 - r2, ym + r3);
+    g.lineTo(.5, ym - gs);
     g.closePath();
     g.fill();
   }
