@@ -17,7 +17,7 @@ const getWorld = () => {
 
   const world = initWorld();
   saveWorld(world);
-  
+
   return world;
 };
 
@@ -38,17 +38,6 @@ const initMainRoom = world => {
 
   grid.enterBuildMode();
 
-  grid.createEnt(0, 2, Entity.Player);
-  grid.createEnt(1, 3, Entity.Box, 0);
-  grid.createEnt(3, 3, Entity.Box, 0);
-  grid.createEnt(1, 5, Entity.Box, 1);
-  grid.createEnt(3, 5, Entity.Box, 1);
-  grid.createEnt(5, 4, Entity.Wall);
-  grid.createEnt(5, 2, Entity.Diamond);
-
-  for(const tile of grid.tiles)
-    tile.createEnt(Entity.Concrete);
-
   const putStr = (str, x, y, traitCtor, upper=0) => {
     if(upper) str = str.toUpperCase();
 
@@ -62,20 +51,24 @@ const initMainRoom = world => {
     }
   };
 
+  for(const tile of grid.tiles)
+    tile.createEnt(Entity.Concrete);
+
   putStr('Levels', 2, 0, Trait.Concrete, 1);
 
-  // for(const tile of grid.tiles){
-  //   const {x, y} = tile.pos;
-  //   const ent = O.fst(tile.traits.get(Trait.Concrete)).ent;
-  //   ent.addTrait(new Trait.Text(ent, `${x}${y}`));
-  // }
+  for(let y = 0; y !== 10; y++){
+    for(let x = 0; x !== 10; x++){
+      const tile = grid.getp(x, y + 2);
 
-  // for(const tile of grid.tiles){
-  //   if(tile.ents.size !== 1) continue;
-  //   if(!O.rand(2)) continue;
-  //
-  //   tile.createEnt(Entity.Player);
-  // }
+      if(x === 0 && y === 0){
+        const btn = tile.createEnt(Entity.Button);
+        btn.addTrait(new Trait.Text(btn, '00'));
+        continue;
+      }
+
+      tile.createEnt(Entity.Lock);
+    }
+  }
 
   grid.exitBuildMode();
 };

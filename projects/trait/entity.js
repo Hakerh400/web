@@ -235,6 +235,26 @@ class Concrete extends Entity{
   }
 }
 
+class Button extends Entity{
+  new(tile, label=null){
+    super.new(tile);
+
+    this.addTrait(new Trait.Button(this));
+
+    if(label !== null)
+      this.addTrait(new Trait.Text(this, label));
+  }
+}
+
+class Lock extends Entity{
+  new(tile){
+    super.new(tile);
+
+    this.addTrait(new Trait.Lock(this));
+    this.addTrait(new Trait.Solid(this));
+  }
+}
+
 module.exports = Object.assign(Entity, {
   NavigationTarget,
   Player,
@@ -242,6 +262,8 @@ module.exports = Object.assign(Entity, {
   Box,
   Diamond,
   Concrete,
+  Button,
+  Lock,
 });
 
 const Trait = require('./trait');

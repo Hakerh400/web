@@ -14,20 +14,27 @@ const reqCtorsNum = reqsArr.length;
 
 class World extends Serializable{
   init(){
+    super.init();
+    
     this.activeRooms = new Set();
     this.passiveRooms = new Set();
     this.selectedRoom = null;
-
-    this.evts = {
-      nav: null,
-      lmb: null,
-    };
 
     this.reqs = new CtorsMap();
     this.notifiedTiles = new Set();
 
     this.tickId = null;
     this.baseReqPri = null;
+
+    this.resetEvts();
+  }
+
+  resetEvts(){
+    this.evts = {
+      nav: null,
+      lmb: null,
+      rmb: null,
+    };
   }
 
   createRoom(grid, mode=0){
@@ -78,9 +85,12 @@ class World extends Serializable{
   }
 
   tick(){
-    const {activeRooms, reqs, notifiedTiles} = this;
+    const {activeRooms, selectedRoom, evts, reqs, notifiedTiles} = this;
 
-    assert(this.selectedRoom !== null);
+    assert(selectedRoom !== null);
+
+    if(evts.lmb !== null) evts.lmb.notify();
+    if(evts.rmb !== null) evts.lmb.notify();
 
     // O.logb();
     this.tickId = O.obj();
@@ -140,6 +150,8 @@ class World extends Serializable{
 
     this.tickId = null;
     this.baseReqPri = null;
+
+    this.resetEvts();
   }
 
   addReq(req){

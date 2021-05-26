@@ -117,7 +117,7 @@ class Trait extends inspect.Inspectable{
 class Meta extends Trait{
   render(g){
     g.fillStyle = '#f00';
-    g.fillRect(-.5, -.5, 1, 1);
+    g.fillRect(0, 0, 1, 1);
   }
 }
 
@@ -188,30 +188,30 @@ class Player extends ActiveTrait{
   render(g){
     g.fillStyle = 'white';
     g.beginPath();
-    drawCirc(g, 0, 0, .4);
+    drawCirc(g, .5, .5, .4);
     g.fill();
     g.stroke();
 
     g.fillStyle = 'white';
     g.beginPath();
-    drawCirc(g, -.2, -.05, .1);
+    drawCirc(g, .3, .45, .1);
     g.fill();
     g.stroke();
     g.beginPath();
-    drawCirc(g, .2, -.05, .1);
+    drawCirc(g, .7, .45, .1);
     g.fill();
     g.stroke();
 
     g.fillStyle = 'black';
     g.beginPath();
-    drawCirc(g, -.2, -.05, .035);
+    drawCirc(g, .3, .45, .035);
     g.fill();
     g.beginPath();
-    drawCirc(g, .2, -.05, .035);
+    drawCirc(g, .7, .45, .035);
     g.fill();
 
     g.beginPath();
-    g.arc(0, 0, .2, pi / 4, pi * 3 / 4);
+    g.arc(.5, .5, .2, pi / 4, pi * 3 / 4);
     g.stroke();
   }
 
@@ -249,10 +249,10 @@ class Wall extends Trait{
   }
 
   render(g){
-    const s = 1 / g.s;
+    const {gs} = g;
 
     g.fillStyle = '#888';
-    g.fillRect(-.5, -.5, 1, 1);
+    g.fillRect(0, 0, 1, 1);
 
     g.fillStyle = '#444';
 
@@ -278,25 +278,25 @@ class Wall extends Trait{
     const dx = w + space;
     const dy = h + space;
 
-    const x1 = -.5 - dx / 2;
-    const y1 = -.5 - dy / 2 + s;
+    const x1 = -dx / 2 + gs;
+    const y1 = -dy / 2 + gs;
 
     let i = 0;
 
-    for(let yy = y1; yy < .5; yy += dy, i++){
+    for(let yy = y1; yy < 1; yy += dy, i++){
       const offset = dx / 2 * (i % 2);
 
-      for(let xx = x1 + offset; xx < .5; xx += dx){
-        const x = max(xx, -.5)
-        const y = max(yy, -.5);
-        const x2 = min(xx + w, .5);
-        const y2 = min(yy + h, .5);
+      for(let xx = x1 + offset; xx < 1; xx += dx){
+        const x = max(xx, 0)
+        const y = max(yy, 0);
+        const x2 = min(xx + w, 1);
+        const y2 = min(yy + h, 1);
         const ax = x2 - x;
         const ay = y2 - y;
 
-        if(w - x2 < space / 5){
-          g.fillRect(x, y, w + s - x, ay);
-          continue;
+        if(1 - x2 < space / 5){
+          g.fillRect(x, y, 1 - x + gs, ay);
+          break;
         }
         
         g.fillRect(x, y, ax, ay);
@@ -313,16 +313,19 @@ class Box extends Trait{
   }
 
   render(g){
-    const s = 1 / g.s;
+    const {gs} = g;
 
     if(this.entHasTrait(Heavy)){
       const s1 = .3;
       const s2 = .215;
       const s3 = .075;
 
+      g.save();
+      g.translate(.5, .5);
+
       g.fillStyle = '#ff0';
       g.beginPath();
-      g.rect(-s1, -s1, s1 * (2 - s), s1 * (2 - s));
+      g.rect(-s1, -s1, s1 * (2 - gs), s1 * (2 - gs));
       g.fill();
       g.stroke();
 
@@ -354,12 +357,14 @@ class Box extends Trait{
       g.fill();
       g.stroke();
 
+      g.restore();
+
       return;
     }
 
     g.fillStyle = '#ff0';
     g.beginPath();
-    g.rect(-.25, -.25, .5, .5);
+    g.rect(.25, .25, .5, .5);
     g.fill();
     g.stroke();
   }
@@ -417,24 +422,24 @@ class Diamond extends Trait{
   render(g){
     g.fillStyle = '#08f';
     g.beginPath();
-    g.moveTo(.5 - .5, .14 - .5);
-    g.lineTo(.7 - .5, .38 - .5);
-    g.lineTo(.5 - .5, .86 - .5);
-    g.lineTo(.3 - .5, .38 - .5);
+    g.moveTo(.5, .14);
+    g.lineTo(.7, .38);
+    g.lineTo(.5, .86);
+    g.lineTo(.3, .38);
     g.closePath();
     g.stroke();
     g.fill();
     g.beginPath();
-    g.moveTo(.5 - .5, .14 - .5);
-    g.lineTo(.38 - .5, .44 - .5);
-    g.lineTo(.5 - .5, .86 - .5);
-    g.moveTo(.5 - .5, .14 - .5);
-    g.lineTo(.62 - .5, .44 - .5);
-    g.lineTo(.5 - .5, .86 - .5);
-    g.moveTo(.3 - .5, .38 - .5);
-    g.lineTo(.38 - .5, .44 - .5);
-    g.lineTo(.62 - .5, .44 - .5);
-    g.lineTo(.7 - .5, .38 - .5);
+    g.moveTo(.5, .14);
+    g.lineTo(.38, .44);
+    g.lineTo(.5, .86);
+    g.moveTo(.5, .14);
+    g.lineTo(.62, .44);
+    g.lineTo(.5, .86);
+    g.moveTo(.3, .38);
+    g.lineTo(.38, .44);
+    g.lineTo(.62, .44);
+    g.lineTo(.7, .38);
     g.stroke();
   }
 }
@@ -442,7 +447,6 @@ class Diamond extends Trait{
 class Floor extends Trait{
   init(){
     super.init();
-
     this.layer = layers.Ground;
   }
 }
@@ -450,19 +454,22 @@ class Floor extends Trait{
 class Concrete extends Trait{
   render(g){
     g.fillStyle = '#808080';
-    g.fillRect(-.5, -.5, 1, 1);
+    g.fillRect(0, 0, 1, 1);
   }
 }
 
 class Text extends Trait{
   new(ent, val){
     super.new(ent);
+
     this.val = String(val);
   }
 
   render(g){
+    const {gs} = g;
+
     g.fillStyle = '#000';
-    g.fillText(this.val, 0, 0);
+    g.fillText(this.val, .5 - gs, .5 + gs);
   }
 
   *serData(ser){
@@ -477,6 +484,98 @@ class Text extends Trait{
     return [
       new BasicInfo(`val = ${O.sf(this.val)} :: String`),
     ];
+  }
+}
+
+class Button extends Trait{
+  init(){
+    super.init();
+
+    this.layer = layers.FloorObj;
+  }
+
+  render(g){
+    const {gs} = g;
+
+    const s = .8;
+    const r = .2;
+
+    const s1 = 1 - s;
+    const sh = s / 2;
+    const s1h = s1 / 2;
+    const s1h1 = 1 - s1h;
+
+    const p1 = s1h + r;
+    const p2 = 1 - p1;
+
+    g.fillStyle = '#89a';
+    g.beginPath();
+    g.moveTo(p1, s1h - gs);
+
+    g.lineTo(p2, s1h - gs);
+    g.arc(p2, p1, r, pi * 1.5, pi * 2);
+
+    g.lineTo(s1h1, p2);
+    g.arc(p2, p2, r, 0, pi * .5);
+
+    g.lineTo(p1, s1h1);
+    g.arc(p1 + gs, p2, r, pi * .5, pi);
+    g.lineTo(s1h, p2);
+
+    g.lineTo(s1h, p1);
+    g.arc(p1 + gs, p1, r, pi, pi * 1.5);
+
+    g.fill();
+    g.stroke();
+  }
+
+  click(){
+    const {world, tile, ent} = this;
+    if(world.evts.lmb !== tile) return;
+
+    log('clicked');
+  }
+}
+
+class Lock extends Trait{
+  init(){
+    super.init();
+
+    this.layer = layers.Wall;
+  }
+
+  render(g){
+    const {gs} = g;
+
+    const y = .45;
+    const h = .35;
+    const hh = h / 2;
+    const ym = y + hh;
+    const r = .04;
+    const r2 = r * 2;
+    const r3 = r * 3;
+
+    g.fillStyle = 'white';
+    g.beginPath();
+    g.arc(.5, y, .25, pi, pi * 2.1);
+    g.arc(.5, y, .15, pi * 2.1, pi, 1);
+    g.fill();
+    g.stroke();
+
+    g.fillStyle = 'rgb(249,174,87)';
+    g.beginPath();
+    g.rect(.2, y, .6 - gs, h);
+    g.fill();
+    g.stroke();
+
+    g.fillStyle = 'black';
+    drawCirc(g, .5, ym - .025, r);
+    g.beginPath();
+    g.moveTo(.5, ym);
+    g.lineTo(.5 + r2 + gs, ym + r3);
+    g.lineTo(.5 - r2, ym + r3);
+    g.closePath();
+    g.fill();
   }
 }
 
@@ -510,6 +609,7 @@ const drawCirc = (g, x, y, r, col=null) => {
 
 const handlersArr = [
   [Player, 'navigate'],
+  [Button, 'click'],
   [Pushable, 'push'],
   [Solid, 'stop'],
   [NavigationTarget, 'navigate'],
@@ -541,6 +641,8 @@ const ctorsArr = [
   Diamond,
   Floor,
   Concrete,
+  Button,
+  Lock,
   Text,
 ];
 

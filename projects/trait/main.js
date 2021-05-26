@@ -90,7 +90,6 @@ const onKeyDown = evt => {
 
     world.evts.nav = dir;
     world.tick();
-    world.evts.nav = null;
 
     worldBuilder.saveWorld(world);
 
@@ -107,10 +106,12 @@ const onKeyUp = evt => {
 };
 
 const onMouseDown = evt => {
-  if(evt.detail > 1){
+  if(evt.detail > 1 && evt.target !== g.canvas){
     O.pd(evt);
     return;
   }
+
+  if(ctrl) clearInfo();
 
   const room = world.selectedRoom;
   if(room === null) return;
@@ -118,21 +119,20 @@ const onMouseDown = evt => {
   const {grid} = room;
   const {w, h} = grid;
 
+  const x = floor((evt.clientX - iw / 2) / s + w / 2);
+  const y = floor((evt.clientY - ih / 2) / s + h / 2);
+
+  const tile = grid.get(pos(x, y));
+  if(tile === null) return;
+
   if(ctrl){
-    clearInfo();
-
-    const x = floor((evt.clientX - iw / 2) / s + w / 2);
-    const y = floor((evt.clientY - ih / 2) / s + h / 2);
-
-    const tile = grid.get(pos(x, y));
-    if(tile === null) return;
-
     const info = O.rec([tile, 'inspect']);
-
     setInfo(O.rec([info, 'toDOM']));
-
     return;
   }
+
+  world.evts.lmb = tile;
+  world.tick();
 };
 
 const onContextMenu = evt => {
@@ -162,7 +162,7 @@ const render = () => {
   g.scale(s);
   g.translate(-w / 2, -h / 2);
 
-  const s1 = 1 / s;
+  const {gs} = g;
 
   g.fillStyle = '#000';
   g.fillRect(0, 0, w, h);
@@ -171,7 +171,7 @@ const render = () => {
     const {x, y} = tile.pos;
 
     g.save();
-    g.translate(x + .5, y + .5);
+    g.translate(x, y);
     tile.render(g);
     g.restore();
   }
@@ -179,11 +179,11 @@ const render = () => {
   g.beginPath();
   for(let i = 0; i <= w; i++){
     g.moveTo(i, 0);
-    g.lineTo(i, h + s1);
+    g.lineTo(i, h + gs);
   }
   for(let i = 0; i <= h; i++){
     g.moveTo(0, i);
-    g.lineTo(w + s1, i);
+    g.lineTo(w + gs, i);
   }
   g.stroke();
 };
