@@ -7,16 +7,18 @@ const Grid = require('./grid');
 const Entity = require('./entity');
 const Trait = require('./trait');
 
+const PERSIST = 0;
+
 const {project} = O;
 
 const getWorld = () => {
-  if(!O.has(O.lst, project)){
-    const world = initWorld();
-    saveWorld(world);
-    return world;
-  }
+  if(PERSIST && O.has(O.lst, project))
+    return loadWorld();
 
-  return loadWorld();
+  const world = initWorld();
+  saveWorld(world);
+  
+  return world;
 };
 
 const initWorld = () => {
