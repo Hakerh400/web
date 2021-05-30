@@ -3,17 +3,22 @@
 const assert = require('assert');
 const Position = require('./position');
 const Serializable = require('./serializable');
+const CtorsMap = require('./ctors-map');
 const ctorsPri = require('./ctors-pri');
 
 class Grid extends Serializable{
   static get baseCtor(){ return Grid; }
 
   init(){
+    super.init();
+
     this.buildMode = 0;
+    this.traits = new CtorsMap();
   }
 
   new(room=null){
     super.new();
+
     this.room = room;
   }
 
@@ -60,13 +65,17 @@ class Rectangle extends Grid{
     }));
   }
 
-  has({x, y}){
+  hasp(x, y){
     const {w, h} = this;
 
     return (
       x >= 0 && y >= 0 &&
       x < w && y < h
     );
+  }
+
+  has({x, y}){
+    return this.hasp(x, y);
   }
 
   getc({x, y}){
@@ -83,6 +92,7 @@ class Rectangle extends Grid{
   }
 
   getp(x, y){
+    if(!this.hasp(x, y)) return null;
     return this.tilesRaw[y][x];
   }
 
@@ -103,6 +113,7 @@ class Rectangle extends Grid{
 
   static *deser(ser){
     const grid = Rectangle.new();
+    const {traits} = grid;
 
     const w = grid.w = ser.readInt();
     const h = grid.h = ser.readInt();
@@ -116,6 +127,9 @@ class Rectangle extends Grid{
 
         tile.grid = grid;
         tile.pos = pos;
+
+        for(const trait of tile.traits.vals)
+          traits.add(trait);
 
         return tile;
       });

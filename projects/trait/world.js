@@ -35,6 +35,8 @@ class World extends Serializable{
       nav: null,
       lmb: null,
       rmb: null,
+      restart: 0,
+      exit: 0,
     };
   }
 
@@ -125,6 +127,7 @@ class World extends Serializable{
     assert(this.passiveRooms.has(room));
 
     this.passiveRooms.delete(room);
+    // room.world = null;
   }
 
   tick(){

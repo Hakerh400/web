@@ -98,6 +98,36 @@ class Serializable extends SerializableBase{
   get ctor(){ return this.constructor; }
   get baseCtor(){ return this.ctor.baseCtor; }
   get pri(){ return this.ctor.pri; }
+
+  addTrait(trait){
+    this.traits.add(trait);
+  }
+
+  removeTrait(trait){
+    this.traits.remove(trait);
+  }
+
+  getEnts(traitCtor){
+    return O.mapg(this.getTraits(traitCtor), trait => {
+      return trait.ent;
+    });
+  }
+
+  getEnt(traitCtor){
+    return O.uni(this.getEnts(traitCtor));
+  }
+
+  getTraits(traitCtor){
+    return this.traits.get(traitCtor);
+  }
+
+  getTrait(traitCtor){
+    return O.uni(this.getTraits(traitCtor));
+  }
+
+  hasTrait(traitCtor){
+    return this.traits.hasKey(traitCtor);
+  }
   
   serialize(){
     const {baseCtor} = this;

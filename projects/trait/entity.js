@@ -29,6 +29,7 @@ class Entity extends Inspectable{
   }
 
   get valid(){ return this.tile !== null; }
+  get grid(){ return this.tile.grid; }
   get room(){ return this.tile.room; }
   get world(){ return this.tile.world; }
 
@@ -44,22 +45,6 @@ class Entity extends Inspectable{
     }
 
     return layer;
-  }
-
-  hasTrait(traitCtor){
-    return this.traits.hasKey(traitCtor);
-  }
-
-  getTraits(traitCtor){
-    return this.traits.get(traitCtor);
-  }
-
-  getTrait(traitCtor){
-    return O.fst(this.getTraits(traitCtor));
-  }
-
-  addTrait(trait){
-    this.traits.add(trait);
   }
 
   createTrait(traitCtor, ...args){
@@ -232,6 +217,8 @@ class Box extends Entity{
 class Diamond extends Entity{
   new(tile, level){
     super.new(tile);
+
+    assert(typeof level === 'string');
 
     this.createTrait(Trait.Diamond, level);
     this.createTrait(Trait.Item);

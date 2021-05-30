@@ -66,7 +66,9 @@ class Tile extends Inspectable{
     // if(this.ents.size === 3)
     //   assert.fail();
 
-    this.traits.addEnt(ent);
+    for(const trait of ent.traits.vals)
+      this.addTrait(trait);
+
     this.ents.add(ent);
     this.notify();
   }
@@ -75,27 +77,21 @@ class Tile extends Inspectable{
     assert(ent instanceof Entity);
     assert(ent.tile === this);
 
-    this.traits.removeEnt(ent);
+    for(const trait of ent.traits.vals)
+      this.removeTrait(trait);
+
     this.ents.delete(ent);
     this.notify();
   }
 
-  getEnts(traitCtor){
-    return O.mapg(this.getTraits(traitCtor), trait => {
-      return trait.ent;
-    });
+  addTrait(trait){
+    this.traits.add(trait);
+    this.grid.addTrait(trait);
   }
 
-  getEnt(traitCtor){
-    return O.fst(this.getEnts(traitCtor));
-  }
-
-  getTraits(traitCtor){
-    return this.traits.get(traitCtor);
-  }
-
-  getTrait(traitCtor){
-    return O.fst(this.getEnts(traitCtor));
+  removeTrait(trait){
+    this.traits.remove(trait);
+    this.grid.removeTrait(trait);
   }
 
   notify(){
@@ -125,7 +121,9 @@ class Tile extends Inspectable{
 
     for(const ent of ents){
       ent.tile = tile;
-      traits.addEnt(ent);
+
+      for(const trait of ent.traits.vals)
+        traits.add(trait);
     }
 
     return tile;

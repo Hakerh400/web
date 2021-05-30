@@ -38,6 +38,7 @@ class Trait extends Inspectable{
 
   get valid(){ return this.ent !== null; }
   get tile(){ return this.ent.tile; }
+  get grid(){ return this.ent.grid; }
   get room(){ return this.ent.room; }
   get world(){ return this.ent.world; }
 
@@ -217,7 +218,7 @@ class Player extends ActiveTrait{
 
   navigate(n){
     if(n) return;
-    const {world, room, tile, ent} = this;
+    const {world, tile, ent} = this;
 
     const dir = world.evts.nav;
     if(dir === null) return;
@@ -226,6 +227,44 @@ class Player extends ActiveTrait{
     if(tileNew === null) return;
 
     reqMoveEnt(world, ent, tileNew, 1, 1);
+  }
+
+  restart(n){
+    if(n) return;
+    const {world, grid} = this;
+
+    if(!world.evts.restart) return;
+
+    const diamond = grid.getTrait(Diamond);
+    const {level} = diamond;
+    if(!/^\d{2}$/.test(level)) return;
+
+    const levelNum = Number(level);
+
+    world.reqPopRoom(grid => {
+      const x = levelNum % 10;
+      const y = 2 + levelNum / 10 | 0;
+      const tile = grid.getp(x, y);
+      if(!tile) return;
+
+      const text = tile.getTrait(Text);
+      if(!text) return;
+      if(text.str !== level) return;
+
+      const btn = tile.getTrait(Button);
+      if(!btn) return;
+
+      btn.exec();
+    });
+  }
+
+  exit(n){
+    if(n) return;
+    const {world, grid} = this;
+
+    if(!world.evts.exit) return;
+
+    world.reqPopRoom();
   }
 }
 
@@ -422,8 +461,7 @@ class Diamond extends Trait{
   new(ent, level){
     super.new(ent);
 
-    assert(typeof level === 'number');
-    this.level = level;
+    this.level = String(level);
   }
 
   render(g){
@@ -454,10 +492,15 @@ class Diamond extends Trait{
     if(n) return;
 
     const {world, tile, level} = this;
+
     if(!tile.hasTrait(Player)) return;
+    if(!/^\d{2}$/.test(level)) return;
+    if(level === '99') return;
+
+    const levelNum = Number(level);
+    const nextLevel = levelNum + 1;
 
     world.reqPopRoom(grid => {
-      const nextLevel = level + 1;
       const x = nextLevel % 10;
       const y = 2 + nextLevel / 10 | 0;
 
@@ -475,11 +518,11 @@ class Diamond extends Trait{
   }
 
   *serData(ser){
-    ser.writeInt(this.level);
+    ser.writeStr(this.level);
   }
 
   *deserData(ser){
-    this.level = ser.readInt();
+    this.level = ser.readStr();
   }
 
   *inspectData(){
@@ -580,12 +623,8 @@ class Button extends Trait{
     g.stroke();
   }
 
-  click(n){
-    if(n) return;
-
-    const {world, tile, ent, action} = this;
-
-    if(world.evts.lmb !== tile) return;
+  exec(){
+    const {world, ent, action} = this;
     if(action === null) return;
 
     const labs = [...O.mapg(ent.getTraits(Text), trait => {
@@ -593,6 +632,15 @@ class Button extends Trait{
     })];
 
     action.exec(this, labs);
+  }
+
+  click(n){
+    if(n) return;
+    const {world, tile} = this;
+
+    if(world.evts.lmb !== tile) return;
+
+    this.exec();
   }
 
   *serData(ser){
@@ -705,6 +753,8 @@ const handlersArr = [
   [Solid, 'stop'],
   [NavigationTarget, 'navigate'],
   [Diamond, 'collect'],
+  [Player, 'restart'],
+  [Player, 'exit'],
 ];
 
 const handlersMap = new CtorsMap();

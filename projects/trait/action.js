@@ -37,28 +37,12 @@ class OpenLevel extends Action{
   exec(btn, labs){
     if(labs.length !== 1) return;
 
-    const lab = labs[0];
-    if(!/^\d{2}$/.test(lab)) return;
+    const level = labs[0];
+    if(!O.has(levels, level)) return;
 
     const {world} = btn;
-    const level = Number(lab);
 
-    world.reqPushRoom(Grid.Rectangle, [20, 15], grid => {
-      const {w, h} = grid;
-
-      for(const tile of grid.tiles)
-        tile.createEnt(Entity.Concrete);
-
-      for(let i = 0; i !== h - 3; i++){
-        grid.createEnt(5, i + 3, Entity.Wall);
-        grid.createEnt(w - 6, i, Entity.Wall);
-      }
-
-      grid.createEnt(2, h - 3, Entity.Player);
-      grid.createEnt(3, h - 3/*w - 3, 2*/, Entity.Diamond, level);
-
-      grid.getp(0, 0).getEnt(Trait.Concrete).createTrait(Trait.Text, level);
-    });
+    levels[level](world, level);
   }
 }
 
@@ -77,3 +61,4 @@ module.exports = Object.assign(Action, {
 const Grid = require('./grid');
 const Entity = require('./entity');
 const Trait = require('./trait');
+const levels = require('./levels');

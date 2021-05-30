@@ -61,33 +61,47 @@ const onResize = evt => {
 };
 
 const onKeyDown = evt => {
+  const {code} = evt;
+
   ctrl = evt.ctrlKey;
 
-  const {code} = evt;
-  let dir = null;
+  const {evts} = world;
+
+  let tick = 1;
 
   switch(code){
     case 'ArrowUp':
-      dir = 0;
+      evts.nav = 0;
       break;
 
     case 'ArrowRight':
-      dir = 1;
+      evts.nav = 1;
       break;
 
     case 'ArrowDown':
-      dir = 2;
+      evts.nav = 2;
       break;
 
     case 'ArrowLeft':
-      dir = 3;
+      evts.nav = 3;
+      break;
+
+    case 'KeyR':
+      evts.restart = 1;
+      break;
+
+    case 'Escape':
+      evts.exit = 1;
+      break;
+
+    default:
+      tick = 0;
       break;
   }
 
-  if(dir !== null){
+  if(tick){
     clearInfo();
 
-    world.evts.nav = dir;
     world.tick();
 
     // worldBuilder.saveWorld(world);
