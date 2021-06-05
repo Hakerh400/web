@@ -12,6 +12,7 @@ const CtorsMap = require('./ctors-map');
 const serializer = require('./serializer');
 const worldBuilder = require('./world-builder');
 const flags = require('./flags');
+const levels = require('./levels');
 const solutions = require('./solutions');
 
 const {floor} = Math;
@@ -34,7 +35,7 @@ const infoContainer = O.ceDiv(O.body, 'info hidden');
 
 const world = worldBuilder.getWorld();
 
-const moves = flags.RECORD ? [] : null;
+const moves = flags.Record ? [] : null;
 let recording = 0;
 
 let playingInterval = null;
@@ -57,6 +58,20 @@ const aels = () => {
   O.ael('beforeunload', onBeforeUnload);
 
   onResize();
+
+  if(flags.OpenLastLevel){
+    const level = String(O.last(O.sortAsc(O.keys(levels).map(a => a | 0)))).padStart(2, 0);
+
+    for(const text of world.selectedRoom.grid.getTraits(Trait.Text)){
+      if(text.str !== level) continue;
+
+      world.evts.lmb = text.tile;
+      world.tick();
+      render();
+
+      break;
+    }
+  }
 };
 
 const onResize = evt => {
@@ -115,7 +130,7 @@ const onKeyDown = evt => {
       break;
 
     case 'Home': {
-      if(!flags.RECORD) break;
+      if(!flags.Record) break;
 
       clearInfo();
       tick = 0;

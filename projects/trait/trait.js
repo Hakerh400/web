@@ -52,6 +52,8 @@ class Trait extends Inspectable{
   get room(){ return this.ent.room; }
   get world(){ return this.ent.world; }
 
+  notify(){ this.ent.notify(); }
+
   getGlobData(){ return this.ent.getGlobData(this.ctor); }
   getLocData(){ return this.ent.getLocData(this); }
 
@@ -237,7 +239,7 @@ class Player extends ActiveTrait{
     const tileNew = tile.adj(dir);
     if(tileNew === null) return;
 
-    reqMoveEnt(world, ent, tileNew, 1, 1);
+    reqMoveEnt(ent, tileNew, 1, 1);
   }
 
   restart(n){
@@ -442,7 +444,7 @@ class Pushable extends Trait{
     const tileNew = tile.adj(dir);
     if(tileNew === null) return;
 
-    reqMoveEnt(world, ent, tileNew, 0, heavy ? 0 : 1);
+    reqMoveEnt(ent, tileNew, 0, heavy ? 0 : 1);
   }
 }
 
@@ -564,7 +566,7 @@ class Text extends Trait{
   }
 }
 
-class Button extends Trait{
+class Button extends ActiveTrait{
   init(){
     super.init();
 
@@ -630,6 +632,20 @@ class Button extends Trait{
     if(world.evts.lmb !== tile) return;
 
     this.exec();
+  }
+
+  press(n){
+    if(n) return;
+    const {world, tile} = this;
+
+    const pressed = (
+      tile.hasTrait(Trait.Solid) ||
+      tile.hasTrait(Trait.Item)
+    );
+
+    if(!pressed) return;
+
+    world.reqCreateEnt(tile, Entity.ElectricalSource);
   }
 
   *serData(ser){
@@ -709,8 +725,190 @@ class Lock extends Trait{
 
 class Entered extends Trait{}
 
-const reqMoveEnt = (world, ent, tileNew, direct=0, strong=0) => {
+class Swap extends Trait{
+  init(){
+    super.init();
+
+    this.layer = layers.Object;
+  }
+
+  render(g){
+    const {gs} = g;
+
+    g.concaveMode = 1;
+
+    g.fillStyle = 'rgb(96,180,180)';
+    g.beginPath();
+    g.moveTo(.5, 0);
+    g.lineTo(.7, .2);
+    g.lineTo(.6, .2);
+    g.lineTo(.6, .4);
+    g.lineTo(.8, .4);
+    g.lineTo(.8, .3);
+    g.lineTo(1, .5);
+    g.lineTo(.8, .7);
+    g.lineTo(.8, .6);
+    g.lineTo(.6, .6);
+    g.lineTo(.6, .8);
+    g.lineTo(.7, .8);
+    g.lineTo(.5, 1);
+    g.lineTo(.3, .8);
+    g.lineTo(.4, .8);
+    g.lineTo(.4, .6);
+    g.lineTo(.2, .6);
+    g.lineTo(.2, .7);
+    g.lineTo(0, .5);
+    g.lineTo(.2, .3);
+    g.lineTo(.2, .4);
+    g.lineTo(.4, .4);
+    g.lineTo(.4, .2);
+    g.lineTo(.3, .2);
+    g.closePath();
+    g.fill();
+    g.stroke();
+
+    g.concaveMode = 0;
+  }
+
+  swap(n){
+    if(n) return;
+    const {tile, ent} = this;
+
+    for(const navTarget of tile.getTraits(NavigationTarget))
+      reqMoveEnt(ent, navTarget.src.tile);
+  }
+}
+
+class Wire extends Trait{
+  new(ent, active=0){
+    super.new(ent);
+
+    this.active = active;
+  }
+
+  render(g){
+    const {tile} = this;
+    let dirs = 0;
+
+    for(const [adj, dir] of tile.adjs){
+      if(!adj.hasTrait(Wire)) continue;
+      dirs |= 1 << dir;
+    }
+
+    g.fillStyle = this.active ? '#0f0' : '#080';
+    g.drawTube(0, 0, dirs, .25, 1);
+  }
+
+  turnOff(n){
+    if(n) return;
+    if(!this.active) return;
+
+    this.active = 0;
+    this.notify();
+  }
+
+  *serData(ser){
+    ser.write(this.active ? 1 : 0);
+  }
+
+  *deserData(ser){
+    this.active = ser.read();
+  }
+
+  *inspectData(){
+    return [
+      new BasicInfo(`active = ${inspectBool(this.active)} :: Bool`),
+    ];
+  }
+}
+
+class ElectricalSource extends Trait{
+  turnWiresOn(n){
+    if(n) return;
+
+    const {world, tile, ent} = this;
+
+    tile.iter(tile => {
+      let found = 0;
+
+      for(const wire of tile.getTraits(Wire)){
+        if(wire.active) continue;
+
+        wire.active = 1;
+        wire.notify();
+
+        found = 1;
+      }
+
+      return found ? null : 0;
+    });
+
+    world.reqRemoveEnt(ent);
+  }
+}
+
+class DigitalDoor extends Trait{
+  render(g){
+    const {gs} = g;
+
+    g.fillStyle = '#f80';
+
+    if(this.isOpen){
+      g.beginPath();
+      g.moveTo(0, 0);
+      g.arc(0, .25 + gs * 1.5, .25, pi * 3 / 2, pi * 5 / 2);
+      g.closePath();
+      g.fill();
+      g.stroke();
+
+      g.beginPath();
+      g.moveTo(1, 1);
+      g.arc(1, .75 + gs, .25 - gs, pi / 2, pi * 3 / 2);
+      g.closePath();
+      g.fill();
+      g.stroke();
+
+      return;
+    }
+
+    g.fillRect(0, 0, 1, 1);
+
+    g.beginPath();
+    g.moveTo(.5, 0);
+    g.arc(.5, .25 + gs * 1.5, .25, pi * 3 / 2, pi * 5 / 2);
+    g.arc(.5, .75 + gs, .25 - gs, pi * 3 / 2, pi / 2, 1);
+    g.stroke();
+  }
+
+  get isOpen(){
+    return !this.ent.hasTrait(Solid);
+  }
+
+  update(n){
+    if(n) return;
+
+    const {world, tile, ent} = this;
+    const {isOpen} = this
+
+    if(isPowered(tile)){
+      if(isOpen) return;
+    
+      for(const trait of ent.getTraits(Solid))
+        trait.remove();
+      
+      return;
+    }
+
+    if(!isOpen) return;
+    if(tile.hasTrait(Solid)) return;
+
+    ent.createTrait(Solid);
+  }
+}
+
+const reqMoveEnt = (ent, tileNew, direct=0, strong=0) => {
   assert(ent instanceof Entity);
+  const {world} = ent;
   world.reqCreateEnt(tileNew, Entity.NavigationTarget, ent, direct, strong);
 };
 
@@ -737,12 +935,25 @@ const drawCirc = (g, x, y, r, col=null) => {
   g.stroke();
 };
 
+const isPowered = tile => {
+  for(const wire of tile.getTraits(Wire))
+    if(wire.active)
+      return 1;
+
+  return 0;
+};
+
 const handlersArr = [
   [Player, 'navigate'],
   [Button, 'click'],
   [Pushable, 'push'],
+  [Swap, 'swap'],
   [Solid, 'stop'],
   [NavigationTarget, 'navigate'],
+  [Button, 'press'],
+  [Wire, 'turnOff'],
+  [ElectricalSource, 'turnWiresOn'],
+  [DigitalDoor, 'update'],
   [Diamond, 'collect'],
   [Player, 'restart'],
   [Player, 'exit'],
@@ -776,8 +987,12 @@ const ctorsArr = [
   Concrete,
   Button,
   Lock,
+  Swap,
   Entered,
+  DigitalDoor,
+  Wire,
   Text,
+  ElectricalSource,
 ];
 
 const ctorsObj = ctorsPri(ctorsArr);

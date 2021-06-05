@@ -3,9 +3,10 @@
 const assert = require('assert');
 
 const flags = {
-  PERSIST: 1,
-  RECORD: 1,
-  PLAY: 1,
+  UnlockLevels: 1,
+  OpenLastLevel: 1,
+  Persist: 0,
+  Record: 1,
 };
 
 module.exports = flags;

@@ -8,12 +8,13 @@ const Entity = require('./entity');
 const Trait = require('./trait');
 const Action = require('./action');
 const flags = require('./flags');
+const levels = require('./levels');
 
 const {project} = O;
 
 const getWorld = () => {
   if(O.has(O.lst, project)){
-    if(flags.PERSIST)
+    if(flags.Persist)
       return loadWorld();
 
     delete O.lst[project];
@@ -60,8 +61,13 @@ const initMainRoom = world => {
       for(let x = 0; x !== 10; x++){
         const tile = grid.getp(x, y + 2);
 
-        if(x === 0 && y === 0){
-          const btn = tile.createEnt(Entity.Button, '01', new Action.OpenLevel());
+        unlock: if(flags.UnlockLevels || (x === 0 && y === 0)){
+          const lab = String(y * 10 + x + 1).padStart(2, '0');
+          if(lab.length !== 2) break unlock;
+          if(!O.has(levels, lab)) break unlock;
+
+          tile.createEnt(Entity.Button, lab, new Action.OpenLevel());
+          
           continue;
         }
 
@@ -72,13 +78,13 @@ const initMainRoom = world => {
 };
 
 const saveWorld = world => {
-  if(!flags.PERSIST) return;
+  if(!flags.Persist) return;
 
   O.lst[project] = world.serialize().toString('base64');
 };
 
 const loadWorld = () => {
-  assert(flags.PERSIST);
+  assert(flags.Persist);
 
   return World.deserialize(O.Buffer.from(O.lst[project], 'base64'));
 };

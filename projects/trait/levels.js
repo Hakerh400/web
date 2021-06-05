@@ -55,6 +55,28 @@ const levels = {
       putStr(grid, Trait.Concrete, 'R-Restart', w, h - 1, 1);
     });
   },
+
+  '03'(world, ent, level){
+    createLayout(world, ent, level, `
+      +--------------------+
+      |                    |
+      |  wwww              |
+      |  w  www w          |
+      |  w bp   w          |
+      |  w swwwww          |
+      |  ww w              |
+      |   w w       ww     |
+      |   w w       wu*    |
+      |   w w       ww*    |
+      |   w w  www    *    |
+      |   w w  wdw    *    |
+      |   w w  wow    *    |
+      |         *******    |
+      |                    |
+      |                    |
+      +--------------------+
+    `);
+  },
 };
 
 const createLayout = (world, ent, level, layoutRaw, cb=null) => {
@@ -66,8 +88,14 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       b: [Entity.Box],
       B: [Entity.Box, 1],
       w: [Entity.Wall],
-      d: [Entity.Diamond, level],
+      d: [Entity.Diamond],
+      s: [Entity.Swap],
+      e: [Entity.Wire],
+      u: [Entity.Button],
+      o: [Entity.DigitalDoor],
     };
+
+    const electrical = '*uo';
 
     for(const tile of grid.tiles){
       const {x, y} = tile.pos;
@@ -76,6 +104,11 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
 
       const c = layout[y + 1][x + 1];
       if(c === ' ') continue;
+
+      if(electrical.includes(c))
+        tile.getEnt(Trait.Concrete).createTrait(Trait.Wire);
+
+      if(c === '*') continue;
 
       assert(O.has(csEnts, c));
       tile.createEnt(...csEnts[c]);

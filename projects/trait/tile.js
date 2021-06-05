@@ -41,6 +41,9 @@ class Tile extends Inspectable{
   get room(){ return this.grid.room; }
   get world(){ return this.grid.world; }
 
+  get adjs(){ O.virtual('adjs'); }
+  iter(){ O.virtual('iter'); }
+
   render(g){
     const ents = [...this.ents].sort((e1, e2) => {
       const layer1 = e1.layer;
@@ -107,9 +110,8 @@ class Tile extends Inspectable{
 
     room.markTileAsNotified(this);
 
-    this.iterAdj(adj => {
+    for(const [adj] of this.adjs)
       room.markTileAsNotified(adj);
-    });
   }
 
   *ser(ser){
@@ -167,12 +169,38 @@ class Rectangle extends Tile{
     return null;
   }
 
-  iterAdj(func){
-    for(let dir = 0; dir !== 4; dir++){
-      const adj = this.adj(dir);
-      if(adj === null) continue;
+  get adjs(){
+    const tile = this;
 
-      func(adj, dir);
+    return function*(){
+      for(let dir = 0; dir !== 4; dir++){
+        const adj = tile.adj(dir);
+        if(adj === null) continue;
+
+        yield [adj, dir];
+      }
+    }();
+  }
+
+  iter(func){
+    const stack = [this];
+    const seen = new Set(stack);
+
+    while(stack.length !== 0){
+      const tile = stack.pop();
+      const result = func(tile);
+
+      if(result === 1) break;
+      if(result === 0) continue;
+
+      assert(result === null);
+
+      for(const [adj] of tile.adjs){
+        if(seen.has(adj)) continue;
+
+        stack.push(adj);
+        seen.add(adj);
+      }
     }
   }
 }

@@ -234,12 +234,10 @@ class Box extends Entity{
 }
 
 class Diamond extends Entity{
-  new(tile, level){
+  new(tile){
     super.new(tile);
 
-    assert(typeof level === 'string');
-
-    this.createTrait(Trait.Diamond, level);
+    this.createTrait(Trait.Diamond);
     this.createTrait(Trait.Item);
   }
 }
@@ -273,6 +271,35 @@ class Lock extends Entity{
   }
 }
 
+class Swap extends Entity{
+  new(tile){
+    super.new(tile);
+
+    this.createTrait(Trait.Swap);
+    this.createTrait(Trait.Solid);
+  }
+}
+
+class ElectricalSource extends Entity{
+  new(tile){
+    super.new(tile);
+
+    this.createTrait(Trait.Meta);
+    this.createTrait(Trait.ElectricalSource);
+  }
+}
+
+class DigitalDoor extends Entity{
+  new(tile, open=0){
+    super.new(tile);
+
+    this.createTrait(Trait.DigitalDoor, open);
+
+    if(!open)
+      this.createTrait(Trait.Solid);
+  }
+}
+
 module.exports = Object.assign(Entity, {
   NavigationTarget,
   Player,
@@ -282,6 +309,9 @@ module.exports = Object.assign(Entity, {
   Concrete,
   Button,
   Lock,
+  Swap,
+  ElectricalSource,
+  DigitalDoor,
 });
 
 const Trait = require('./trait');
