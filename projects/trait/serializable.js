@@ -107,14 +107,21 @@ class Serializable extends SerializableBase{
     this.traits.remove(trait);
   }
 
-  getEnts(traitCtor){
-    return O.mapg(this.getTraits(traitCtor), trait => {
-      return trait.ent;
-    });
+  *getEnts(traitCtor){
+    const ents = new Set();
+
+    for(const trait of this.getTraits(traitCtor)){
+      const {ent} = trait;
+      if(ents.has(ent)) continue;
+
+      yield ent;
+
+      ents.add(ent);
+    }
   }
 
   getEnt(traitCtor){
-    return O.uni(this.getEnts(traitCtor));
+    return uni(this.getEnts(traitCtor));
   }
 
   getTraits(traitCtor){
@@ -122,7 +129,7 @@ class Serializable extends SerializableBase{
   }
 
   getTrait(traitCtor){
-    return O.uni(this.getTraits(traitCtor));
+    return uni(this.getTraits(traitCtor));
   }
 
   hasTrait(traitCtor){
@@ -160,6 +167,21 @@ class Serializable extends SerializableBase{
 
   *serPri(ser){ return O.tco([this.ctor, 'serPri'], ser); }
   *serCtor(ser){ return O.tco([this.ctor, 'serCtor'], ser); }
+}
+
+const uni = iterable => {
+  let result = null;
+  let hasResult = 0;
+
+  for(const val of iterable){
+    assert(!hasResult);
+
+    result = val;
+    hasResult = 1;
+  }
+
+  assert(result);
+  return result;
 }
 
 module.exports = Serializable;

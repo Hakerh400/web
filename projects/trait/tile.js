@@ -30,7 +30,14 @@ class Tile extends Inspectable{
     this.pos = pos;
   }
 
-  get valid(){ return this.grid !== null; }
+  get valid(){
+    return (
+      this.grid !== null &&
+      this.room !== null &&
+      this.world !== null
+    );
+  }
+  
   get room(){ return this.grid.room; }
   get world(){ return this.grid.world; }
 
@@ -85,12 +92,12 @@ class Tile extends Inspectable{
   }
 
   addTrait(trait){
-    this.traits.add(trait);
+    super.addTrait(trait);
     this.grid.addTrait(trait);
   }
 
   removeTrait(trait){
-    this.traits.remove(trait);
+    super.removeTrait(trait);
     this.grid.removeTrait(trait);
   }
 

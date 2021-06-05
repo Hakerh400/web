@@ -36,7 +36,17 @@ class Trait extends Inspectable{
     this.onCreate();
   }
 
-  get valid(){ return this.ent !== null; }
+  get valid(){
+    return (
+      this.ent !== null &&
+      this.tile !== null &&
+      this.grid !== null &&
+      this.room !== null &&
+      this.world !== null
+    );
+  }
+
+  get pos(){ return this.ent.pos; }
   get tile(){ return this.ent.tile; }
   get grid(){ return this.ent.grid; }
   get room(){ return this.ent.room; }
@@ -57,6 +67,7 @@ class Trait extends Inspectable{
     for(const ent of this.locDataEnts)
       ent.locData.delete(this);
 
+    this.ent.removeTrait(this);
     this.ent = null;
   }
 
@@ -242,7 +253,7 @@ class Player extends ActiveTrait{
     const levelNum = Number(level);
 
     world.reqPopRoom(grid => {
-      const x = levelNum % 10;
+      const x = (levelNum - 1) % 10;
       const y = 2 + levelNum / 10 | 0;
       const tile = grid.getp(x, y);
       if(!tile) return;
@@ -458,12 +469,6 @@ class Item extends Trait{
 }
 
 class Diamond extends Trait{
-  new(ent, level){
-    super.new(ent);
-
-    this.level = String(level);
-  }
-
   render(g){
     g.fillStyle = '#08f';
     g.beginPath();
@@ -494,41 +499,38 @@ class Diamond extends Trait{
     const {world, tile, level} = this;
 
     if(!tile.hasTrait(Player)) return;
-    if(!/^\d{2}$/.test(level)) return;
-    if(level === '99') return;
 
-    const levelNum = Number(level);
-    const nextLevel = levelNum + 1;
+    world.reqPopRoom((grid, ent) => {
+      assert(ent);
+      if(!ent) return;
 
-    world.reqPopRoom(grid => {
-      const x = nextLevel % 10;
-      const y = 2 + nextLevel / 10 | 0;
+      const {w, h} = grid;
+      const {x, y} = ent.pos;
 
-      const tile = grid.getp(x, y);
+      const i = x + y * w + 1;
+      const x1 = i % w;
+      const y1 = i / w | 0;
+
+      const text = ent.getTrait(Text);
+      if(!text) return;
+
+      const {str} = text;
+      if(!/^\d{2}$/.test(str)) return;
+
+      const nextLevel = Number(str) + 1;
+
+      const tile = grid.getp(x1, y1);
       if(tile === null) return;
 
       const locks = [...tile.getEnts(Lock)];
       if(locks.length !== 1) return;
 
       const lock = locks[0];
+      const lab = String(nextLevel).padStart(2, '0');
 
       world.reqRemoveEnt(lock);
-      world.reqCreateEnt(tile, Entity.Button, `${y - 2}${x}`, new Action.OpenLevel());
+      world.reqCreateEnt(tile, Entity.Button, lab, new Action.OpenLevel());
     });
-  }
-
-  *serData(ser){
-    ser.writeStr(this.level);
-  }
-
-  *deserData(ser){
-    this.level = ser.readStr();
-  }
-
-  *inspectData(){
-    return [
-      new BasicInfo(`level = ${this.level} :: Int`),
-    ];
   }
 }
 
@@ -718,6 +720,8 @@ class Lock extends Trait{
   }
 }
 
+class Entered extends Trait{}
+
 const reqMoveEnt = (world, ent, tileNew, direct=0, strong=0) => {
   assert(ent instanceof Entity);
   world.reqCreateEnt(tileNew, Entity.NavigationTarget, ent, direct, strong);
@@ -785,6 +789,7 @@ const ctorsArr = [
   Concrete,
   Button,
   Lock,
+  Entered,
   Text,
 ];
 

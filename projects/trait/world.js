@@ -57,6 +57,7 @@ class World extends Serializable{
   }
 
   pushRoom(gridCtor, gridCtorArgs, builder){
+    if(window.z) zz
     const {roomStack} = this;
 
     const room = this.createRoom(gridCtor, gridCtorArgs, 2, builder);
@@ -127,7 +128,7 @@ class World extends Serializable{
     assert(this.passiveRooms.has(room));
 
     this.passiveRooms.delete(room);
-    // room.world = null;
+    room.world = null;
   }
 
   tick(){
@@ -178,8 +179,11 @@ class World extends Serializable{
 
         // reqs.clear();
         
-        for(const tile of notifiedTiles){
-          for(const trait of tile.traits.get(traitCtor)){
+        tileLoop: for(const tile of notifiedTiles){
+          traitLoop: for(const trait of tile.traits.get(traitCtor)){
+            if(!tile.valid) continue tileLoop;
+            if(!trait.valid) continue traitLoop;
+
             if(!traitsExecNum.has(trait))
               traitsExecNum.set(trait, 0);
 
@@ -223,8 +227,8 @@ class World extends Serializable{
     this.addReq(new Request.RemoveEntity(this, ent, ent));
   }
 
-  reqPushRoom(gridCtor, gridCtorArgs, builder){
-    this.addReq(new Request.PushRoom(this, gridCtor, gridCtorArgs, builder));
+  reqPushRoom(ent, gridCtor, gridCtorArgs, builder){
+    this.addReq(new Request.PushRoom(this, ent, gridCtor, gridCtorArgs, builder));
   }
 
   reqPopRoom(cb=null){

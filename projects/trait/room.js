@@ -26,6 +26,10 @@ class Room extends Serializable{
     grid.room = this;
   }
 
+  get valid(){
+    return this.world !== null;
+  }
+
   get passive(){ return !this.active; }
   set passive(a){ this.active = !a; }
 

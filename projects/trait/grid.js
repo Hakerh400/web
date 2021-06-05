@@ -22,7 +22,13 @@ class Grid extends Serializable{
     this.room = room;
   }
 
-  get valid(){ return this.room !== null; }
+  get valid(){
+    return (
+      this.room !== null &&
+      this.world !== null
+    );
+  }
+
   get world(){ return this.room.world; }
 
   enterBuildMode(){

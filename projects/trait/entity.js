@@ -28,7 +28,16 @@ class Entity extends Inspectable{
     this.tile = tile;
   }
 
-  get valid(){ return this.tile !== null; }
+  get valid(){
+    return (
+      this.tile !== null &&
+      this.grid !== null &&
+      this.room !== null &&
+      this.world !== null
+    );
+  }
+
+  get pos(){ return this.tile.pos; }
   get grid(){ return this.tile.grid; }
   get room(){ return this.tile.room; }
   get world(){ return this.tile.world; }
@@ -49,6 +58,16 @@ class Entity extends Inspectable{
 
   createTrait(traitCtor, ...args){
     this.addTrait(new traitCtor(this, ...args));
+  }
+
+  addTrait(trait){
+    super.addTrait(trait);
+    this.tile.addTrait(trait);
+  }
+
+  removeTrait(trait){
+    super.removeTrait(trait);
+    this.tile.removeTrait(trait);
   }
 
   getGlobData(traitCtor){

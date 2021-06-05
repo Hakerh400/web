@@ -9,8 +9,8 @@ const w = 20;
 const h = 15;
 
 const levels = {
-  '00'(world, level){
-    world.reqPushRoom(Grid.Rectangle, [w, h], grid => {
+  '01'(world, ent, level){
+    world.reqPushRoom(ent, Grid.Rectangle, [w, h], grid => {
       for(const tile of grid.tiles)
         tile.createEnt(Entity.Concrete);
 
@@ -20,15 +20,15 @@ const levels = {
       }
 
       grid.createEnt(2, h - 3, Entity.Player);
-      grid.createEnt(w - 3, 2, Entity.Diamond, level);
-      // grid.createEnt(3, h - 3, Entity.Diamond, level);
+      // grid.createEnt(w - 3, 2, Entity.Diamond, level);
+      grid.createEnt(3, h - 3, Entity.Diamond, level);
 
       // grid.getp(0, 0).getEnt(Trait.Concrete).createTrait(Trait.Text, level);
     });
   },
 
-  '01'(world, level){
-    world.reqPushRoom(Grid.Rectangle, [w, h], grid => {
+  '02'(world, ent, level){
+    world.reqPushRoom(ent, Grid.Rectangle, [w, h], grid => {
       const layout = O.sanl(O.ftext(`
         +--------------------+
         |     dwwwww         |
@@ -41,7 +41,7 @@ const levels = {
         | w w www www w      |
         | w w    B bb w      |
         | w wwww   w ww      |
-        | w  B wwwww w       |
+        | w B  wwwww w       |
         | w   B      w       |
         | wwwwwwwwwwww       |
         |b                   |

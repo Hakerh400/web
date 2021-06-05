@@ -42,7 +42,7 @@ class OpenLevel extends Action{
 
     const {world} = btn;
 
-    levels[level](world, level);
+    levels[level](world, btn.ent, level);
   }
 }
 

@@ -155,14 +155,21 @@ class PushRoom extends Request{
     if(reqs.size !== 1) O.noimpl();
 
     const req = O.fst(reqs);
-    const {world, gridCtor, gridCtorArgs, builder} = req;
+    const {world, ent, gridCtor, gridCtorArgs, builder} = req;
+
+    if(ent !== null)
+      ent.createTrait(Trait.Entered);
 
     world.pushRoom(gridCtor, gridCtorArgs, builder);
   }
 
-  constructor(world, gridCtor, gridCtorArgs, builder){
+  constructor(world, ent, gridCtor, gridCtorArgs, builder){
     super(world);
 
+    if(ent !== null)
+      assert(ent instanceof Entity);
+
+    this.ent = ent;
     this.gridCtor = gridCtor;
     this.gridCtorArgs = gridCtorArgs;
     this.builder = builder;
@@ -178,12 +185,14 @@ class PopRoom extends Request{
 
     world.popRoom();
 
-    if(cb !== null){
-      const {selectedRoom} = world;
-      const {grid} = selectedRoom;
+    const {grid} = world.selectedRoom;
+    const ent = grid.getEnt(Trait.Entered);
 
-      cb(grid);
-    }
+    if(ent !== null)
+      ent.getTrait(Trait.Entered).remove();
+
+    if(cb !== null)
+      cb(grid, ent);
   }
 
   constructor(world, cb=null){
