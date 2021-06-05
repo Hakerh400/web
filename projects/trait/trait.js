@@ -856,14 +856,14 @@ class DigitalDoor extends Trait{
     if(this.isOpen){
       g.beginPath();
       g.moveTo(0, 0);
-      g.arc(0, .25 + gs * 1.5, .25, pi * 3 / 2, pi * 5 / 2);
+      g.arc(0, .25 + gs / 2, .25, pi * 3 / 2, pi * 5 / 2);
       g.closePath();
       g.fill();
       g.stroke();
 
       g.beginPath();
       g.moveTo(1, 1);
-      g.arc(1, .75 + gs, .25 - gs, pi / 2, pi * 3 / 2);
+      g.arc(1, .75, .25 - gs, pi / 2, pi * 3 / 2);
       g.closePath();
       g.fill();
       g.stroke();
@@ -875,8 +875,8 @@ class DigitalDoor extends Trait{
 
     g.beginPath();
     g.moveTo(.5, 0);
-    g.arc(.5, .25 + gs * 1.5, .25, pi * 3 / 2, pi * 5 / 2);
-    g.arc(.5, .75 + gs, .25 - gs, pi * 3 / 2, pi / 2, 1);
+    g.arc(.5, .25 + gs / 2, .25, pi * 3 / 2, pi * 5 / 2);
+    g.arc(.5, .75, .25 - gs, pi * 3 / 2, pi / 2, 1);
     g.stroke();
   }
 
