@@ -246,22 +246,10 @@ class Player extends ActiveTrait{
 
     if(!world.evts.restart) return;
 
-    const diamond = grid.getTrait(Diamond);
-    const {level} = diamond;
-    if(!/^\d{2}$/.test(level)) return;
+    world.reqPopRoom((grid, ent) => {
+      if(!ent) return;
 
-    const levelNum = Number(level);
-
-    world.reqPopRoom(grid => {
-      const x = (levelNum - 1) % 10;
-      const y = 2 + levelNum / 10 | 0;
-      const tile = grid.getp(x, y);
-      if(!tile) return;
-
-      const text = tile.getTrait(Text);
-      if(!text) return;
-      if(text.str !== level) return;
-
+      const {tile} = ent;
       const btn = tile.getTrait(Button);
       if(!btn) return;
 
@@ -501,7 +489,6 @@ class Diamond extends Trait{
     if(!tile.hasTrait(Player)) return;
 
     world.reqPopRoom((grid, ent) => {
-      assert(ent);
       if(!ent) return;
 
       const {w, h} = grid;

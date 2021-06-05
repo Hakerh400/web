@@ -11,6 +11,8 @@ const Trait = require('./trait');
 const CtorsMap = require('./ctors-map');
 const serializer = require('./serializer');
 const worldBuilder = require('./world-builder');
+const flags = require('./flags');
+const solutions = require('./solutions');
 
 const {floor} = Math;
 const {project} = O;
@@ -31,6 +33,12 @@ const {g} = O.ceCanvas(1);
 const infoContainer = O.ceDiv(O.body, 'info hidden');
 
 const world = worldBuilder.getWorld();
+
+const moves = flags.RECORD ? [] : null;
+let recording = 0;
+
+let playingInterval = null;
+let playing = 0;
 
 let iw, ih;
 let ctrl = 0;
@@ -61,6 +69,11 @@ const onResize = evt => {
 };
 
 const onKeyDown = evt => {
+  if(playing){
+    playing = 0;
+    clearInterval(playingInterval);
+  }
+
   const {code} = evt;
 
   ctrl = evt.ctrlKey;
@@ -69,21 +82,28 @@ const onKeyDown = evt => {
 
   let tick = 1;
 
+  const nav = dir => {
+    evts.nav = dir;
+
+    if(recording)
+      moves.push(dir);
+  };
+
   switch(code){
     case 'ArrowUp':
-      evts.nav = 0;
+      nav(0);
       break;
 
     case 'ArrowRight':
-      evts.nav = 1;
+      nav(1);
       break;
 
     case 'ArrowDown':
-      evts.nav = 2;
+      nav(2);
       break;
 
     case 'ArrowLeft':
-      evts.nav = 3;
+      nav(3);
       break;
 
     case 'KeyR':
@@ -93,6 +113,53 @@ const onKeyDown = evt => {
     case 'Escape':
       evts.exit = 1;
       break;
+
+    case 'Home': {
+      if(!flags.RECORD) break;
+
+      clearInfo();
+      tick = 0;
+
+      if(ctrl){
+        const levelRaw = prompt('Level:');
+        if(levelRaw === null) break;
+
+        const level = levelRaw.padStart(2, '0');
+        if(!O.has(solutions, level)) break;
+
+        const sol = solutions[level];
+        const solLen = sol.length;
+        let solIndex = 0;
+
+        playing = 1;
+
+        playingInterval = setInterval(() => {
+          if(solIndex === solLen){
+            playing = 0;
+            clearInterval(playingInterval);
+            return;
+          }
+
+          world.evts.nav = sol[solIndex++] | 0;
+          world.tick();
+          render();
+        }, 100);
+
+        break;
+      }
+
+      if(!recording){
+        log('start');
+        assert(moves.length === 0);
+        recording = 1;
+      }else{
+        log('end');
+        log(moves.join(''));
+        moves.length = 0;
+        recording = 0;
+      }
+
+    } break;
 
     default:
       tick = 0;
