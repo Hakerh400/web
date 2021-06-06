@@ -1037,6 +1037,7 @@ class WireOverlap extends WireBase{
 
   get activeV(){ return this.status[0]; }
   set activeV(a){ this.status[0] = a; }
+
   get activeH(){ return this.status[1]; }
   set activeH(a){ this.status[1] = a; }
 
@@ -1053,11 +1054,11 @@ class WireOverlap extends WireBase{
     g.beginPath();
     g.moveTo(0, .4);
     g.lineTo(.4, .4);
-    g.arc(.5 + gs / 2, .4, .1 - gs, pi, pi2);
+    g.arc(.5/* + gs / 2*/, .4, .1/* - gs*/, pi, pi2);
     g.lineTo(1, .4);
     g.lineTo(1, .6);
     g.lineTo(.6, .6);
-    g.arc(.5 + gs / 2, .6, .1 - gs, pi2, pi, 1);
+    g.arc(.5/* + gs / 2*/, .6, .1/* - gs*/, pi2, pi, 1);
     g.lineTo(0, .6);
     g.closePath();
     g.fill();
@@ -1163,6 +1164,7 @@ class Disjunction extends LogicGateBase{
     g.beginPath();
     g.moveTo(.1, .9);
     O.drawArc(g, .1, .9, .5, .1, .2);
+    g.lineTo(.5, .1)
     O.drawArc(g, .5, .1, .9, .9, .2);
     O.drawArc(g, .9, .9, .1, .9, -.5);
     g.closePath();
@@ -1182,6 +1184,7 @@ class Conjunction extends LogicGateBase{
     g.beginPath();
     g.moveTo(.1, .7);
     g.arc(.5, .7, .4, pi, pi2);
+    g.lineTo(.9, .7);
     g.closePath();
     g.fill();
     g.stroke();
