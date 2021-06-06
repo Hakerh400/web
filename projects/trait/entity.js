@@ -298,15 +298,6 @@ class Swap extends Entity{
   }
 }
 
-class PowerSource extends Entity{
-  new(tile){
-    super.new(tile);
-
-    this.createTrait(Trait.Meta);
-    this.createTrait(Trait.PowerSource);
-  }
-}
-
 class DigitalDoor extends Entity{
   new(tile, open=0){
     super.new(tile);
@@ -342,21 +333,28 @@ class Inverter extends LogicGate{
   }
 }
 
+class Disjunction extends LogicGate{
+  new(tile, dir){
+    super.new(tile);
+
+    this.createTrait(Trait.Disjunction, dir);
+  }
+}
+
+class Conjunction extends LogicGate{
+  new(tile, dir){
+    super.new(tile);
+
+    this.createTrait(Trait.Conjunction, dir);
+  }
+}
+
 class Water extends Entity{
   new(tile, dir){
     super.new(tile);
 
     this.createTrait(Trait.Water);
     this.createTrait(Trait.Liquid);
-  }
-}
-
-class Follower extends Entity{
-  new(tile, dir){
-    super.new(tile);
-
-    this.createTrait(Trait.Solid);
-    this.createTrait(Trait.Follower);
   }
 }
 
@@ -372,13 +370,13 @@ module.exports = Object.assign(Entity, {
   Button,
   Lock,
   Swap,
-  PowerSource,
   DigitalDoor,
   OneWay,
   LogicGate,
   Inverter,
+  Disjunction,
+  Conjunction,
   Water,
-  Follower,
 });
 
 const Trait = require('./trait');

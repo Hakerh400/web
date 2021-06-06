@@ -6,6 +6,7 @@ const Room = require('./room');
 const Trait = require('./trait');
 const CtorsMap = require('./ctors-map');
 const Serializable = require('./serializable');
+const flags = require('./flags');
 
 const {handlersArr, handlersMap} = Trait;
 const reqsArr = Request.ctorsArr;
@@ -30,6 +31,8 @@ class World extends Serializable{
     this.baseReqPri = null;
 
     this.resetEvts();
+
+    this.notifiedTilesInfo = flags.DisplayNotifiedTiles ? new Set() : null;
   }
 
   resetEvts(){
@@ -162,6 +165,15 @@ class World extends Serializable{
         assert(trait.valid);
         trait.tile.notify();
       }
+    }
+
+    if(flags.DisplayNotifiedTiles){
+      const {notifiedTilesInfo} = this;
+
+      notifiedTilesInfo.clear();
+
+      for(const tile of notifiedTiles)
+        notifiedTilesInfo.add(tile);
     }
 
     for(const [traitCtor, handler] of handlersArr){

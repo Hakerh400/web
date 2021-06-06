@@ -8,6 +8,7 @@ const Entity = require('./entity');
 const Trait = require('./trait');
 const CtorsMap = require('./ctors-map');
 const Serializable = require('./serializable');
+const flags = require('./flags');
 
 class Room extends Serializable{
   active = 0;
@@ -52,9 +53,14 @@ class Room extends Serializable{
   markTileAsNotified(tile, delay=0){
     const {world, grid} = this;
     assert(!grid.buildMode);
+
+    if(flags.DisplayNotifiedTiles)
+      world.notifiedTilesInfo.add(tile);
     
-    if(delay) world.notifiedTilesDelayed.add(tile);
-    else world.notifiedTiles.add(tile);
+    world.notifiedTiles.add(tile);
+
+    if(delay)
+      world.notifiedTilesDelayed.add(tile);
   }
 
   reqCreateEntAtPos(pos, entCtor, ...args){

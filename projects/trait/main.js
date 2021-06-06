@@ -274,8 +274,19 @@ const render = () => {
     const {x, y} = tile.pos;
 
     g.save();
+
     g.translate(x, y);
     tile.render(g);
+
+    if(flags.DisplayNotifiedTiles){
+      if(world.notifiedTilesInfo.has(tile)){
+        g.globalAlpha = .5;
+        g.fillStyle = '#f00';
+        g.fillRect(0, 0, 1, 1);
+        g.globalAlpha = 1;
+      }
+    }
+
     g.restore();
   }
 

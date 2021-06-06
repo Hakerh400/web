@@ -588,7 +588,7 @@ class Text extends Trait{
   }
 }
 
-class Button extends ActiveTrait{
+class Button extends Trait{
   init(){
     super.init();
 
@@ -665,9 +665,10 @@ class Button extends ActiveTrait{
       tile.hasTrait(Trait.Item)
     );
 
-    if(!pressed) return;
+    const status = pressed ? 1 : -1;
 
-    world.reqCreateEnt(tile, Entity.PowerSource);
+    for(const wire of tile.getTraits(Wire))
+      wire.updateRec(status);
   }
 
   *serData(ser){
@@ -801,8 +802,67 @@ class Swap extends Trait{
   }
 }
 
-class Wire extends Trait{
+class DirectionalTrait extends Trait{
+  new(ent, dir){
+    super.new(ent);
+
+    this.dir = dir;
+  }
+
+  rendert(g){ O.virtual('rendert'); }
+
+  render(g){
+    g.save(1);
+    g.rotate(.5, .5, (-this.dir & 3) * pih);
+
+    this.rendert(g);
+
+    g.restore();
+  }
+
+  *serData(ser){
+    ser.write(this.dir, 4);
+  }
+
+  *deserData(ser){
+    this.dir = ser.read(4);
+  }
+
+  *inspectData(){
+    return [
+      new BasicInfo(`dir = ${inspectDir(this.dir)} :: Direction`),
+    ];
+  }
+}
+
+class ElectronicBase extends Trait{
+  new(ent){
+    super.new(ent);
+
+    ent.createTrait(Electronic);
+  }
+
+  onRemove(){
+    removeTraits(this.ent, Electronic);
+  }
+}
+
+class Electronic extends Trait{}
+
+class WireBase extends ElectronicBase{
   static wiresMap = new WeakMap();
+
+  new(ent, ...args){
+    super.new(ent);
+
+    const {infoSize} = this;
+    assert(args.length <= infoSize);
+
+    while(args.length !== infoSize)
+      args.push(0);
+
+    this.status = args.map(a => a | 0);
+  }
 
   init(){
     super.init();
@@ -810,44 +870,93 @@ class Wire extends Trait{
     this.statusInfo = new WeakMap();
   }
 
-  new(ent, active=0){
-    super.new(ent);
+  get infoSize(){ O.virtual('infoSize'); }
 
-    this.active = active;
-  }
-
-  getStatus(){
+  getStatusArr(){
     const {world, statusInfo} = this;
     const {tickId} = world;
 
     if(!statusInfo.has(tickId))
-      return null;
+      statusInfo.set(tickId, O.ca(this.infoSize, () => null));
 
     return statusInfo.get(tickId);
   }
 
-  setStatus(active){
+  getStatus(index){
+    const statusArr = this.getStatusArr();
+    assert(index < statusArr.length);
+
+    return statusArr[index];
+  }
+
+  setStatus(index, status){
     const {world, statusInfo} = this;
     const {tickId} = world;
 
-    assert(active === -1 || active === 0 || active === 1);
+    const statusArr = this.getStatusArr();
+    assert(index < statusArr.length);
 
-    const status = this.getStatus();
+    const statusOld = statusArr[index];
 
-    if(status === 2) return;
-    if(status === active) return;
+    assert(status === -1 || status === 0 || status === 1);
+
+    if(statusOld === 2) return;
+    if(statusOld === status) return;
 
     this.notifySilent();
 
-    if(status === null || status === -1){
-      statusInfo.set(tickId, active);
+    if(statusOld === null || statusOld === -1){
+      statusArr[index] = status;
       return;
     }
 
-    if(active === -1) return;
+    if(status === -1) return;
 
-    statusInfo.set(tickId, 2);
+    statusArr[index] = 2;
   }
+
+  update(n){
+    if(n) return;
+    const {infoSize} = this;
+
+    let found = 0;
+
+    for(let i = 0; i !== infoSize; i++){
+      let status = this.getStatus(i);
+
+      if(status === null) continue;
+      if(status === 2) continue;
+
+      if(status === -1)
+        status = 0;
+
+      if(status === this.status[i]) continue;
+
+      this.status[i] = status;
+      found = 1;
+    }
+
+    if(found) this.notify(1);
+  }
+
+  *serData(ser){
+    for(const status of this.status){
+      assert(status === 0 || status === 1);
+      ser.write(status);
+    }
+  }
+
+  *deserData(ser){
+    const {infoSize, status} = this;
+    assert(status.length === infoSize);
+
+    for(let i = 0; i !== infoSize; i++)
+      status[i] = ser.read();
+  }
+}
+
+class Wire extends WireBase{
+  get infoSize(){ return 1; }
 
   render(g){
     const {tile} = this;
@@ -857,58 +966,63 @@ class Wire extends Trait{
     let dirs = 0;
 
     for(const [adj, dir] of tile.adjs)
-      if(adj.hasTrait(Wire) || adj.hasTrait(LogicGate))
+      if(adj.hasTrait(Electronic))
         dirs |= 1 << dir;
 
-    g.fillStyle = this.active ? '#0f0' : '#080';
+    g.fillStyle = this.status[0] ? '#0f0' : '#080';
+    g.concaveMode = 1;
     g.drawTube(0, 0, dirs, .2, 1);
+    g.concaveMode = 0;
   }
 
-  cooldown(n){
-    if(n) return;
-    this.updateRec(-1);
-  }
+  get active(){ return this.status[0]; }
+  set active(a){ this.status[0] = a; }
 
-  update(n){
-    if(n) return;
-
-    let status = this.getStatus();
-
-    if(status === null) return;
-    if(status === 2) return;
-
-    if(status === -1)
-      status = 0;
-
-    if(status === this.active) return;
-
-    this.active = status;
-
-    this.notify();
-    if(status) this.notify(1);
-  }
-
-  updateRec(active){
+  updateRec(status){
     const {tile} = this;
 
-    tile.iter(tile => {
+    const seen = O.ca(2, () => new Set());
+    const stack = [];
+
+    const add = (tile, index) => {
+      if(tile === null) return;
+
+      const set = seen[index];
+      if(set.has(tile)) return;
+
+      set.add(tile);
+      stack.push([tile, index]);
+    };
+
+    add(tile, 0);
+    add(tile, 1);
+
+    while(stack.length !== 0){
+      const [tile, index] = stack.pop();
       let found = 0;
 
       for(const wire of tile.getTraits(Wire)){
-        wire.setStatus(active);
+        wire.setStatus(0, status);
+        found = 2;
+      }
+
+      for(const wireOverlap of tile.getTraits(WireOverlap)){
+        wireOverlap.setStatus(index, status);
         found = 1;
       }
 
-      return found ? null : 0;
-    });
-  }
+      if(found === 0) continue;
 
-  *serData(ser){
-    ser.write(this.active ? 1 : 0);
-  }
+      if(found === 2 || index === 0){
+        add(tile.adj(0), 0);
+        add(tile.adj(2), 0);
+      }
 
-  *deserData(ser){
-    this.active = ser.read();
+      if(found === 2 || index === 1){
+        add(tile.adj(1), 1);
+        add(tile.adj(3), 1);
+      }
+    }
   }
 
   *inspectData(){
@@ -918,16 +1032,163 @@ class Wire extends Trait{
   }
 }
 
-class PowerSource extends Trait{
+class WireOverlap extends WireBase{
+  get infoSize(){ return 2; }
+
+  get activeV(){ return this.status[0]; }
+  set activeV(a){ this.status[0] = a; }
+  get activeH(){ return this.status[1]; }
+  set activeH(a){ this.status[1] = a; }
+
+  render(g){
+    const {gs} = g;
+
+    g.fillStyle = this.activeV ? '#0f0' : '#080';
+    g.beginPath();
+    g.rect(.4, 0, .2, 1);
+    g.fill();
+    g.stroke();
+
+    g.fillStyle = this.activeH ? '#0f0' : '#080';
+    g.beginPath();
+    g.moveTo(0, .4);
+    g.lineTo(.4, .4);
+    g.arc(.5 + gs / 2, .4, .1 - gs, pi, pi2);
+    g.lineTo(1, .4);
+    g.lineTo(1, .6);
+    g.lineTo(.6, .6);
+    g.arc(.5 + gs / 2, .6, .1 - gs, pi2, pi, 1);
+    g.lineTo(0, .6);
+    g.closePath();
+    g.fill();
+    g.stroke();
+  }
+
+  *inspectData(){
+    return [
+      new BasicInfo(`activeV = ${inspectBool(this.activeV)} :: Bool`),
+      new BasicInfo(`activeH = ${inspectBool(this.activeH)} :: Bool`),
+    ];
+  }
+}
+
+class LogicGate extends Trait{
+  init(){
+    super.init();
+
+    this.layer = layers.GroundObj;
+  }
+}
+
+class LogicGateBase extends DirectionalTrait{
+  new(ent, dir){
+    super.new(ent, dir);
+
+    ent.createTrait(Electronic);
+  }
+
+  onRemove(){
+    removeTraits(this.ent, Electronic);
+  }
+
   updateWires(n){
     if(n) return;
-    const {world, tile, ent} = this;
+    const {tile, dir} = this;
+
+    const inputs = [];
+    const outputWires = [];
 
     for(const wire of tile.getTraits(Wire))
-      wire.updateRec(1);
+      inputs.push(wire.active);
 
-    tile.notify(1);
-    world.reqRemoveEnt(ent);
+    for(const wireOverlap of tile.getTraits(Wire))
+      inputs.push(wireOverlap.active);
+
+    for(const [adj, adjDir] of tile.adjs){
+      const isOut = adjDir === dir;
+
+      for(const wire of adj.getTraits(Wire)){
+        if(isOut){
+          outputWires.push(wire);
+          continue;
+        }
+
+        inputs.push(wire.active);
+      }
+
+      for(const wireOverlap of adj.getTraits(WireOverlap)){
+        if(isOut) continue;
+
+        inputs.push(wireOverlap.status[adjDir & 1]);
+      }
+    }
+
+    const output = this.apply(inputs);
+    if(output === null) return;
+
+    for(const wire of outputWires)
+      wire.updateRec(output);
+  }
+
+  apply(inputs){ O.virtual('apply'); }
+}
+
+class Inverter extends LogicGateBase{
+  rendert(g){
+    g.fillStyle = '#fff';
+
+    g.beginPath();
+    g.moveTo(.2, .9);
+    g.lineTo(.5, .3);
+    g.lineTo(.8, .9);
+    g.closePath();
+    g.fill();
+    g.stroke();
+
+    drawCirc(g, .5, .2, .1);
+  }
+
+  apply(inputs){
+    const input = O.uni(inputs);
+    if(input === null) return null;
+
+    return input ^ 1;
+  }
+}
+
+class Disjunction extends LogicGateBase{
+  rendert(g){
+    g.fillStyle = '#fff';
+
+    g.beginPath();
+    g.moveTo(.1, .9);
+    O.drawArc(g, .1, .9, .5, .1, .2);
+    O.drawArc(g, .5, .1, .9, .9, .2);
+    O.drawArc(g, .9, .9, .1, .9, -.5);
+    g.closePath();
+    g.fill();
+    g.stroke();
+  }
+
+  apply(inputs){
+    return inputs.reduce((a, b) => a | b, 0);
+  }
+}
+
+class Conjunction extends LogicGateBase{
+  rendert(g){
+    g.fillStyle = '#fff';
+
+    g.beginPath();
+    g.moveTo(.1, .7);
+    g.arc(.5, .7, .4, pi, pi2);
+    g.closePath();
+    g.fill();
+    g.stroke();
+  }
+
+  apply(inputs){
+    return inputs.reduce((a, b) => a & b, 1);
   }
 }
 
@@ -991,39 +1252,6 @@ class DigitalDoor extends Trait{
   }
 }
 
-class DirectionalTrait extends Trait{
-  new(ent, dir){
-    super.new(ent);
-
-    this.dir = dir;
-  }
-
-  rendert(g){ O.virtual('rendert'); }
-
-  render(g){
-    g.save(1);
-    g.rotate(.5, .5, (-this.dir & 3) * pih);
-
-    this.rendert(g);
-
-    g.restore();
-  }
-
-  *serData(ser){
-    ser.write(this.dir, 4);
-  }
-
-  *deserData(ser){
-    this.dir = ser.read(4);
-  }
-
-  *inspectData(){
-    return [
-      new BasicInfo(`dir = ${inspectDir(this.dir)} :: Direction`),
-    ];
-  }
-}
-
 class OneWay extends DirectionalTrait{
   init(){
     super.init();
@@ -1070,109 +1298,12 @@ class OneWay extends DirectionalTrait{
   }
 }
 
-class LogicGate extends ActiveTrait{
-  init(){
-    super.init();
-
-    this.layer = layers.GroundObj;
-  }
-}
-
-class LogicGateBase extends DirectionalTrait{
-  updateWires(n){
-    if(n) return;
-    const {tile, dir} = this;
-
-    const inputs = [];
-    const outputWires = [];
-
-    for(const wire of tile.getTraits(Wire))
-      inputs.push(wire.active);
-
-    for(const [adj, adjDir] of tile.adjs){
-      const isOut = adjDir === dir;
-
-      for(const wire of adj.getTraits(Wire)){
-        if(isOut){
-          outputWires.push(wire);
-          continue;
-        }
-
-        inputs.push(wire.active);
-      }
-    }
-
-    const output = this.apply(inputs);
-    if(output === null) return;
-
-    for(const wire of outputWires)
-      wire.updateRec(output);
-  }
-
-  apply(inputs){ O.virtual('apply'); }
-}
-
-class Inverter extends LogicGateBase{
-  render(g){
-    g.fillStyle = '#fff';
-
-    g.beginPath();
-    g.moveTo(.1, .2);
-    g.lineTo(.7, .5);
-    g.lineTo(.1, .8);
-    g.closePath();
-    g.fill();
-    g.stroke();
-
-    drawCirc(g, .8, .5, .1);
-  }
-
-  apply(inputs){
-    const input = O.uni(inputs);
-    if(input === null) return null;
-
-    return input ^ 1;
-  }
-}
-
 class Liquid extends Trait{}
 
 class Water extends Trait{
   render(g){
     g.fillStyle = '#088';
     g.fillRect(0, 0, 1, 1);
-  }
-}
-
-class Follower extends Trait{
-  render(g){
-    g.fillStyle = '#ff0';
-
-    g.aligned = 0;
-    g.beginPath();
-    O.drawStar(g, .5, .5, .1, .4, 5);
-    g.fill();
-    g.stroke();
-    g.aligned = 1;
-  }
-
-  follow(n){
-    const {world, tile, ent} = this;
-    let found = 0;
-
-    for(const [adj] of tile.adjs){
-      for(const solid of adj.getEnts(Solid)){
-        const targetTile = calcTargetTile(solid);
-
-        if(targetTile === adj) continue;
-        if(targetTile === tile) continue;
-
-        moveEnt(ent, adj);
-        found = 1;
-      }
-    }
-
-    return found;
   }
 }
 
@@ -1240,26 +1371,31 @@ const removeEnt = ent => {
   world.reqRemoveEnt(ent);
 };
 
-const removeEnts = (tile, trait) => {
-  for(const ent of tile.getEnts(trait))
+const removeEnts = (tile, traitCtor) => {
+  for(const ent of tile.getEnts(traitCtor))
     removeEnt(ent);
+};
+
+const removeTraits = (ent, traitCtor) => {
+  for(const trait of ent.getTraits(traitCtor))
+    trait.remove();
 };
 
 const handlersArr = [
   [Player, 'navigate'],
   [Button, 'click'],
   [Pushable, 'push'],
-  [Follower, 'follow'],
   [Swap, 'swap'],
   [OneWay, 'stop'],
   [Solid, 'stop'],
   [NavigationTarget, 'navigate'],
   [Box, 'checkGround'],
   [Button, 'press'],
-  [Wire, 'cooldown'],
-  [PowerSource, 'updateWires'],
   [Inverter, 'updateWires'],
+  [Disjunction, 'updateWires'],
+  [Conjunction, 'updateWires'],
   [Wire, 'update'],
+  [WireOverlap, 'update'],
   [DigitalDoor, 'update'],
   [Diamond, 'collect'],
   [Player, 'restart'],
@@ -1283,7 +1419,6 @@ const ctorsArr = [
   NavigationTarget,
 
   Player,
-  Follower,
   Solid,
   Wall,
   Box,
@@ -1294,9 +1429,14 @@ const ctorsArr = [
   Ground,
   Concrete,
   WoodenGround,
+
   LogicGate,
   LogicGateBase,
+
   Inverter,
+  Disjunction,
+  Conjunction,
+
   Item,
   Diamond,
   Button,
@@ -1304,9 +1444,15 @@ const ctorsArr = [
   Swap,
   Entered,
   DigitalDoor,
+
+  ElectronicBase,
+  Electronic,
+
+  WireBase,
   Wire,
+  WireOverlap,
+
   Text,
-  PowerSource,
   OneWay,
   DirectionalTrait,
 ];

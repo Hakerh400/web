@@ -82,14 +82,14 @@ const levels = {
   '04'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
-      |    ~www*** ++++w   |
-      | bbb~  w^w     +w   |
-      | bbb~b wvw     +w   |
-      | bbb~  w*wwww  +w   |
-      |~~~~~ ww*   w  +w   |
-      |      wwdww w  +w   |
-      |      w * w www+w   |
-      |      w * w Dc>+w   |
+      |    ~www*** ####w   |
+      | bbb~  w^w     #w   |
+      | bbb~b wvw     #w   |
+      | bbb~  w*wwww  #w   |
+      |~~~~~ ww*   w  #w   |
+      |      wwdww w  #w   |
+      |      w * w www#w   |
+      |      w * w Dc>#w   |
       |      w^^^wwwww w   |
       |        *           |
       |        *           |
@@ -119,24 +119,54 @@ const levels = {
   '05'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
-      |                    |
-      | ff psbb<           |
-      |                    |
-      |   bb               |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
+      |p                   |
+      |su* # * ### #### ## |
+      |     * #   *    #   |
+      |su***+*+** *    # * |
+      |     * # **+ # ## * |
+      |su**** # * *  #   * |
+      |     *   * *  # *** |
+      |su** **** **  # *   |
+      |  w*          # *   |
+      | ww* ########## * ww|
+      | w              **dc|
+      | w                ww|
+      | w                  |
+      | wwwwwwwwwwwwwwwwww |
       |                    |
       +--------------------+
     `, grid => {
-      
+      grid.getp(7, 3).getTrait(Trait.WireOverlap).activeV = 1;
+
+      const gateCtors = {
+        '~': Entity.Inverter,
+        'v': Entity.Disjunction,
+        '^': Entity.Conjunction,
+      };
+
+      const gates = [
+        [3, 1, '~', 1],
+        [5, 1, '^', 1],
+        [7, 1, 'v', 1],
+        [11, 1, 'v', 1],
+        [16, 1, 'v', 1],
+        [18, 2, '~', 2],
+        [12, 4, '~', 1],
+        [14, 4, '^', 1],
+        [6, 5, '~', 1],
+        [9, 7, '^', 1],
+        [4, 9, '~', 1],
+      ];
+
+      for(const gateInfo of gates){
+        const [x, y, ctorStr, dir] = gateInfo;
+        const ctor = gateCtors[ctorStr];
+
+        grid.getp(x, y).createEnt(ctor, dir);
+      }
+
+      for(let i = 0; i !== 8; i++)
+        grid.getp(2, i).createEnt(Entity.OneWay, 3);
     });
   },
 };
@@ -156,14 +186,13 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       u: [Entity.Button],
       d: [Entity.DigitalDoor],
       D: [Entity.DigitalDoor, 1],
-      f: [Entity.Follower],
       '^': [Entity.OneWay, 0],
       '>': [Entity.OneWay, 1],
       'v': [Entity.OneWay, 2],
       '<': [Entity.OneWay, 3],
     };
 
-    const electrical = '*+udD';
+    const electrical = '*+#udD';
 
     for(const tile of grid.tiles){
       const {x, y} = tile.pos;
@@ -179,11 +208,18 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       if(c === ' ' || c === '~') continue;
 
       if(electrical.includes(c)){
-        const active = c === '+' || c === 'D';
-        tile.getEnt(Trait.Concrete).createTrait(Trait.Wire, active);
+        const ground = tile.getEnt(Trait.Concrete);
+        const active = c === '#' || c === 'D';
+
+        if(c === '+'){
+          ground.createTrait(Trait.WireOverlap);
+          continue;
+        }
+
+        ground.createTrait(Trait.Wire, active);
       }
 
-      if(c === '*' || c === '+') continue;
+      if(c === '*' || c === '#') continue;
 
       assert(O.has(csEnts, c));
       tile.createEnt(...csEnts[c]);
