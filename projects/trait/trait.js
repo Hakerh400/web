@@ -852,6 +852,13 @@ class Electronic extends Trait{}
 class WireBase extends ElectronicBase{
   static wiresMap = new WeakMap();
 
+  init(){
+    super.init();
+
+    this.statusInfo = new WeakMap();
+    this.status = O.ca(this.infoSize, () => 0);
+  }
+
   new(ent, ...args){
     super.new(ent);
 
@@ -861,13 +868,8 @@ class WireBase extends ElectronicBase{
     while(args.length !== infoSize)
       args.push(0);
 
-    this.status = args.map(a => a | 0);
-  }
-
-  init(){
-    super.init();
-
-    this.statusInfo = new WeakMap();
+    for(let i = 0; i !== infoSize; i++)
+      this.status[i] = args[i] | 0;
   }
 
   get infoSize(){ O.virtual('infoSize'); }
@@ -1055,10 +1057,12 @@ class WireOverlap extends WireBase{
     g.moveTo(0, .4);
     g.lineTo(.4, .4);
     g.arc(.5/* + gs / 2*/, .4, .1/* - gs*/, pi, pi2);
+    g.lineTo(.6, .4);
     g.lineTo(1, .4);
     g.lineTo(1, .6);
     g.lineTo(.6, .6);
     g.arc(.5/* + gs / 2*/, .6, .1/* - gs*/, pi2, pi, 1);
+    g.lineTo(.4, .6);
     g.lineTo(0, .6);
     g.closePath();
     g.fill();

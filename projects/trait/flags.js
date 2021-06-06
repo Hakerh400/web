@@ -4,9 +4,9 @@ const assert = require('assert');
 
 const flags = {
   UnlockLevels: 1,
-  OpenLastLevel: 1,
+  OpenLastLevel: 0,
   DisplayStrings: 0,
-  Persist: 0,
+  Persist: 1,
   Record: 1,
   DisplayNotifiedTiles: 0,
 };

@@ -178,6 +178,17 @@ const onKeyDown = evt => {
 
     } break;
 
+    case 'F5':
+      O.pd(evt);
+      tick = 0;
+
+      worldBuilder.saveWorld(world);
+      
+      O.rel('beforeunload', onBeforeUnload);
+      location.reload();
+
+      break;
+
     default:
       tick = 0;
       break;
