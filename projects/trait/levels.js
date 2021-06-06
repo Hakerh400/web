@@ -169,6 +169,30 @@ const levels = {
         grid.getp(2, i).createEnt(Entity.OneWay, 3);
     });
   },
+
+  '06'(world, ent, level){
+    createLayout(world, ent, level, `
+      +--------------------+
+      |                    |
+      | pfb                |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      +--------------------+
+    `, grid => {
+      
+    });
+  },
 };
 
 const createLayout = (world, ent, level, layoutRaw, cb=null) => {
@@ -190,6 +214,7 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       '>': [Entity.OneWay, 1],
       'v': [Entity.OneWay, 2],
       '<': [Entity.OneWay, 3],
+      f: [Entity.Follower],
     };
 
     const electrical = '*+#udD';

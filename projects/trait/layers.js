@@ -1,6 +1,7 @@
 'use strict';
 
 const layers = O.enum([
+  'Liquid',
   'Ground',
   'GroundObj',
   'Item',

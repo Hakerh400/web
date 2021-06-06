@@ -436,11 +436,13 @@ class Box extends Trait{
       return;
     }
 
+    g.concaveMode = 1;
     g.fillStyle = '#ff0';
     g.beginPath();
     g.rect(.25, .25, .5, .5);
     g.fill();
     g.stroke();
+    g.concaveMode = 0;
   }
 
   checkGround(n){
@@ -972,9 +974,7 @@ class Wire extends WireBase{
         dirs |= 1 << dir;
 
     g.fillStyle = this.status[0] ? '#0f0' : '#080';
-    g.concaveMode = 1;
-    g.drawTube(0, 0, dirs, .2, 1);
-    g.concaveMode = 0;
+    drawTube(g, dirs, .2, 1);
   }
 
   get active(){ return this.status[0]; }
@@ -1305,12 +1305,34 @@ class OneWay extends DirectionalTrait{
   }
 }
 
-class Liquid extends Trait{}
+class Liquid extends Trait{
+  init(){
+    super.init();
+
+    this.layer = layers.Liquid;
+  }
+}
 
 class Water extends Trait{
   render(g){
     g.fillStyle = '#088';
     g.fillRect(0, 0, 1, 1);
+  }
+}
+
+class Follower extends Trait{
+  init(){
+    super.init();
+
+    this.layer = layers.Object;
+  }
+
+  render(g){
+    const dirs = 0;
+
+    g.fillStyle = '#f8f';
+    drawTube(g, dirs, .5);
+    drawCirc(g, .5, .5, .1);
   }
 }
 
@@ -1358,6 +1380,12 @@ const drawCirc = (g, x, y, r, col=null) => {
   g.arc(x, y, r, 0, pi2);
   g.fill();
   g.stroke();
+};
+
+const drawTube = (g, dirs, size, round) => {
+  g.concaveMode = 1;
+  g.drawTube(0, 0, dirs, size, round);
+  g.concaveMode = 0;
 };
 
 const isPowered = tile => {
@@ -1451,6 +1479,7 @@ const ctorsArr = [
   Swap,
   Entered,
   DigitalDoor,
+  Follower,
 
   ElectronicBase,
   Electronic,

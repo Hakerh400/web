@@ -358,6 +358,15 @@ class Water extends Entity{
   }
 }
 
+class Follower extends Entity{
+  new(tile){
+    super.new(tile);
+
+    this.createTrait(Trait.Follower);
+    this.createTrait(Trait.Solid);
+  }
+}
+
 module.exports = Object.assign(Entity, {
   NavigationTarget,
   Player,
@@ -377,6 +386,7 @@ module.exports = Object.assign(Entity, {
   Disjunction,
   Conjunction,
   Water,
+  Follower,
 });
 
 const Trait = require('./trait');
