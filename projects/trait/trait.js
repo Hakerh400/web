@@ -941,6 +941,7 @@ class DigitalDoor extends Trait{
       g.beginPath();
       g.moveTo(0, 0);
       g.arc(0, .25 + gs / 2, .25, pi * 3 / 2, pi * 5 / 2);
+      g.lineTo(0, .5);
       g.closePath();
       g.fill();
       g.stroke();

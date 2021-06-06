@@ -120,7 +120,7 @@ const levels = {
     createLayout(world, ent, level, `
       +--------------------+
       |                    |
-      | ff p bb<           |
+      | ff psbb<           |
       |                    |
       |   bb               |
       |                    |
