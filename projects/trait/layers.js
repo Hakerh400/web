@@ -2,7 +2,7 @@
 
 const layers = O.enum([
   'Ground',
-  'FloorObj',
+  'GroundObj',
   'Item',
   'Object',
   'Wall',

@@ -118,9 +118,7 @@ class Entity extends Inspectable{
       trait.render(g);
   }
 
-  notify(){
-    this.tile.notify();
-  }
+  notify(delay){ this.tile.notify(delay); }
 
   remove(){
     this.tile.removeEnt(this);
@@ -242,12 +240,32 @@ class Diamond extends Entity{
   }
 }
 
-class Concrete extends Entity{
-  new(tile){
+class Ground extends Entity{
+  new(tile, opts=null){
     super.new(tile);
 
+    this.createTrait(Trait.Ground);
+
+    if(opts !== null){
+      if(O.has(opts, 'wire') && opts.wire)
+        this.createTrait(Trait.Wire);
+    }
+  }
+}
+
+class Concrete extends Ground{
+  new(tile, opts){
+    super.new(tile, opts);
+
     this.createTrait(Trait.Concrete);
-    this.createTrait(Trait.Floor);
+  }
+}
+
+class WoodenGround extends Ground{
+  new(tile, opts){
+    super.new(tile, opts);
+
+    this.createTrait(Trait.WoodenGround);
   }
 }
 
@@ -280,12 +298,12 @@ class Swap extends Entity{
   }
 }
 
-class ElectricalSource extends Entity{
+class PowerSource extends Entity{
   new(tile){
     super.new(tile);
 
     this.createTrait(Trait.Meta);
-    this.createTrait(Trait.ElectricalSource);
+    this.createTrait(Trait.PowerSource);
   }
 }
 
@@ -308,19 +326,49 @@ class OneWay extends Entity{
   }
 }
 
+class LogicGate extends Entity{
+  new(tile){
+    super.new(tile);
+
+    this.createTrait(Trait.LogicGate);
+  }
+}
+
+class Inverter extends LogicGate{
+  new(tile, dir){
+    super.new(tile);
+
+    this.createTrait(Trait.Inverter, dir);
+  }
+}
+
+class Water extends Entity{
+  new(tile, dir){
+    super.new(tile);
+
+    this.createTrait(Trait.Water);
+    this.createTrait(Trait.Liquid);
+  }
+}
+
 module.exports = Object.assign(Entity, {
   NavigationTarget,
   Player,
   Wall,
   Box,
   Diamond,
+  Ground,
   Concrete,
+  WoodenGround,
   Button,
   Lock,
   Swap,
-  ElectricalSource,
+  PowerSource,
   DigitalDoor,
   OneWay,
+  LogicGate,
+  Inverter,
+  Water,
 });
 
 const Trait = require('./trait');

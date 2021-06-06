@@ -81,15 +81,15 @@ const levels = {
   '04'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
-      |        ********    |
-      | bbb b w^w     *    |
-      | bbb   wvw     *    |
-      | bbb   w*wwww  *    |
-      |       w*   w  *    |
-      |      wwdww w  *    |
-      |      w * w www*    |
-      |      w * w dc>*    |
-      |      w^^^wwwww     |
+      |    ~  w*** ++++w   |
+      | bbb~b w^w     +w   |
+      | bbb~  wvw     +w   |
+      | bbb~  w*wwww  +w   |
+      |~~~~~  w*   w  +w   |
+      |      wwdww w  +w   |
+      |      w * w www+w   |
+      |      w * w Dc>+w   |
+      |      w^^^wwwww w   |
       |        *           |
       |        *           |
       |        p           |
@@ -98,16 +98,20 @@ const levels = {
       |        u           |
       +--------------------+
     `, grid => {
-      const wiresInfo = [8, 1, 8, 2, 8, 8, 13, 7, 14, 7];
+      const wiresInfo = [
+        [8, 1, 0],
+        [8, 2, 0],
+        [8, 8, 0],
+        [13, 7, 1],
+        [14, 7, 1],
+      ];
 
       grid.getp(2, 2).getEnt(Trait.Box).createTrait(Trait.Wire);
 
-      for(let i = 0; i !== wiresInfo.length; i += 2){
-        const x = wiresInfo[i];
-        const y = wiresInfo[i + 1];
+      for(const [x, y, active] of wiresInfo)
+        grid.getp(x, y).getEnt(Trait.Concrete).createTrait(Trait.Wire, active);
 
-        grid.getp(x, y).getEnt(Trait.Concrete).createTrait(Trait.Wire);
-      }
+      grid.getp(11, 0).createEnt(Entity.Inverter, 1);
     });
   },
 };
@@ -126,26 +130,34 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       e: [Entity.Wire],
       u: [Entity.Button],
       d: [Entity.DigitalDoor],
+      D: [Entity.DigitalDoor, 1],
       '^': [Entity.OneWay, 0],
       '>': [Entity.OneWay, 1],
       'v': [Entity.OneWay, 2],
       '<': [Entity.OneWay, 3],
     };
 
-    const electrical = '*ud';
+    const electrical = '*+udD';
 
     for(const tile of grid.tiles){
       const {x, y} = tile.pos;
+      const c = layout[y + 1][x + 1];
+
+      if(c === '~'){
+        tile.createEnt(Entity.Water);
+        continue;
+      }
 
       tile.createEnt(Entity.Concrete);
 
-      const c = layout[y + 1][x + 1];
-      if(c === ' ') continue;
+      if(c === ' ' || c === '~') continue;
 
-      if(electrical.includes(c))
-        tile.getEnt(Trait.Concrete).createTrait(Trait.Wire);
+      if(electrical.includes(c)){
+        const active = c === '+' || c === 'D';
+        tile.getEnt(Trait.Concrete).createTrait(Trait.Wire, active);
+      }
 
-      if(c === '*') continue;
+      if(c === '*' || c === '+') continue;
 
       assert(O.has(csEnts, c));
       tile.createEnt(...csEnts[c]);

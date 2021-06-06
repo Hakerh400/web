@@ -121,6 +121,8 @@ const onKeyDown = evt => {
       nav(3);
       break;
 
+    case 'Enter': break;
+
     case 'KeyR':
       evts.restart = 1;
       break;

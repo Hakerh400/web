@@ -23,6 +23,8 @@ class World extends Serializable{
 
     this.reqs = new CtorsMap();
     this.notifiedTiles = new Set();
+    this.notifiedTilesDelayed = new Set();
+    this.notifiedTraits = new CtorsMap();
 
     this.tickId = null;
     this.baseReqPri = null;
@@ -132,9 +134,22 @@ class World extends Serializable{
   }
 
   tick(){
-    const {activeRooms, selectedRoom, evts, reqs, notifiedTiles} = this;
+    const {
+      activeRooms,
+      selectedRoom,
+      evts,
+      reqs,
+      notifiedTiles,
+      notifiedTilesDelayed,
+      notifiedTraits,
+    } = this;
 
     assert(selectedRoom !== null);
+
+    for(const tile of notifiedTilesDelayed)
+      notifiedTiles.add(tile);
+
+    notifiedTilesDelayed.clear();
 
     if(evts.lmb !== null) evts.lmb.notify();
     if(evts.rmb !== null) evts.lmb.notify();
@@ -178,25 +193,43 @@ class World extends Serializable{
         }
 
         // reqs.clear();
+
+        const execHandler = trait => {
+          if(!trait.valid) return;
+
+          // assert(trait[handler.name] === handler);
+
+          if(!traitsExecNum.has(trait))
+            traitsExecNum.set(trait, 0);
+
+          const n = traitsExecNum.get(trait);
+          handler.call(trait, n);
+
+          traitsExecNum.set(trait, n + 1);
+        };
+
+        const invalidTiles = new Set();
         
-        tileLoop: for(const tile of notifiedTiles){
-          traitLoop: for(const trait of tile.traits.get(traitCtor)){
-            if(!tile.valid) continue tileLoop;
-            if(!trait.valid) continue traitLoop;
-
-            if(!traitsExecNum.has(trait))
-              traitsExecNum.set(trait, 0);
-
-            const n = traitsExecNum.get(trait);
-            handler.call(trait, n);
-
-            traitsExecNum.set(trait, n + 1);
+        for(const tile of notifiedTiles){
+          if(!tile.valid){
+            invalidTiles.add(tile);
+            continue;
           }
+
+          for(const trait of tile.traits.get(traitCtor))
+            execHandler(trait);
         }
+
+        for(const trait of notifiedTraits.get(traitCtor))
+          execHandler(trait);
+
+        for(const tile of invalidTiles)
+          notifiedTiles.delete(tile);
       }while(reqs.nempty);
     }
 
     notifiedTiles.clear();
+    notifiedTraits.clear();
 
     this.tickId = null;
     this.baseReqPri = null;
@@ -239,6 +272,7 @@ class World extends Serializable{
     assert(this.selectedRoom !== null);
     assert(this.evts.nav === null);
     assert(this.notifiedTiles.size === 0);
+    assert(this.notifiedTraits.size === 0);
     assert(this.reqs.empty);
     assert(this.tickId === null);
     assert(this.baseReqPri === null);
@@ -246,6 +280,7 @@ class World extends Serializable{
     yield [[ser, 'writeSet'], this.activeRooms];
     yield [[ser, 'writeSet'], this.passiveRooms];
     yield [[ser, 'writeArr'], this.roomStack];
+    yield [[ser, 'writeSet'], this.notifiedTilesDelayed];
 
     yield [[this.selectedRoom, 'serm'], ser];
   }
@@ -256,6 +291,7 @@ class World extends Serializable{
     const activeRooms = world.activeRooms = yield [[ser, 'readSet'], Room];
     const passiveRooms = world.passiveRooms = yield [[ser, 'readSet'], Room];
     const roomStack = world.roomStack = yield [[ser, 'readArr'], Room];
+    const notifiedTilesDelayed = world.notifiedTilesDelayed = yield [[ser, 'readSet'], Tile];
     const selectedRoom = world.selectedRoom = yield [[Room, 'deserm'], ser];
 
     assert(activeRooms.has(selectedRoom));

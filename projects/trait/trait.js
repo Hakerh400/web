@@ -52,7 +52,11 @@ class Trait extends Inspectable{
   get room(){ return this.ent.room; }
   get world(){ return this.ent.world; }
 
-  notify(){ this.ent.notify(); }
+  notify(delay){ this.ent.notify(delay); }
+
+  notifySilent(){
+    this.world.notifiedTraits.add(this);
+  }
 
   getGlobData(){ return this.ent.getGlobData(this.ctor); }
   getLocData(){ return this.ent.getLocData(this); }
@@ -136,14 +140,13 @@ class Meta extends Trait{
 }
 
 class ActiveTrait extends Trait{
-  new(ent, ...args){
-    super.new(ent, ...args);
+  new(ent){
+    super.new(ent);
     this.room.addActiveTrait(this);
   }
 
-  remove(){
+  onRemove(){
     this.room.removeActiveTrait(this);
-    super.remove();
   }
 }
 
@@ -244,9 +247,9 @@ class Player extends ActiveTrait{
 
   restart(n){
     if(n) return;
-    const {world, grid} = this;
+    const {world} = this;
 
-    if(!world.evts.restart) return;
+    if(!this.shouldRestart()) return;
 
     world.reqPopRoom((grid, ent) => {
       if(!ent) return;
@@ -266,6 +269,15 @@ class Player extends ActiveTrait{
     if(!world.evts.exit) return;
 
     world.reqPopRoom();
+  }
+
+  shouldRestart(){
+    const {world, tile, ent} = this;
+
+    if(world.evts.restart) return 1;
+    if(!tile.hasTrait(Ground)) return 1;
+
+    return 0;
   }
 }
 
@@ -300,21 +312,6 @@ class Wall extends Trait{
     const h = .20;
     const space = .05;
 
-    // const A = +(1 / (w + space)).toFixed(3);
-    // const B = +(1 / (h + space)).toFixed(3);
-    //
-    // const check = a => {
-    //   if(a !== (a | 0)) return 0;
-    //   if(a & 1) return 0;
-    //   return 1;
-    // };
-    //
-    // if(!(check(A) && check(B))){
-    //   log(A);
-    //   log(B);
-    //   assert.fail();
-    // }
-
     const dx = w + space;
     const dy = h + space;
 
@@ -335,7 +332,7 @@ class Wall extends Trait{
         const ay = y2 - y;
 
         if(1 - x2 < space / 5){
-          g.fillRect(x, y, 1 - x + gs, ay);
+          g.fillRect(x, y, 1 - x, ay);
           break;
         }
         
@@ -407,6 +404,25 @@ class Box extends Trait{
     g.rect(.25, .25, .5, .5);
     g.fill();
     g.stroke();
+  }
+
+  checkGround(n){
+    if(n) return;
+    const {world, tile, ent} = this;
+
+    if(tile.hasTrait(Ground)) return;
+
+    if(tile.hasTrait(Water)){
+      removeEnt(ent);
+      removeEnts(tile, Water);
+
+      const hasWire = ent.hasTrait(Wire);
+      createEnt(tile, Entity.WoodenGround, {wire: hasWire});
+
+      return;
+    }
+
+    removeEnt(ent);
   }
 }
 
@@ -523,7 +539,7 @@ class Diamond extends Trait{
   }
 }
 
-class Floor extends Trait{
+class Ground extends Trait{
   init(){
     super.init();
     this.layer = layers.Ground;
@@ -533,6 +549,13 @@ class Floor extends Trait{
 class Concrete extends Trait{
   render(g){
     g.fillStyle = '#808080';
+    g.fillRect(0, 0, 1, 1);
+  }
+}
+
+class WoodenGround extends Trait{
+  render(g){
+    g.fillStyle = '#8a0';
     g.fillRect(0, 0, 1, 1);
   }
 }
@@ -570,7 +593,7 @@ class Button extends ActiveTrait{
   init(){
     super.init();
 
-    this.layer = layers.FloorObj;
+    this.layer = layers.GroundObj;
   }
 
   new(ent, action=null){
@@ -645,7 +668,7 @@ class Button extends ActiveTrait{
 
     if(!pressed) return;
 
-    world.reqCreateEnt(tile, Entity.ElectricalSource);
+    world.reqCreateEnt(tile, Entity.PowerSource);
   }
 
   *serData(ser){
@@ -780,31 +803,105 @@ class Swap extends Trait{
 }
 
 class Wire extends Trait{
+  static wiresMap = new WeakMap();
+
+  init(){
+    super.init();
+
+    this.statusInfo = new WeakMap();
+  }
+
   new(ent, active=0){
     super.new(ent);
 
     this.active = active;
   }
 
-  render(g){
-    const {tile} = this;
-    let dirs = 0;
+  getStatus(){
+    const {world, statusInfo} = this;
+    const {tickId} = world;
 
-    for(const [adj, dir] of tile.adjs){
-      if(!adj.hasTrait(Wire)) continue;
-      dirs |= 1 << dir;
-    }
+    if(!statusInfo.has(tickId))
+      return null;
 
-    g.fillStyle = this.active ? '#0f0' : '#080';
-    g.drawTube(0, 0, dirs, .25, 1);
+    return statusInfo.get(tickId);
   }
 
-  turnOff(n){
-    if(n) return;
-    if(!this.active) return;
+  setStatus(active){
+    const {world, statusInfo} = this;
+    const {tickId} = world;
 
-    this.active = 0;
+    assert(active === -1 || active === 0 || active === 1);
+
+    const status = this.getStatus();
+
+    if(status === 2) return;
+    if(status === active) return;
+
+    this.notifySilent();
+
+    if(status === null || status === -1){
+      statusInfo.set(tickId, active);
+      return;
+    }
+
+    if(active === -1) return;
+
+    statusInfo.set(tickId, 2);
+  }
+
+  render(g){
+    const {tile} = this;
+    const {gs} = g;
+    const gsh = gs / 2;
+
+    let dirs = 0;
+
+    for(const [adj, dir] of tile.adjs)
+      if(adj.hasTrait(Wire) || adj.hasTrait(LogicGate))
+        dirs |= 1 << dir;
+
+    g.fillStyle = this.active ? '#0f0' : '#080';
+    g.drawTube(gsh, gsh, dirs, .25, 1);
+  }
+
+  cooldown(n){
+    if(n) return;
+    this.updateRec(-1);
+  }
+
+  update(n){
+    if(n) return;
+
+    let status = this.getStatus();
+
+    if(status === null) return;
+    if(status === 2) return;
+
+    if(status === -1)
+      status = 0;
+
+    if(status === this.active) return;
+
+    this.active = status;
+
     this.notify();
+    if(status) this.notify(1);
+  }
+
+  updateRec(active){
+    const {tile} = this;
+
+    tile.iter(tile => {
+      let found = 0;
+
+      for(const wire of tile.getTraits(Wire)){
+        wire.setStatus(active);
+        found = 1;
+      }
+
+      return found ? null : 0;
+    });
   }
 
   *serData(ser){
@@ -822,27 +919,15 @@ class Wire extends Trait{
   }
 }
 
-class ElectricalSource extends Trait{
-  turnWiresOn(n){
+class PowerSource extends Trait{
+  updateWires(n){
     if(n) return;
-
     const {world, tile, ent} = this;
 
-    tile.iter(tile => {
-      let found = 0;
+    for(const wire of tile.getTraits(Wire))
+      wire.updateRec(1);
 
-      for(const wire of tile.getTraits(Wire)){
-        if(wire.active) continue;
-
-        wire.active = 1;
-        wire.notify();
-
-        found = 1;
-      }
-
-      return found ? null : 0;
-    });
-
+    tile.notify(1);
     world.reqRemoveEnt(ent);
   }
 }
@@ -863,7 +948,7 @@ class DigitalDoor extends Trait{
 
       g.beginPath();
       g.moveTo(1, 1);
-      g.arc(1, .75, .25 - gs, pi / 2, pi * 3 / 2);
+      g.arc(1, .75 + gs, .25, pi / 2, pi * 3 / 2);
       g.closePath();
       g.fill();
       g.stroke();
@@ -876,7 +961,7 @@ class DigitalDoor extends Trait{
     g.beginPath();
     g.moveTo(.5, 0);
     g.arc(.5, .25 + gs / 2, .25, pi * 3 / 2, pi * 5 / 2);
-    g.arc(.5, .75, .25 - gs, pi * 3 / 2, pi / 2, 1);
+    g.arc(.5, .75 + gs, .25, pi * 3 / 2, pi / 2, 1);
     g.stroke();
   }
 
@@ -906,26 +991,50 @@ class DigitalDoor extends Trait{
   }
 }
 
-class OneWay extends Trait{
-  init(){
-    super.init();
-
-    this.layer = layers.Wall;
-  }
-
+class DirectionalTrait extends Trait{
   new(ent, dir){
     super.new(ent);
 
     this.dir = dir;
   }
 
+  rendert(g){ O.virtual('rendert'); }
+
   render(g){
+    g.save(1);
+    g.rotate(.5, .5, (-this.dir & 3) * pih);
+
+    this.rendert(g);
+
+    g.restore();
+  }
+
+  *serData(ser){
+    ser.write(this.dir, 4);
+  }
+
+  *deserData(ser){
+    this.dir = ser.read(4);
+  }
+
+  *inspectData(){
+    return [
+      new BasicInfo(`dir = ${inspectDir(this.dir)} :: Direction`),
+    ];
+  }
+}
+
+class OneWay extends DirectionalTrait{
+  init(){
+    super.init();
+
+    this.layer = layers.Wall;
+  }
+
+  rendert(g){
     g.globalAlpha = .3;
     g.fillStyle = '#2fa';
     g.fillRect(0, 0, 1, 1);
-
-    g.save(1);
-    g.rotate(.5, .5, (-this.dir & 3) * pih);
 
     g.globalAlpha = .75
     g.fillStyle = '#1a8';
@@ -939,8 +1048,6 @@ class OneWay extends Trait{
     g.closePath();
     g.fill();
     g.stroke();
-
-    g.restore();
 
     g.globalAlpha = 1;
   }
@@ -961,19 +1068,79 @@ class OneWay extends Trait{
       world.reqRemoveEnt(trait.ent);
     }
   }
+}
 
-  *serData(ser){
-    ser.write(this.dir, 4);
+class LogicGate extends ActiveTrait{
+  init(){
+    super.init();
+
+    this.layer = layers.GroundObj;
+  }
+}
+
+class LogicGateBase extends DirectionalTrait{
+  updateWires(n){
+    if(n) return;
+    const {tile, dir} = this;
+
+    const inputs = [];
+    const outputWires = [];
+
+    for(const wire of tile.getTraits(Wire))
+      inputs.push(wire.active);
+
+    for(const [adj, adjDir] of tile.adjs){
+      const isOut = adjDir === dir;
+
+      for(const wire of adj.getTraits(Wire)){
+        if(isOut){
+          outputWires.push(wire);
+          continue;
+        }
+
+        inputs.push(wire.active);
+      }
+    }
+
+    const output = this.apply(inputs);
+    if(output === null) return;
+
+    for(const wire of outputWires)
+      wire.updateRec(output);
   }
 
-  *deserData(ser){
-    this.dir = ser.read(4);
+  apply(inputs){ O.virtual('apply'); }
+}
+
+class Inverter extends LogicGateBase{
+  render(g){
+    g.fillStyle = '#fff';
+
+    g.beginPath();
+    g.moveTo(.1, .2);
+    g.lineTo(.7, .5);
+    g.lineTo(.1, .8);
+    g.closePath();
+    g.fill();
+    g.stroke();
+
+    drawCirc(g, .8, .5, .1);
   }
 
-  *inspectData(){
-    return [
-      new BasicInfo(`dir = ${inspectDir(this.dir)} :: Direction`),
-    ];
+  apply(inputs){
+    const input = O.uni(inputs);
+    if(input === null) return null;
+
+    return input ^ 1;
+  }
+}
+
+class Liquid extends Trait{}
+
+class Water extends Trait{
+  render(g){
+    g.fillStyle = '#088';
+    g.fillRect(0, 0, 1, 1);
   }
 }
 
@@ -1023,6 +1190,21 @@ const isPowered = tile => {
   return 0;
 };
 
+const createEnt = (tile, traitCtor, ...args) => {
+  const {world} = tile;
+  world.reqCreateEnt(tile, traitCtor, ...args);
+};
+
+const removeEnt = ent => {
+  const {world} = ent;
+  world.reqRemoveEnt(ent);
+};
+
+const removeEnts = (tile, trait) => {
+  for(const ent of tile.getEnts(trait))
+    removeEnt(ent);
+};
+
 const handlersArr = [
   [Player, 'navigate'],
   [Button, 'click'],
@@ -1031,9 +1213,12 @@ const handlersArr = [
   [OneWay, 'stop'],
   [Solid, 'stop'],
   [NavigationTarget, 'navigate'],
+  [Box, 'checkGround'],
   [Button, 'press'],
-  [Wire, 'turnOff'],
-  [ElectricalSource, 'turnWiresOn'],
+  [Wire, 'cooldown'],
+  [PowerSource, 'updateWires'],
+  [Inverter, 'updateWires'],
+  [Wire, 'update'],
   [DigitalDoor, 'update'],
   [Diamond, 'collect'],
   [Player, 'restart'],
@@ -1062,10 +1247,16 @@ const ctorsArr = [
   Box,
   Pushable,
   Heavy,
+  Liquid,
+  Water,
+  Ground,
+  Concrete,
+  WoodenGround,
+  LogicGate,
+  LogicGateBase,
+  Inverter,
   Item,
   Diamond,
-  Floor,
-  Concrete,
   Button,
   Lock,
   Swap,
@@ -1073,8 +1264,9 @@ const ctorsArr = [
   DigitalDoor,
   Wire,
   Text,
-  ElectricalSource,
+  PowerSource,
   OneWay,
+  DirectionalTrait,
 ];
 
 const ctorsObj = ctorsPri(ctorsArr);

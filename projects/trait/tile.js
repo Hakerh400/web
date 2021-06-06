@@ -104,14 +104,14 @@ class Tile extends Inspectable{
     this.grid.removeTrait(trait);
   }
 
-  notify(){
+  notify(delay){
     const {room, grid} = this;
     if(grid.buildMode) return;
 
-    room.markTileAsNotified(this);
+    room.markTileAsNotified(this, delay);
 
     for(const [adj] of this.adjs)
-      room.markTileAsNotified(adj);
+      room.markTileAsNotified(adj, delay);
   }
 
   *ser(ser){

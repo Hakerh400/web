@@ -43,17 +43,18 @@ class Room extends Serializable{
     activeTraits.add(trait);
   }
 
-  removeActiveEnt(trait){
+  removeActiveTrait(trait){
     const {activeTraits} = this;
     assert(activeTraits.has(trait));
     activeTraits.delete(trait);
   }
 
-  markTileAsNotified(tile){
-    const {grid} = this;
+  markTileAsNotified(tile, delay=0){
+    const {world, grid} = this;
     assert(!grid.buildMode);
     
-    this.world.notifiedTiles.add(tile);
+    if(delay) world.notifiedTilesDelayed.add(tile);
+    else world.notifiedTiles.add(tile);
   }
 
   reqCreateEntAtPos(pos, entCtor, ...args){
