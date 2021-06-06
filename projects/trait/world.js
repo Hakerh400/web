@@ -203,7 +203,14 @@ class World extends Serializable{
             traitsExecNum.set(trait, 0);
 
           const n = traitsExecNum.get(trait);
-          handler.call(trait, n);
+          if(n === null) return;
+
+          const result = handler.call(trait, n);
+
+          if(result){
+            traitsExecNum.set(trait, null);
+            return;
+          }
 
           traitsExecNum.set(trait, n + 1);
         };

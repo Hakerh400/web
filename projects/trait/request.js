@@ -35,20 +35,19 @@ class ModifyEntGlobData extends Request{
     for(const req of reqs){
       const {ent, traitCtor, action} = req;
       const [name, info] = action;
+      if(!ent.valid) continue;
 
       if(m === null) m = name;
       assert(name === m);
 
       if(name === 'set.insert'){
         let set = ent.getGlobData(traitCtor);
-
-        if(set === null){
-          set = new Set();
-          ent.setGlobData(traitCtor, set);
-        }
+        if(set === null) set = new Set();
 
         for(const elem of info)
           set.add(elem);
+
+        ent.setGlobData(traitCtor, set);
 
         continue;
       }
@@ -61,6 +60,8 @@ class ModifyEntGlobData extends Request{
 
         for(const elem of info)
           set.delete(elem);
+        
+        ent.setGlobData(traitCtor, set);
 
         continue;
       }
@@ -101,6 +102,8 @@ class MoveEntity extends Request{
 
     for(const req of reqs){
       const {ent, tileFrom, tileTo} = req;
+      if(!ent.valid) continue;
+
       assert(ent.tile === tileFrom);
 
       if(!map.has(ent)){
@@ -138,7 +141,10 @@ class RemoveEntity extends Request{
 
     for(const req of reqs){
       const {ent} = req;
+      if(!ent.valid) continue;
+
       if(removed.has(ent)) continue;
+      removed.add(ent);
 
       ent.remove();
     }
@@ -157,7 +163,7 @@ class PushRoom extends Request{
     const req = O.fst(reqs);
     const {world, ent, gridCtor, gridCtorArgs, builder} = req;
 
-    if(ent !== null)
+    if(ent !== null && ent.valid)
       ent.createTrait(Trait.Entered);
 
     world.pushRoom(gridCtor, gridCtorArgs, builder);

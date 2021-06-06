@@ -183,11 +183,11 @@ class Rectangle extends Tile{
   }
 
   iter(func){
-    const stack = [this];
-    const seen = new Set(stack);
+    const queue = [this];
+    const seen = new Set(queue);
 
-    while(stack.length !== 0){
-      const tile = stack.pop();
+    while(queue.length !== 0){
+      const tile = queue.shift();
       const result = func(tile);
 
       if(result === 1) break;
@@ -198,7 +198,7 @@ class Rectangle extends Tile{
       for(const [adj] of tile.adjs){
         if(seen.has(adj)) continue;
 
-        stack.push(adj);
+        queue.push(adj);
         seen.add(adj);
       }
     }

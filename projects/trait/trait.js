@@ -242,7 +242,7 @@ class Player extends ActiveTrait{
     const tileNew = tile.adj(dir);
     if(tileNew === null) return;
 
-    reqMoveEnt(ent, tileNew, 1, 1);
+    moveEnt(ent, tileNew, 1, 1);
   }
 
   restart(n){
@@ -342,6 +342,43 @@ class Wall extends Trait{
   }
 }
 
+class Pushable extends Trait{
+  push(n){
+    const {world, room, tile, ent} = this;
+    const heavy = this.entHasTrait(Heavy);
+
+    let srcTile = null;
+    let strong = 0;
+
+    for(const trait of tile.traits.get(NavigationTarget)){
+      if(!trait.strong) continue;
+      if(heavy && !trait.direct) continue;
+
+      const tile = trait.src.tile;
+
+      if(srcTile === null){
+        srcTile = tile;
+        continue;
+      }
+
+      if(tile === srcTile) continue;
+
+      return;
+    }
+
+    if(srcTile === null) return;
+
+    const dir = srcTile.adj2dir(tile);
+    if(dir === null) return;
+
+    const tileNew = tile.adj(dir);
+    if(tileNew === null) return;
+
+    moveEnt(ent, tileNew, 0, heavy ? 0 : 1);
+    return 1;
+  }
+}
+
 class Box extends Trait{
   init(){
     super.init();
@@ -423,44 +460,6 @@ class Box extends Trait{
     }
 
     removeEnt(ent);
-  }
-}
-
-class Pushable extends Trait{
-  push(n){
-    const {world, room, tile, ent} = this;
-    const heavy = this.entHasTrait(Heavy);
-
-    if(calcTargetTile(ent) !== tile) return;
-
-    let srcTile = null;
-    let strong = 0;
-
-    for(const trait of tile.traits.get(NavigationTarget)){
-      if(!trait.strong) continue;
-      if(heavy && !trait.direct) continue;
-
-      const tile = trait.src.tile;
-
-      if(srcTile === null){
-        srcTile = tile;
-        continue;
-      }
-
-      if(tile === srcTile) continue;
-
-      return;
-    }
-
-    if(srcTile === null) return;
-
-    const dir = srcTile.adj2dir(tile);
-    if(dir === null) return;
-
-    const tileNew = tile.adj(dir);
-    if(tileNew === null) return;
-
-    reqMoveEnt(ent, tileNew, 0, heavy ? 0 : 1);
   }
 }
 
@@ -798,7 +797,7 @@ class Swap extends Trait{
     const {tile, ent} = this;
 
     for(const navTarget of tile.getTraits(NavigationTarget))
-      reqMoveEnt(ent, navTarget.src.tile);
+      moveEnt(ent, navTarget.src.tile);
   }
 }
 
@@ -862,7 +861,7 @@ class Wire extends Trait{
         dirs |= 1 << dir;
 
     g.fillStyle = this.active ? '#0f0' : '#080';
-    g.drawTube(gsh, gsh, dirs, .25, 1);
+    g.drawTube(0, 0, dirs, .2, 1);
   }
 
   cooldown(n){
@@ -1144,10 +1143,45 @@ class Water extends Trait{
   }
 }
 
-const reqMoveEnt = (ent, tileNew, direct=0, strong=0) => {
+class Follower extends Trait{
+  render(g){
+    g.fillStyle = '#ff0';
+
+    g.aligned = 0;
+    g.beginPath();
+    O.drawStar(g, .5, .5, .1, .4, 5);
+    g.fill();
+    g.stroke();
+    g.aligned = 1;
+  }
+
+  follow(n){
+    const {world, tile, ent} = this;
+    let found = 0;
+
+    for(const [adj] of tile.adjs){
+      for(const solid of adj.getEnts(Solid)){
+        const targetTile = calcTargetTile(solid);
+
+        if(targetTile === adj) continue;
+        if(targetTile === tile) continue;
+
+        moveEnt(ent, adj);
+        found = 1;
+      }
+    }
+
+    return found;
+  }
+}
+
+const moveEnt = (ent, tileNew, direct=0, strong=0) => {
   assert(ent instanceof Entity);
+
   const {world} = ent;
+
   world.reqCreateEnt(tileNew, Entity.NavigationTarget, ent, direct, strong);
+  // ent.notify();
 };
 
 const calcTargetTile = ent => {
@@ -1209,6 +1243,7 @@ const handlersArr = [
   [Player, 'navigate'],
   [Button, 'click'],
   [Pushable, 'push'],
+  [Follower, 'follow'],
   [Swap, 'swap'],
   [OneWay, 'stop'],
   [Solid, 'stop'],
@@ -1242,6 +1277,7 @@ const ctorsArr = [
   NavigationTarget,
 
   Player,
+  Follower,
   Solid,
   Wall,
   Box,

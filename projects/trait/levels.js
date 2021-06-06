@@ -4,6 +4,7 @@ const assert = require('assert');
 const Grid = require('./grid');
 const Entity = require('./entity');
 const Trait = require('./trait');
+const flags = require('./flags');
 
 const w = 20;
 const h = 15;
@@ -81,11 +82,11 @@ const levels = {
   '04'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
-      |    ~  w*** ++++w   |
-      | bbb~b w^w     +w   |
-      | bbb~  wvw     +w   |
+      |    ~www*** ++++w   |
+      | bbb~  w^w     +w   |
+      | bbb~b wvw     +w   |
       | bbb~  w*wwww  +w   |
-      |~~~~~  w*   w  +w   |
+      |~~~~~ ww*   w  +w   |
       |      wwdww w  +w   |
       |      w * w www+w   |
       |      w * w Dc>+w   |
@@ -114,6 +115,30 @@ const levels = {
       grid.getp(11, 0).createEnt(Entity.Inverter, 1);
     });
   },
+
+  '05'(world, ent, level){
+    createLayout(world, ent, level, `
+      +--------------------+
+      |                    |
+      | ffp                |
+      |                    |
+      |   bb               |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      +--------------------+
+    `, grid => {
+      
+    });
+  },
 };
 
 const createLayout = (world, ent, level, layoutRaw, cb=null) => {
@@ -131,6 +156,7 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       u: [Entity.Button],
       d: [Entity.DigitalDoor],
       D: [Entity.DigitalDoor, 1],
+      f: [Entity.Follower],
       '^': [Entity.OneWay, 0],
       '>': [Entity.OneWay, 1],
       'v': [Entity.OneWay, 2],
@@ -169,6 +195,8 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
 };
 
 const putStr = (grid, hostTrait, str, x, y, rightAlign=0) => {
+  if(!flags.DisplayStrings) return;
+
   const len = str.length;
 
   if(rightAlign)
