@@ -14,7 +14,7 @@ const levels = {
       +--------------------+
       |              w     |
       |              w     |
-      |              w  d  |
+      |              w  c  |
       |     w        w     |
       |     w        w     |
       |     w        w     |
@@ -34,7 +34,7 @@ const levels = {
   '02'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
-      |     dwwwww         |
+      |     cwwwww         |
       |   wwww   w ww      |
       |   w    B bb w      |
       |bwBw www www w      |
@@ -69,13 +69,46 @@ const levels = {
       |   w w       wu*    |
       |   w w       ww*    |
       |   w w  www    *    |
+      |   w w  wcw    *    |
       |   w w  wdw    *    |
-      |   w w  wow    *    |
       |         *******    |
       |                    |
       |                    |
       +--------------------+
     `);
+  },
+
+  '04'(world, ent, level){
+    createLayout(world, ent, level, `
+      +--------------------+
+      |        ********    |
+      | bbb b w^w     *    |
+      | bbb   wvw     *    |
+      | bbb   w*wwww  *    |
+      |       w*   w  *    |
+      |      wwdww w  *    |
+      |      w * w www*    |
+      |      w * w dc>*    |
+      |      w^^^wwwww     |
+      |        *           |
+      |        *           |
+      |        p           |
+      |        *           |
+      |        *           |
+      |        u           |
+      +--------------------+
+    `, grid => {
+      const wiresInfo = [8, 1, 8, 2, 8, 8, 13, 7, 14, 7];
+
+      grid.getp(2, 2).getEnt(Trait.Box).createTrait(Trait.Wire);
+
+      for(let i = 0; i !== wiresInfo.length; i += 2){
+        const x = wiresInfo[i];
+        const y = wiresInfo[i + 1];
+
+        grid.getp(x, y).getEnt(Trait.Concrete).createTrait(Trait.Wire);
+      }
+    });
   },
 };
 
@@ -88,14 +121,18 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       b: [Entity.Box],
       B: [Entity.Box, 1],
       w: [Entity.Wall],
-      d: [Entity.Diamond],
+      c: [Entity.Diamond],
       s: [Entity.Swap],
       e: [Entity.Wire],
       u: [Entity.Button],
-      o: [Entity.DigitalDoor],
+      d: [Entity.DigitalDoor],
+      '^': [Entity.OneWay, 0],
+      '>': [Entity.OneWay, 1],
+      'v': [Entity.OneWay, 2],
+      '<': [Entity.OneWay, 3],
     };
 
-    const electrical = '*uo';
+    const electrical = '*ud';
 
     for(const tile of grid.tiles){
       const {x, y} = tile.pos;

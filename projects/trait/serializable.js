@@ -170,6 +170,8 @@ class Serializable extends SerializableBase{
 }
 
 const uni = iterable => {
+  return O.uni(iterable);
+
   let result = null;
   let hasResult = 0;
 

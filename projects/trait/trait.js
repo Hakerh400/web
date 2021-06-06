@@ -906,6 +906,77 @@ class DigitalDoor extends Trait{
   }
 }
 
+class OneWay extends Trait{
+  init(){
+    super.init();
+
+    this.layer = layers.Wall;
+  }
+
+  new(ent, dir){
+    super.new(ent);
+
+    this.dir = dir;
+  }
+
+  render(g){
+    g.globalAlpha = .3;
+    g.fillStyle = '#2fa';
+    g.fillRect(0, 0, 1, 1);
+
+    g.save(1);
+    g.rotate(.5, .5, (-this.dir & 3) * pih);
+
+    g.globalAlpha = .75
+    g.fillStyle = '#1a8';
+    g.beginPath();
+    g.moveTo(.5, .1);
+    g.lineTo(.9, .9);
+    g.lineTo(.8, .9);
+    g.lineTo(.5, .3);
+    g.lineTo(.2, .9);
+    g.lineTo(.1, .9);
+    g.closePath();
+    g.fill();
+    g.stroke();
+
+    g.restore();
+
+    g.globalAlpha = 1;
+  }
+
+  stop(){
+    const {world, tile, ent} = this;
+    const targetTile = calcTargetTile(ent);
+
+    const dir = this.dir + 2 & 3;
+
+    for(const trait of targetTile.traits.get(NavigationTarget)){
+      const {src} = trait;
+      if(src === ent) continue;
+
+      const entDir = src.tile.adj2dir(targetTile);
+      if(entDir !== dir) continue;
+
+      world.reqRemoveEnt(trait.ent);
+    }
+  }
+
+  *serData(ser){
+    ser.write(this.dir, 4);
+  }
+
+  *deserData(ser){
+    this.dir = ser.read(4);
+  }
+
+  *inspectData(){
+    return [
+      new BasicInfo(`dir = ${inspectDir(this.dir)} :: Direction`),
+    ];
+  }
+}
+
 const reqMoveEnt = (ent, tileNew, direct=0, strong=0) => {
   assert(ent instanceof Entity);
   const {world} = ent;
@@ -923,6 +994,15 @@ const calcTargetTile = ent => {
 
 const inspectBool = val => {
   return val ? 'True' : 'False';
+};
+
+const inspectDir = dir => {
+  return [
+    'Up',
+    'Right',
+    'Down',
+    'Left',
+  ][dir];
 };
 
 const drawCirc = (g, x, y, r, col=null) => {
@@ -948,6 +1028,7 @@ const handlersArr = [
   [Button, 'click'],
   [Pushable, 'push'],
   [Swap, 'swap'],
+  [OneWay, 'stop'],
   [Solid, 'stop'],
   [NavigationTarget, 'navigate'],
   [Button, 'press'],
@@ -993,6 +1074,7 @@ const ctorsArr = [
   Wire,
   Text,
   ElectricalSource,
+  OneWay,
 ];
 
 const ctorsObj = ctorsPri(ctorsArr);

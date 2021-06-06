@@ -300,6 +300,14 @@ class DigitalDoor extends Entity{
   }
 }
 
+class OneWay extends Entity{
+  new(tile, dir){
+    super.new(tile);
+
+    this.createTrait(Trait.OneWay, dir);
+  }
+}
+
 module.exports = Object.assign(Entity, {
   NavigationTarget,
   Player,
@@ -312,6 +320,7 @@ module.exports = Object.assign(Entity, {
   Swap,
   ElectricalSource,
   DigitalDoor,
+  OneWay,
 });
 
 const Trait = require('./trait');
