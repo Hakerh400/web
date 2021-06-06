@@ -1178,7 +1178,12 @@ class Follower extends Trait{
 const moveEnt = (ent, tileNew, direct=0, strong=0) => {
   assert(ent instanceof Entity);
 
-  const {world} = ent;
+  const {world, tile} = ent;
+  const dir = tile.adj2dir(tileNew);
+  const dir1 = dir + 2 & 3;
+
+  for(const oneWay of tileNew.getTraits(OneWay))
+    if(oneWay.dir === dir1) return;
 
   world.reqCreateEnt(tileNew, Entity.NavigationTarget, ent, direct, strong);
   // ent.notify();
