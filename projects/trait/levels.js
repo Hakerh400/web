@@ -181,6 +181,32 @@ const levels = {
         grid.getp(x, y).createEnt(Entity.OneWay, dir);
     });
   },
+
+  '06'(world, ent, level){
+    createLayout(world, ent, level, `
+      +--------------------+
+      |                    |
+      | pbu                |
+      |   *****d           |
+      |   *                |
+      |   b   * *d         |
+      |   *                |
+      |  bu                |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      +--------------------+
+    `, grid => {
+      grid.getp(3, 4).getEnt(Trait.Box).createTrait(Trait.Wire);
+      grid.getp(7, 3).createEnt(Entity.Inverter, 2);
+      grid.getp(8, 4).createEnt(Entity.Inverter, 1);
+    });
+  },
 };
 
 const createLayout = (world, ent, level, layoutRaw, cb=null) => {

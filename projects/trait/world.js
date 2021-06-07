@@ -162,12 +162,9 @@ class World extends Serializable{
     // O.logb();
     this.tickId = O.obj();
 
-    for(const room of activeRooms){
-      for(const trait of room.activeTraits){
-        assert(trait.valid);
-        trait.tile.notify();
-      }
-    }
+    for(const room of activeRooms)
+      for(const trait of room.activeTraits)
+        notifiedTraits.add(trait);
 
     if(flags.DisplayNotifiedTiles){
       const {notifiedTilesInfo} = this;
@@ -269,9 +266,9 @@ class World extends Serializable{
     this.addReq(new Request.ModifyEntGlobData(this, ent, traitCtor, action));
   }
 
-  reqModifyEntLocData(ent, trait, action){
-    this.addReq(new Request.ModifyEntLocData(this, ent, trait, action));
-  }
+  // reqModifyEntLocData(ent, trait, action){
+  //   this.addReq(new Request.ModifyEntLocData(this, ent, trait, action));
+  // }
 
   reqCreateEnt(tile, entCtor, ...args){
     this.addReq(new Request.CreateEntity(this, tile, entCtor, args));

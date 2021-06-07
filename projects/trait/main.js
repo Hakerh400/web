@@ -20,7 +20,7 @@ const {project} = O;
 
 await O.addStyle('style.css');
 
-const ANIM_INTERVAL = 100;
+const ANIM_INTERVAL = 20;
 
 const s = 40;
 
@@ -293,7 +293,9 @@ const render = () => {
     g.save();
 
     g.translate(x, y);
+    g.clipRect(0, 0, 1, 1);
     tile.render(g);
+    g.unclipRect();
 
     if(flags.DisplayNotifiedTiles){
       if(world.notifiedTilesInfo.has(tile)){

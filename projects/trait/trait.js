@@ -665,12 +665,16 @@ class Button extends Trait{
     const pressed = (
       tile.hasTrait(Trait.Solid) ||
       tile.hasTrait(Trait.Item)
-    );
+    ) | 0;
 
-    const status = pressed ? 1 : -1;
+    const status = pressed ? 1 : 0;
 
-    for(const wire of tile.getTraits(Wire))
+    for(const wire of tile.getTraits(Wire)){
+      // if(wire.getStatus(0) === null && wire.active === pressed)
+      //   continue;
+      
       wire.updateRec(status);
+    }
   }
 
   *serData(ser){
@@ -907,7 +911,7 @@ class WireBase extends ElectronicBase{
     if(statusOld === 2) return;
     if(statusOld === status) return;
 
-    this.notifySilent();
+    this.notify();
 
     if(statusOld === null || statusOld === -1){
       statusArr[index] = status;
@@ -979,6 +983,15 @@ class Wire extends WireBase{
 
   get active(){ return this.status[0]; }
   set active(a){ this.status[0] = a; }
+
+  cooldown(n){
+    if(n) return;
+
+    if(!this.active) return;
+    if(this.getStatus(0) === -1) return;
+
+    this.updateRec(-1);
+  }
 
   updateRec(status){
     const {tile} = this;
@@ -1077,7 +1090,7 @@ class WireOverlap extends WireBase{
   }
 }
 
-class LogicGate extends Trait{
+class LogicGate extends ActiveTrait{
   init(){
     super.init();
 
@@ -1562,12 +1575,16 @@ const handlersArr = [
   [NavigationTarget, 'navigate'],
   [Tail, 'update'],
   [Box, 'checkGround'],
+
+  [Wire, 'cooldown'],
+  // [WireOverlap, 'cooldown'],
   [Button, 'press'],
   [Inverter, 'updateWires'],
   [Disjunction, 'updateWires'],
   [Conjunction, 'updateWires'],
   [Wire, 'update'],
   [WireOverlap, 'update'],
+
   [DigitalDoor, 'update'],
   [Diamond, 'collect'],
   [Player, 'restart'],
