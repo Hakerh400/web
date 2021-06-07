@@ -29,16 +29,16 @@ class SimpleRequest extends Request{
 
 class ModifyEntGlobData extends Request{
   static exec(reqs){
-    // const entTraitDataMap = new Map();
-    let m = null;
+    const entTraitDataMap = new Map();
+    // let m = null;
 
     for(const req of reqs){
       const {ent, traitCtor, action} = req;
       const [name, info] = action;
       if(!ent.valid) continue;
 
-      if(m === null) m = name;
-      assert(name === m);
+      // if(m === null) m = name;
+      // assert(name === m);
 
       if(name === 'set.insert'){
         let set = ent.getGlobData(traitCtor);
@@ -52,7 +52,7 @@ class ModifyEntGlobData extends Request{
         continue;
       }
 
-      if(m === 'set.remove'){
+      if(name === 'set.remove'){
         let set = ent.getGlobData(traitCtor);
 
         if(set === null)
@@ -66,10 +66,49 @@ class ModifyEntGlobData extends Request{
         continue;
       }
 
+      if(name === 'val.set'){
+        if(!entTraitDataMap.has(ent))
+          entTraitDataMap.set(ent, new Map());
+
+        const traitDataMap = entTraitDataMap.get(ent);
+
+        if(!traitDataMap.has(traitCtor))
+          traitDataMap.set(traitCtor, new Set());
+
+        const vals = traitDataMap.get(traitCtor);
+        vals.add(info);
+
+        continue;
+      }
+
       assert.fail();
 
       // if(!entTraitDataMap.has(ent))
       //   entTraitDataMap.set(ent, new Map());
+    }
+
+    for(const [ent, map] of entTraitDataMap){
+      for(const [traitCtor, set] of map){
+        const size = set.size;
+        assert(size !== 0);
+
+        const hasNull = set.has(null);
+
+        if(size !== 1){
+          if(size !== 2){
+            if(hasNull)
+              ent.setGlobData(traitCtor, O.uni(set));
+
+            continue;
+          }
+
+          if(!hasNull) continue;
+
+          set.delete(null);
+        }
+
+        ent.setGlobData(traitCtor, O.uni(set));
+      }
     }
   }
 
@@ -81,6 +120,59 @@ class ModifyEntGlobData extends Request{
     this.action = action;
   }
 }
+
+// class ModifyEntLocData extends Request{
+//   static exec(reqs){
+//     const entTraitDataMap = new Map();
+//     let m = null;
+//
+//     for(const req of reqs){
+//       const {ent, trait, action} = req;
+//       const [name, info] = action;
+//       if(!ent.valid) continue;
+//
+//       if(m === null) m = name;
+//       assert(name === m);
+//
+//       if(!entTraitDataMap.has(ent))
+//         entTraitDataMap.set(ent, new Map());
+//
+//       const traitDataMap = entTraitDataMap.get(ent);
+//
+//       if(!traitDataMap.has(trait))
+//         traitDataMap.set(trait, new Set());
+//
+//       const vals = traitDataMap.get(trait);
+//
+//       if(name === 'val.set'){
+//         vals.add(info);
+//         continue;
+//       }
+//
+//       assert.fail();
+//
+//       // if(!entTraitDataMap.has(ent))
+//       //   entTraitDataMap.set(ent, new Map());
+//     }
+//
+//     for(const [ent, map] of entTraitDataMap){
+//       for(const [trait, set] of map){
+//         assert(set.size !== 0);
+//         if(set.size !== 1) continue;
+//
+//         ent.setLocData(trait, O.uni(set));
+//       }
+//     }
+//   }
+//
+//   constructor(world, ent, trait, action){
+//     super(world);
+//
+//     this.ent = ent;
+//     this.trait = trait;
+//     this.action = action;
+//   }
+// }
 
 class CreateEntity extends SimpleRequest{
   constructor(world, tile, entCtor, args){
@@ -210,6 +302,7 @@ class PopRoom extends Request{
 
 const ctorsArr = [
   ModifyEntGlobData,
+  // ModifyEntLocData,
   CreateEntity,
   MoveEntity,
   RemoveEntity,

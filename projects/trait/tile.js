@@ -161,6 +161,10 @@ class Rectangle extends Tile{
     return this.room.getTile(new Position.Rectangle(x, y));
   }
 
+  isAdj(adj){
+    return this.adj2dir(adj) !== null;
+  }
+
   adj2dir(adj){
     for(let dir = 0; dir !== 4; dir++)
       if(this.adj(dir) === adj)

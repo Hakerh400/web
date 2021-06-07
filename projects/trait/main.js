@@ -20,6 +20,8 @@ const {project} = O;
 
 await O.addStyle('style.css');
 
+const ANIM_INTERVAL = 100;
+
 const s = 40;
 
 const cols = {
@@ -160,7 +162,7 @@ const onKeyDown = evt => {
           world.evts.nav = sol[solIndex++] | 0;
           world.tick();
           render();
-        }, 100);
+        }, ANIM_INTERVAL);
 
         break;
       }
@@ -183,7 +185,7 @@ const onKeyDown = evt => {
       tick = 0;
 
       worldBuilder.saveWorld(world);
-      
+
       O.rel('beforeunload', onBeforeUnload);
       location.reload();
 
@@ -238,8 +240,12 @@ const onMouseDown = evt => {
   if(tile === null) return;
 
   if(isInspect){
+    if(flags.LogTileOnClick)
+      log(tile);
+
     const info = O.rec([tile, 'inspect']);
     setInfo(O.rec([info, 'toDOM']));
+
     return;
   }
 

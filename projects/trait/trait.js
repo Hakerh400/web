@@ -1201,14 +1201,12 @@ class Conjunction extends LogicGateBase{
 
 class DigitalDoor extends Trait{
   render(g){
-    const {gs} = g;
-
     g.fillStyle = '#f80';
 
     if(this.isOpen){
       g.beginPath();
       g.moveTo(0, 0);
-      g.arc(0, .25 + gs / 2, .25, pi * 3 / 2, pi * 5 / 2);
+      g.arc(0, .25, .25, pi * 3 / 2, pi * 5 / 2);
       g.lineTo(0, .5);
       g.closePath();
       g.fill();
@@ -1216,7 +1214,7 @@ class DigitalDoor extends Trait{
 
       g.beginPath();
       g.moveTo(1, 1);
-      g.arc(1, .75 + gs, .25, pi / 2, pi * 3 / 2);
+      g.arc(1, .75, .25, pi / 2, pi * 3 / 2);
       g.closePath();
       g.fill();
       g.stroke();
@@ -1228,8 +1226,8 @@ class DigitalDoor extends Trait{
 
     g.beginPath();
     g.moveTo(.5, 0);
-    g.arc(.5, .25 + gs / 2, .25, pi * 3 / 2, pi * 5 / 2);
-    g.arc(.5, .75 + gs, .25, pi * 3 / 2, pi / 2, 1);
+    g.arc(.5, .25, .25, pi * 3 / 2, pi * 5 / 2);
+    g.arc(.5, .75, .25, pi * 3 / 2, pi / 2, 1);
     g.stroke();
   }
 
@@ -1320,19 +1318,155 @@ class Water extends Trait{
   }
 }
 
-class Follower extends Trait{
+class Tail extends Trait{
   init(){
     super.init();
 
     this.layer = layers.Object;
+    this.target = null;
+
+    this.potentialTargets = new Set();
+  }
+
+  onRemove(){
+    this.removeTarget();
+  }
+
+  removeTarget(){
+    const {world, target} = this;
+
+    if(!target) return;
+    if(!target.valid) return;
+
+    this.target = null;
+
+    world.reqModifyEntGlobData(target, Tail, ['val.set', null]);
   }
 
   render(g){
-    const dirs = 0;
+    const {tile, ent, target} = this;
+    let dirs = 0;
+
+    calcDirs1: {
+      if(!target) break calcDirs1;
+      if(!target.valid) break calcDirs1;
+      if(target.getGlobData(Tail) !== this) break calcDirs1;
+
+      const dir = tile.adj2dir(target.tile);
+      if(dir === null) break calcDirs1;
+
+      dirs |= 1 << dir;
+    }
+
+    calcDirs2: {
+      const tail = ent.getGlobData(Tail);
+      if(!tail) break calcDirs2;
+      if(tail.target !== ent) break calcDirs2;
+
+      const dir = tile.adj2dir(tail.tile);
+      if(dir === null) break calcDirs2;
+
+      dirs |= 1 << dir;
+    }
 
     g.fillStyle = '#f8f';
-    drawTube(g, dirs, .5);
+    drawTube(g, dirs, .4);
+
+    g.fillStyle = '#c6c';
     drawCirc(g, .5, .5, .1);
+  }
+
+  observe(n){
+    if(n) return;
+    const {tile, ent, potentialTargets} = this;
+
+    assert(potentialTargets.size === 0);
+    if(this.target !== null) return;
+
+    for(const [adj] of tile.adjs){
+      for(const navTarget of adj.getTraits(NavigationTarget)){
+        const {src} = navTarget;
+
+        if(src === ent) continue;
+        if(src.getGlobData(Tail) !== null) continue;
+
+        potentialTargets.add(src);
+      }
+    }
+  }
+
+  update(n){
+    if(n) return;
+    const {world, tile, potentialTargets} = this;
+
+    if(this.target !== null){
+      const {target} = this;
+
+      assert(potentialTargets.size === 0);
+      potentialTargets.clear();
+
+      checkTarget: {
+        if(!target.valid) break checkTarget;
+        if(target.getGlobData(Tail) !== this) break checkTarget;
+        if(!target.tile.isAdj(tile)) break checkTarget;
+
+        return;
+      }
+
+      this.removeTarget();
+
+      return;
+    }
+
+    const actualTargets = new Set();
+
+    for(const target of potentialTargets){
+      if(!target.valid) continue;
+      if(!target.tile.isAdj(tile)) continue;
+
+      actualTargets.add(target);
+    }
+
+    potentialTargets.clear();
+
+    const target = O.uni(actualTargets);
+    if(!target) return;
+
+    this.target = target;
+
+    world.reqModifyEntGlobData(target, Tail, ['val.set', this]);
+  }
+
+  follow(n){
+    const {tile, ent, target} = this;
+
+    if(calcTargetTile(ent) !== tile) return;
+
+    if(!target) return;
+    if(!target.valid) return;
+    if(!target.tile.isAdj(tile)) return;
+
+    const targetTile = calcTargetTile(target);
+    if(targetTile === target.tile) return;
+    if(targetTile === tile) return;
+
+    moveEnt(ent, target.tile);
+  }
+
+  *serData(ser){
+    const {target} = this;
+
+    if(target !== null){
+      ser.write(1);
+      yield [[target, 'ser'], ser];
+    }else{
+      ser.write(0);
+    }
+  }
+
+  *deserData(ser){
+    if(ser.read())
+      this.target = [[Entity, 'deser'], ser];
   }
 }
 
@@ -1422,8 +1556,11 @@ const handlersArr = [
   [Pushable, 'push'],
   [Swap, 'swap'],
   [OneWay, 'stop'],
+  [Tail, 'follow'],
+  [Tail, 'observe'],
   [Solid, 'stop'],
   [NavigationTarget, 'navigate'],
+  [Tail, 'update'],
   [Box, 'checkGround'],
   [Button, 'press'],
   [Inverter, 'updateWires'],
@@ -1479,7 +1616,7 @@ const ctorsArr = [
   Swap,
   Entered,
   DigitalDoor,
-  Follower,
+  Tail,
 
   ElectronicBase,
   Electronic,

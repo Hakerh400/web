@@ -269,6 +269,10 @@ class World extends Serializable{
     this.addReq(new Request.ModifyEntGlobData(this, ent, traitCtor, action));
   }
 
+  reqModifyEntLocData(ent, trait, action){
+    this.addReq(new Request.ModifyEntLocData(this, ent, trait, action));
+  }
+
   reqCreateEnt(tile, entCtor, ...args){
     this.addReq(new Request.CreateEntity(this, tile, entCtor, args));
   }

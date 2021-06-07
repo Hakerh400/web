@@ -358,11 +358,11 @@ class Water extends Entity{
   }
 }
 
-class Follower extends Entity{
+class Tail extends Entity{
   new(tile){
     super.new(tile);
 
-    this.createTrait(Trait.Follower);
+    this.createTrait(Trait.Tail);
     this.createTrait(Trait.Solid);
   }
 }
@@ -386,7 +386,7 @@ module.exports = Object.assign(Entity, {
   Disjunction,
   Conjunction,
   Water,
-  Follower,
+  Tail,
 });
 
 const Trait = require('./trait');

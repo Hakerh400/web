@@ -119,24 +119,24 @@ const levels = {
   '05'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
-      |p                   |
       |su* # * ### #### ## |
-      |     * #   *    #   |
+      |p    * #   *    #   |
       |su***+*+** *    # * |
       |     * # **+ # ## * |
       |su**** # * *  #   * |
       |     *   * *  # *** |
       |su** **** **  # *   |
-      |  w*          # *   |
-      | ww* ########## * ww|
-      | w              **dc|
-      | w                ww|
-      | w                  |
-      | wwwwwwwwwwwwwwwwww |
-      |                    |
+      |  w*wwwwwwwwww#w*ww |
+      |   * ########## d   |
+      |wwwwwwwwwwwwwwwwwww |
+      |cw***u b      wt    |
+      |dw*wwwwdwwwww wtw w |
+      |*w******w         w |
+      |*w w w tw wwwwwwwww |
+      |**uw   tw           |
       +--------------------+
     `, grid => {
-      grid.getp(7, 3).getTrait(Trait.WireOverlap).activeV = 1;
+      grid.getp(7, 2).getTrait(Trait.WireOverlap).activeV = 1;
 
       const gateCtors = {
         '~': Entity.Inverter,
@@ -145,17 +145,17 @@ const levels = {
       };
 
       const gates = [
-        [3, 1, '~', 1],
-        [5, 1, '^', 1],
-        [7, 1, 'v', 1],
-        [11, 1, 'v', 1],
-        [16, 1, 'v', 1],
-        [18, 2, '~', 2],
-        [12, 4, '~', 1],
-        [14, 4, '^', 1],
-        [6, 5, '~', 1],
-        [9, 7, '^', 1],
-        [4, 9, '~', 1],
+        [3, 0, '~', 1],
+        [5, 0, '^', 1],
+        [7, 0, 'v', 1],
+        [11, 0, 'v', 1],
+        [16, 0, 'v', 1],
+        [18, 1, '~', 2],
+        [12, 3, '~', 1],
+        [14, 3, '^', 1],
+        [6, 4, '~', 1],
+        [9, 6, '^', 1],
+        [4, 8, '~', 1],
       ];
 
       for(const gateInfo of gates){
@@ -165,32 +165,20 @@ const levels = {
         grid.getp(x, y).createEnt(ctor, dir);
       }
 
-      for(let i = 0; i !== 8; i++)
-        grid.getp(2, i).createEnt(Entity.OneWay, 3);
-    });
-  },
+      const oneWays = [
+        [3, 7, 2],
+        [14, 7, 2],
+        [16, 7, 2],
+        [3, 10, 3],
+        [4, 10, 1],
+        [6, 13, 0],
+      ];
 
-  '06'(world, ent, level){
-    createLayout(world, ent, level, `
-      +--------------------+
-      |                    |
-      | pfb                |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      +--------------------+
-    `, grid => {
+      for(let i = 0; i !== 7; i++)
+        grid.getp(2, i).createEnt(Entity.OneWay, 3);
       
+      for(const [x, y, dir] of oneWays)
+        grid.getp(x, y).createEnt(Entity.OneWay, dir);
     });
   },
 };
@@ -214,7 +202,7 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       '>': [Entity.OneWay, 1],
       'v': [Entity.OneWay, 2],
       '<': [Entity.OneWay, 3],
-      f: [Entity.Follower],
+      t: [Entity.Tail],
     };
 
     const electrical = '*+#udD';

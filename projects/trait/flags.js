@@ -9,6 +9,7 @@ const flags = {
   Persist: 0,
   Record: 1,
   DisplayNotifiedTiles: 0,
+  LogTileOnClick: 1,
 };
 
 module.exports = flags;
