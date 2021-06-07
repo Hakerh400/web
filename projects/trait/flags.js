@@ -8,7 +8,7 @@ const flags = {
   DisplayStrings: 0,
   Persist: 0,
   Record: 1,
-  DisplayNotifiedTiles: 1,
+  DisplayNotifiedTiles: 0,
   LogTileOnClick: 1,
 };
 

@@ -140,21 +140,21 @@ const levels = {
 
       const gateCtors = {
         '~': Entity.Inverter,
-        'v': Entity.Disjunction,
-        '^': Entity.Conjunction,
+        '|': Entity.Disjunction,
+        '&': Entity.Conjunction,
       };
 
       const gates = [
         [3, 0, '~', 1],
-        [5, 0, '^', 1],
-        [7, 0, 'v', 1],
-        [11, 0, 'v', 1],
-        [16, 0, 'v', 1],
+        [5, 0, '&', 1],
+        [7, 0, '|', 1],
+        [11, 0, '|', 1],
+        [16, 0, '|', 1],
         [18, 1, '~', 2],
         [12, 3, '~', 1],
-        [14, 3, '^', 1],
+        [14, 3, '&', 1],
         [6, 4, '~', 1],
-        [9, 6, '^', 1],
+        [9, 6, '&', 1],
         [4, 8, '~', 1],
       ];
 
@@ -185,26 +185,74 @@ const levels = {
   '06'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
-      |                    |
-      | pbu                |
-      |   *****d           |
-      |   *                |
-      |   b   * *d         |
-      |   *                |
-      |  bu                |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
+      |pu# * d          ttt|
+      |    * *d  wwww w wwt|
+      | u## **w  w d*****bu|
+      |    #wwww w bd wwwww|
+      | u###w wd***u  d*  u|
+      |    w  w dwwwwww***u|
+      |    w  w bb  D   *ww|
+      |wwwww  w  www#ww**wc|
+      |       w ****+**dww |
+      |       wwdwdw#w ww  |
+      |        w   w###w   |
+      |        ww  wwww    |
       |                    |
       |                    |
       |                    |
       +--------------------+
     `, grid => {
-      grid.getp(3, 4).getEnt(Trait.Box).createTrait(Trait.Wire);
-      grid.getp(7, 3).createEnt(Entity.Inverter, 2);
-      grid.getp(8, 4).createEnt(Entity.Inverter, 1);
+      grid.getp(13, 8).getTrait(Trait.WireOverlap).activeV = 1;
+      grid.getp(18, 2).getEnt(Trait.Concrete).createTrait(Trait.Wire);
+
+      const pressedButtons = [
+        [1, 0],
+        [1, 2],
+        [1, 4],
+      ];
+
+      for(const [x, y] of pressedButtons){
+        const tile = grid.getp(x, y);
+
+        tile.createEnt(Entity.Swap);
+        tile.getTrait(Trait.Wire).active = 1;
+      }
+
+      const gateCtors = {
+        '~': Entity.Inverter,
+        '|': Entity.Disjunction,
+        '&': Entity.Conjunction,
+      };
+
+      const gates = [
+        [3, 0, '~', 1],
+        [4, 2, '&', 1],
+        [15, 9, '~', 2],
+      ];
+
+      for(const gateInfo of gates){
+        const [x, y, ctorStr, dir] = gateInfo;
+        const ctor = gateCtors[ctorStr];
+
+        grid.getp(x, y).createEnt(ctor, dir);
+      }
+
+      const oneWays = [
+        [2, 0, 3],
+        [2, 1, 3],
+        [2, 2, 3],
+        [2, 3, 3],
+        [2, 4, 3],
+        [12, 0, 1],
+        [14, 1, 2],
+        [15, 2, 3],
+        [14, 3, 2],
+        [14, 4, 1],
+        [13, 7, 0],
+      ];
+      
+      for(const [x, y, dir] of oneWays)
+        grid.getp(x, y).createEnt(Entity.OneWay, dir);
     });
   },
 };
