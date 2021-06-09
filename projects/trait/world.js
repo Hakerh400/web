@@ -28,6 +28,7 @@ class World extends Serializable{
     this.notifiedTiles = new Set();
     this.notifiedTilesDelayed = new Set();
     this.notifiedTraits = new CtorsMap();
+    this.detachedItems = new Set();
 
     this.tickId = null;
     this.baseReqPri = null;
@@ -45,6 +46,7 @@ class World extends Serializable{
       restart: 0,
       exit: 0,
       pickOrDropItem: 0,
+      applyItem: 0,
     };
   }
 
@@ -148,6 +150,7 @@ class World extends Serializable{
       notifiedTiles,
       notifiedTilesDelayed,
       notifiedTraits,
+      detachedItems,
     } = this;
 
     assert(selectedRoom !== null);
@@ -194,7 +197,7 @@ class World extends Serializable{
           reqs.map.delete(reqCtor);
 
           if(reqsSet.size !== 0)
-            reqCtor.exec(reqsSet);
+            reqCtor.exec(this, reqsSet);
 
           if(this.baseReqPri <= pri){
             pri = this.baseReqPri;
@@ -203,6 +206,13 @@ class World extends Serializable{
 
           pri++;
         }
+
+        for(const item of detachedItems){
+          if(item.valid) continue;
+          item.delete();
+        }
+
+        detachedItems.clear();
 
         // reqs.clear();
 
@@ -323,6 +333,7 @@ class World extends Serializable{
     assert(this.evts.nav === null);
     assert(this.notifiedTiles.size === 0);
     assert(this.notifiedTraits.size === 0);
+    assert(this.detachedItems.size === 0);
     assert(this.reqs.empty);
     assert(this.tickId === null);
     assert(this.baseReqPri === null);

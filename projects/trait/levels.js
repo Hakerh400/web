@@ -260,9 +260,9 @@ const levels = {
     createLayout(world, ent, level, `
       +--------------------+
       |                    |
-      | p~t                |
-      |                    |
-      | h w                |
+      | p~ tb              |
+      |          tttt      |
+      | h w      tttt      |
       |                    |
       |                    |
       |                    |
@@ -277,6 +277,7 @@ const levels = {
       +--------------------+
     `, grid => {
       grid.getp(2, 1).createEnt(Entity.UnstableGround);
+      grid.getp(2, 1).createEnt(Entity.Key);
     });
   },
 };
@@ -302,6 +303,7 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       '<': [Entity.OneWay, 3],
       t: [Entity.Tail],
       h: [Entity.Hammer],
+      k: [Entity.Key],
     };
 
     const electrical = '*+#udD';

@@ -108,6 +108,8 @@ class Serializable extends SerializableBase{
   }
 
   *getEnts(traitCtor){
+    assert(traitCtor);
+    
     const ents = new Set();
 
     for(const trait of this.getTraits(traitCtor)){

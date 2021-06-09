@@ -13,6 +13,9 @@ const {
   DetailedInfo,
 } = info;
 
+const {min, max} = Math;
+const {pi, pih, pi2} = O;
+
 class Item extends Inspectable{
   static get baseCtor(){ return Item; }
 
@@ -41,6 +44,8 @@ class Item extends Inspectable{
   get grid(){ return this.trait.grid; }
   get room(){ return this.trait.room; }
   get world(){ return this.trait.world; }
+
+  apply(tile){ O.virtual('apply'); }
 
   delete(){
     const {trait} = this;
@@ -113,10 +118,65 @@ class Hammer extends Item{
     g.fill();
     g.stroke();
   }
+
+  apply(tile){
+    const {world} = this;
+
+    if(!tile) return;
+
+    const solid = tile.getEnt(Trait.Solid);
+    if(!solid) return;
+
+    world.reqRemoveEnt(solid);
+    world.reqDeleteItem(this);
+  }
+}
+
+class Key extends Item{
+  render(g){
+    const drawExternalLine = () => {
+      g.moveTo(.45, .45);
+      g.lineTo(.95, .45);
+      g.lineTo(.95, .55);
+      g.lineTo(.85, .55);
+      g.lineTo(.85, .7);
+      g.lineTo(.75, .7);
+      g.lineTo(.75, .55);
+      g.lineTo(.65, .55);
+      g.lineTo(.65, .7);
+      g.lineTo(.55, .7);
+      g.lineTo(.55, .55);
+      g.lineTo(.45, .55);
+      O.drawArc(g, .45, .55, .45, .45, 7);
+    };
+
+    const drawInternalLine = () => {
+      g.arc(.28, .5, .1, pi2, 0, 1);
+    };
+
+    g.concaveMode = 1;
+    g.fillStyle = 'rgb(240,179,112)';
+
+    g.beginPath();
+    drawExternalLine();
+    drawInternalLine();
+    g.fill();
+
+    g.beginPath();
+    drawExternalLine();
+    g.stroke();
+
+    g.beginPath();
+    drawInternalLine();
+    g.stroke();
+
+    g.concaveMode = 0;
+  }
 }
 
 const ctorsArr = [
   Hammer,
+  Key,
 ];
 
 const ctorsObj = ctorsPri(ctorsArr);
@@ -128,5 +188,5 @@ module.exports = Object.assign(Item, {
 
 const Grid = require('./grid');
 const Entity = require('./entity');
-const Trait = require('./entity');
+const Trait = require('./trait');
 const Action = require('./action');

@@ -101,9 +101,12 @@ const onKeyDown = evt => {
 
   const nav = dir => {
     evts.nav = dir;
+    evts.applyItem = ctrl;
 
-    if(recording)
-      moves.push(dir);
+    if(recording){
+      if(!ctrl) moves.push(dir);
+      else moves.push(dir + 6);
+    }
   };
 
   switch(code){
@@ -188,6 +191,9 @@ const onKeyDown = evt => {
                 evts.pickOrDropItem = 1;
                 break exec;
               }
+
+              evts.nav = n - 6;
+              evts.applyItem = 1;
 
               assert.fail();
             }

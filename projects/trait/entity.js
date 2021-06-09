@@ -121,10 +121,15 @@ class Entity extends Inspectable{
   notify(delay){ this.tile.notify(delay); }
 
   remove(){
+    const {traits, globData} = this;
+
     this.tile.removeEnt(this);
 
-    for(const trait of this.traits.vals)
+    for(const trait of traits.vals)
       trait.remove();
+
+    for(const [traitCtor, data] of globData)
+      traitCtor.onRemoveGlobData(data);
 
     this.tile = null;
   }
@@ -200,30 +205,36 @@ class NavigationTarget extends Entity{
   }
 }
 
-class Player extends Entity{
+class Solid extends Entity{
+  static get exclusive(){ return 1; }
+
+  new(tile){
+    super.new(tile);
+    this.createTrait(Trait.Solid);
+  }
+}
+
+class Player extends Solid{
   new(tile){
     super.new(tile);
 
     this.createTrait(Trait.Player);
-    this.createTrait(Trait.Solid);
   }
 }
 
-class Wall extends Entity{
+class Wall extends Solid{
   new(tile){
     super.new(tile);
 
     this.createTrait(Trait.Wall);
-    this.createTrait(Trait.Solid);
   }
 }
 
-class Box extends Entity{
+class Box extends Solid{
   new(tile, heavy=0){
     super.new(tile);
 
     this.createTrait(Trait.Box);
-    this.createTrait(Trait.Solid);
     this.createTrait(Trait.Pushable);
 
     if(heavy)
@@ -279,21 +290,19 @@ class Button extends Entity{
   }
 }
 
-class Lock extends Entity{
+class Lock extends Solid{
   new(tile){
     super.new(tile);
 
     this.createTrait(Trait.Lock);
-    this.createTrait(Trait.Solid);
   }
 }
 
-class Swap extends Entity{
+class Swap extends Solid{
   new(tile){
     super.new(tile);
 
     this.createTrait(Trait.Swap);
-    this.createTrait(Trait.Solid);
   }
 }
 
@@ -357,12 +366,11 @@ class Water extends Entity{
   }
 }
 
-class Tail extends Entity{
+class Tail extends Solid{
   new(tile){
     super.new(tile);
 
     this.createTrait(Trait.Tail);
-    this.createTrait(Trait.Solid);
   }
 }
 
@@ -385,6 +393,12 @@ class ItemEntity extends Entity{
 class Hammer extends ItemEntity{
   new(tile){
     super.new(tile, Item.Hammer);
+  }
+}
+
+class Key extends ItemEntity{
+  new(tile){
+    super.new(tile, Item.Key);
   }
 }
 
@@ -412,6 +426,7 @@ module.exports = Object.assign(Entity, {
 
   ItemEntity,
   Hammer,
+  Key,
 });
 
 const Trait = require('./trait');

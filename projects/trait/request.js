@@ -8,7 +8,7 @@ const CtorsMap = require('./ctors-map');
 const ctorsPri = require('./ctors-pri');
 
 class Request{
-  static exec(reqs){ O.virtual('exec', 1); }
+  static exec(world, reqs){ O.virtual('exec', 1); }
 
   constructor(world){
     this.world = world;
@@ -19,7 +19,7 @@ class Request{
 }
 
 class SimpleRequest extends Request{
-  static exec(reqs){
+  static exec(world, reqs){
     for(const req of reqs)
       req.simpleExec();
   }
@@ -28,7 +28,7 @@ class SimpleRequest extends Request{
 }
 
 class ModifyEntGlobData extends Request{
-  static exec(reqs){
+  static exec(world, reqs){
     const entTraitDataMap = new Map();
     // let m = null;
 
@@ -122,7 +122,7 @@ class ModifyEntGlobData extends Request{
 }
 
 // class ModifyEntLocData extends Request{
-//   static exec(reqs){
+//   static exec(world, reqs){
 //     const entTraitDataMap = new Map();
 //     let m = null;
 //
@@ -189,7 +189,7 @@ class CreateEntity extends SimpleRequest{
 }
 
 class MoveEntity extends Request{
-  static exec(reqs){
+  static exec(world, reqs){
     const map = new Map();
 
     for(const req of reqs){
@@ -228,7 +228,7 @@ class MoveEntity extends Request{
 }
 
 class RemoveEntity extends Request{
-  static exec(reqs){
+  static exec(world, reqs){
     const removed = new Set();
 
     for(const req of reqs){
@@ -249,7 +249,7 @@ class RemoveEntity extends Request{
 }
 
 class SetItem extends Request{
-  static exec(reqs){
+  static exec(world, reqs){
     const traitItemMap = new Map();
     const itemTraitMap = new Map();
     const allItems = new Set();
@@ -330,7 +330,7 @@ class SetItem extends Request{
         continue;
       }
 
-      item.delete();
+      world.detachedItems.add(item);
     }
   }
 
@@ -342,7 +342,7 @@ class SetItem extends Request{
 }
 
 class DeleteItem extends Request{
-  static exec(reqs){
+  static exec(world, reqs){
     for(const req of reqs){
       const {item} = req;
       item.delete();
@@ -356,11 +356,11 @@ class DeleteItem extends Request{
 }
 
 class PushRoom extends Request{
-  static exec(reqs){
+  static exec(world, reqs){
     if(reqs.size !== 1) O.noimpl();
 
     const req = O.fst(reqs);
-    const {world, ent, gridCtor, gridCtorArgs, builder} = req;
+    const {ent, gridCtor, gridCtorArgs, builder} = req;
 
     if(ent !== null && ent.valid)
       ent.createTrait(Trait.Entered);
@@ -382,11 +382,11 @@ class PushRoom extends Request{
 }
 
 class PopRoom extends Request{
-  static exec(reqs){
+  static exec(world, reqs){
     if(reqs.size !== 1) O.noimpl();
 
     const req = O.fst(reqs);
-    const {world, cb} = req;
+    const {cb} = req;
 
     world.popRoom();
 
@@ -408,13 +408,15 @@ class PopRoom extends Request{
 }
 
 const ctorsArr = [
+  DeleteItem,
+  SetItem,
+
+  RemoveEntity,
   ModifyEntGlobData,
   // ModifyEntLocData,
   CreateEntity,
   MoveEntity,
-  DeleteItem,
-  SetItem,
-  RemoveEntity,
+
   PushRoom,
   PopRoom,
 ];

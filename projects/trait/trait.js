@@ -21,6 +21,8 @@ const layersNum = O.keys(layers).length >> 1;
 class Trait extends Inspectable{
   static get baseCtor(){ return Trait; }
 
+  static onRemoveGlobData(data){}
+
   init(){
     super.init();
 
@@ -180,7 +182,7 @@ class Trait extends Inspectable{
       itemInfo = new BasicInfo(`item = Nothing :: Maybe Item`);
     }else{
       const {details} = yield [[item, 'inspect']];
-      itemInfo = new DetailedInfo(`item = Just ${item.ctor.name}`, details);
+      itemInfo = new DetailedInfo(`item = Just ${item.ctor.name} :: Maybe Item`, details);
     }
 
     return new DetailedInfo(`trait :: ${this.ctor.name}`, [
@@ -305,9 +307,26 @@ class Player extends ActiveTrait{
     }
   }
 
+  applyItem(n){
+    if(n) return;
+    const {world, tile, ent, item} = this;
+
+    if(item === null) return;
+    if(!world.evts.applyItem) return;
+
+    const dir = world.evts.nav;
+    if(dir === null) return;
+
+    const adj = tile.adj(dir);
+
+    item.apply(adj);
+  }
+
   navigate(n){
     if(n) return;
     const {world, tile, ent} = this;
+
+    if(world.evts.applyItem) return;
 
     const dir = world.evts.nav;
     if(dir === null) return;
@@ -360,6 +379,8 @@ class Player extends ActiveTrait{
       world.reqPickItem(itemTrait, this);
       return;
     }
+
+    if(tile.hasTrait(ItemTrait)) return;
 
     world.reqDropItem(this);
   }
@@ -576,7 +597,25 @@ class ItemTrait extends Trait{
 
     if(itemCtor instanceof Item){
       assert(args.length === 0);
-      this.world.reqSetItem(this, itemCtor);
+
+      const item = itemCtor;
+
+      setItem: {
+        check: {
+          if(item.deleted) break check;
+
+          this.item = item;
+
+          if(!item.valid){
+            item.delete();
+            break check;
+          }
+
+          break setItem;
+        }
+
+        removeEnt(ent);
+      }
     }else{
       this.item = new itemCtor(null, ...args);
     }
@@ -1498,6 +1537,11 @@ class Water extends Trait{
 }
 
 class Tail extends Trait{
+  static onRemoveGlobData(tail){
+    if(!tail) return;
+    tail.removeTarget();
+  }
+
   init(){
     super.init();
 
@@ -1739,6 +1783,7 @@ const removeTraits = (ent, traitCtor) => {
 
 const handlersArr = [
   [Player, 'pickOrDropItem'],
+  [Player, 'applyItem'],
   [Player, 'navigate'],
 
   [Button, 'click'],
