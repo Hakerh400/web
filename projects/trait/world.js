@@ -306,7 +306,7 @@ class World extends Serializable{
     this.addReq(new Request.SetItem(this, trait, item));
   }
 
-  reqDelItem(item){
+  reqDeleteItem(item){
     this.addReq(new Request.DeleteItem(this, item));
   }
 

@@ -101,12 +101,10 @@ class Trait extends Inspectable{
   remove(){
     this.onRemove();
 
-    const {item} = this;
+    const {world, item} = this;
 
-    if(item !== null){
-      this.item = null;
-      item.delete();
-    }
+    if(item !== null)
+      world.reqDeleteItem(item);
 
     for(const ent of this.locDataEnts)
       ent.locData.delete(this);
