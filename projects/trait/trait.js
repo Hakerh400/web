@@ -3,9 +3,9 @@
 const assert = require('assert');
 const CtorsMap = require('./ctors-map');
 const Inspectable = require('./inspectable');
+const Serializable = require('./serializable');
 const info = require('./info');
 const layers = require('./layers');
-const Serializable = require('./serializable');
 const ctorsPri = require('./ctors-pri');
 
 const {
@@ -26,13 +26,13 @@ class Trait extends Inspectable{
 
     this.locDataEnts = new Set();
     this.layer = null;
+    this.itemRaw = null;
   }
 
   new(ent){
     super.new();
 
     this.ent = ent;
-
     this.onCreate();
   }
 
@@ -52,6 +52,37 @@ class Trait extends Inspectable{
   get room(){ return this.ent.room; }
   get world(){ return this.ent.world; }
 
+  get item(){
+    const item = this.itemRaw;
+    if(item === null) return null;
+
+    assert(item.valid);
+    assert(item.trait === this);
+
+    return item;
+  }
+
+  set item(item){
+    const itemPrev = this.item;
+
+    if(item !== null){
+      assert(itemPrev === null);
+      assert(item.trait === null);
+      assert(!item.deleted);
+
+      this.itemRaw = item;
+      item.trait = this;
+
+      assert(item.valid);
+      return;
+    }
+
+    assert(itemPrev !== null);
+
+    this.itemRaw = null;
+    itemPrev.trait = null;
+  }
+
   notify(delay){ this.ent.notify(delay); }
 
   notifySilent(){
@@ -70,6 +101,13 @@ class Trait extends Inspectable{
   remove(){
     this.onRemove();
 
+    const {item} = this;
+
+    if(item !== null){
+      this.item = null;
+      item.delete();
+    }
+
     for(const ent of this.locDataEnts)
       ent.locData.delete(this);
 
@@ -78,7 +116,7 @@ class Trait extends Inspectable{
   }
 
   *ser(ser){
-    const {layer} = this;
+    const {layer, item} = this;
 
     yield [[this, 'serCtor'], ser];
 
@@ -87,6 +125,13 @@ class Trait extends Inspectable{
     }else{
       ser.write(1);
       ser.write(layer, layersNum);
+    }
+
+    if(item === null){
+      ser.write(0);
+    }else{
+      ser.write(1);
+      yield [[item, 'ser'], ser];
     }
 
     yield [[this, 'serData'], ser];
@@ -98,6 +143,12 @@ class Trait extends Inspectable{
 
     const layer = ctor.layer = ser.read() ?
       ser.read(layersNum) : null;
+
+    const item = trait.itemRaw = ser.read() ?
+      yield [[Item, 'deser'], ser] : null;
+
+    if(item !== null)
+      item.trait = this;
 
     yield [[trait, 'deserData'], ser];
 
@@ -118,15 +169,25 @@ class Trait extends Inspectable{
   }
 
   *inspect(){
-    const {layer} = this;
+    const {layer, item} = this;
 
     const layerInfo = new BasicInfo(
       `layer = ${layer !== null ?
         `Just ${this.layer}` :
         `Nothing`} :: Maybe Int`);
 
+    let itemInfo;
+
+    if(item === null){
+      itemInfo = new BasicInfo(`item = Nothing :: Maybe Item`);
+    }else{
+      const {details} = yield [[item, 'inspect']];
+      itemInfo = new DetailedInfo(`item = Just ${item.ctor.name}`, details);
+    }
+
     return new DetailedInfo(`trait :: ${this.ctor.name}`, [
       layerInfo,
+      itemInfo,
       new DetailedInfo('data :: TraitData', yield [[this, 'inspectData']]),
     ]);
   }
@@ -198,11 +259,17 @@ class NavigationTarget extends Trait{
 class Player extends ActiveTrait{
   init(){
     super.init();
-
     this.layer = layers.Object;
   }
 
+  onRemove(){
+    super.onRemove();
+    this.restart();
+  }
+
   render(g){
+    const {item} = this;
+
     g.fillStyle = 'white';
     g.beginPath();
     drawCirc(g, .5, .5, .4);
@@ -230,6 +297,14 @@ class Player extends ActiveTrait{
     g.beginPath();
     g.arc(.5, .5, .2, pi / 4, pi * 3 / 4);
     g.stroke();
+
+    if(item){
+      g.save();
+      g.translate(.5, .5);
+      g.scale(.5);
+      item.render(g);
+      g.restore();
+    }
   }
 
   navigate(n){
@@ -245,21 +320,21 @@ class Player extends ActiveTrait{
     moveEnt(ent, tileNew, 1, 1);
   }
 
-  restart(n){
+  checkGround(n){
+    if(n) return;
+    const {tile, ent} = this;
+
+    if(tile.hasTrait(Ground)) return;
+    ent.remove();
+  }
+
+  checkRestart(n){
     if(n) return;
     const {world} = this;
 
-    if(!this.shouldRestart()) return;
+    if(!world.evts.restart) return;
 
-    world.reqPopRoom((grid, ent) => {
-      if(!ent) return;
-
-      const {tile} = ent;
-      const btn = tile.getTrait(Button);
-      if(!btn) return;
-
-      btn.exec();
-    });
+    this.restart();    
   }
 
   exit(n){
@@ -271,13 +346,38 @@ class Player extends ActiveTrait{
     world.reqPopRoom();
   }
 
-  shouldRestart(){
-    const {world, tile, ent} = this;
+  pickOrDropItem(n){
+    if(n) return;
+    const {world, tile} = this;
 
-    if(world.evts.restart) return 1;
-    if(!tile.hasTrait(Ground)) return 1;
+    if(!world.evts.pickOrDropItem) return;
 
-    return 0;
+    if(!this.item){
+      const itemTrait = tile.getTrait(ItemTrait);
+      if(!itemTrait) return;
+
+      const {item} = itemTrait;
+      if(!item) return;
+
+      world.reqPickItem(itemTrait, this);
+      return;
+    }
+
+    world.reqDropItem(this);
+  }
+
+  restart(){
+    const {world} = this;
+
+    world.reqPopRoom((grid, ent) => {
+      if(!ent) return;
+
+      const {tile} = ent;
+      const btn = tile.getTrait(Button);
+      if(!btn) return;
+
+      btn.exec();
+    });
   }
 }
 
@@ -467,15 +567,37 @@ class Box extends Trait{
 
 class Heavy extends Trait{}
 
-class Item extends Trait{
+class ItemTrait extends Trait{
   init(){
     super.init();
-
     this.layer = layers.Item;
+  }
+
+  new(ent, itemCtor, ...args){
+    super.new(ent);
+
+    if(itemCtor instanceof Item){
+      assert(args.length === 0);
+      this.world.reqSetItem(this, itemCtor);
+    }else{
+      this.item = new itemCtor(null, ...args);
+    }
+  }
+
+  render(g){
+    const {item} = this;
+    if(!item) return;
+
+    item.render(g);
   }
 }
 
 class Diamond extends Trait{
+  init(){
+    super.init();
+    this.layer = layers.Treasure;
+  }
+
   render(g){
     g.fillStyle = '#08f';
     g.beginPath();
@@ -551,6 +673,52 @@ class Concrete extends Trait{
   render(g){
     g.fillStyle = '#808080';
     g.fillRect(0, 0, 1, 1);
+  }
+}
+
+class UnstableGround extends Trait{
+  render(g){
+    g.fillStyle = '#808080';
+
+    const s = 1 / 7;
+
+    g.beginPath();
+    g.moveTo(s * 2, 0);
+    g.lineTo(s * 4, 0);
+    g.lineTo(0, s * 4);
+    g.lineTo(0, s * 2);
+    g.closePath();
+    g.fill();
+    g.stroke();
+
+    g.beginPath();
+    g.moveTo(s * 6, 0);
+    g.lineTo(1, 0);
+    g.lineTo(1, s);
+    g.lineTo(s, 1);
+    g.lineTo(0, 1);
+    g.lineTo(0, s * 6);
+    g.closePath();
+    g.fill();
+    g.stroke();
+
+    g.beginPath();
+    g.moveTo(1, s * 3);
+    g.lineTo(1, s * 5);
+    g.lineTo(s * 5, 1);
+    g.lineTo(s * 3, 1);
+    g.closePath();
+    g.fill();
+    g.stroke();
+  }
+
+  collapse(n){
+    if(n) return;
+    const {tile, ent} = this;
+
+    if(!tile.hasTrait(Solid)) return;
+
+    removeEnt(ent);
   }
 }
 
@@ -1466,6 +1634,14 @@ class Tail extends Trait{
     moveEnt(ent, target.tile);
   }
 
+  checkGround(n){
+    if(n) return;
+    const {tile, ent} = this;
+
+    if(tile.hasTrait(Ground)) return;
+    ent.remove();
+  }
+
   *serData(ser){
     const {target} = this;
 
@@ -1564,7 +1740,9 @@ const removeTraits = (ent, traitCtor) => {
 };
 
 const handlersArr = [
+  [Player, 'pickOrDropItem'],
   [Player, 'navigate'],
+
   [Button, 'click'],
   [Pushable, 'push'],
   [Swap, 'swap'],
@@ -1574,7 +1752,9 @@ const handlersArr = [
   [Solid, 'stop'],
   [NavigationTarget, 'navigate'],
   [Tail, 'update'],
+
   [Box, 'checkGround'],
+  [Tail, 'checkGround'],
 
   [Wire, 'cooldown'],
   // [WireOverlap, 'cooldown'],
@@ -1587,7 +1767,11 @@ const handlersArr = [
 
   [DigitalDoor, 'update'],
   [Diamond, 'collect'],
-  [Player, 'restart'],
+
+  [Player, 'checkGround'],
+  [UnstableGround, 'collapse'],
+
+  [Player, 'checkRestart'],
   [Player, 'exit'],
 ];
 
@@ -1617,6 +1801,7 @@ const ctorsArr = [
   Water,
   Ground,
   Concrete,
+  UnstableGround,
   WoodenGround,
 
   LogicGate,
@@ -1626,7 +1811,7 @@ const ctorsArr = [
   Disjunction,
   Conjunction,
 
-  Item,
+  ItemTrait,
   Diamond,
   Button,
   Lock,
@@ -1659,4 +1844,5 @@ module.exports = Object.assign(Trait, {
 
 const Grid = require('./grid');
 const Entity = require('./entity');
+const Item = require('./item');
 const Action = require('./action');

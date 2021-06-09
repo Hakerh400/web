@@ -255,6 +255,30 @@ const levels = {
         grid.getp(x, y).createEnt(Entity.OneWay, dir);
     });
   },
+
+  '07'(world, ent, level){
+    createLayout(world, ent, level, `
+      +--------------------+
+      |                    |
+      | p~t                |
+      |                    |
+      | h w                |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      |                    |
+      +--------------------+
+    `, grid => {
+      grid.getp(2, 1).createEnt(Entity.UnstableGround);
+    });
+  },
 };
 
 const createLayout = (world, ent, level, layoutRaw, cb=null) => {
@@ -277,6 +301,7 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       'v': [Entity.OneWay, 2],
       '<': [Entity.OneWay, 3],
       t: [Entity.Tail],
+      h: [Entity.Hammer],
     };
 
     const electrical = '*+#udD';

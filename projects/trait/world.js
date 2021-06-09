@@ -44,6 +44,7 @@ class World extends Serializable{
       rmb: null,
       restart: 0,
       exit: 0,
+      pickOrDropItem: 0,
     };
   }
 
@@ -280,6 +281,33 @@ class World extends Serializable{
 
   reqRemoveEnt(ent){
     this.addReq(new Request.RemoveEntity(this, ent, ent));
+  }
+
+  reqPickItem(from, to){
+    const {item} = from;
+
+    assert(item !== null);
+    assert(to.item === null);
+
+    this.reqSetItem(to, item);
+    this.reqRemoveEnt(from.ent);
+  }
+
+  reqDropItem(ent){
+    const {item} = ent;
+
+    assert(item !== null);
+
+    this.reqSetItem(ent, null);
+    this.reqCreateEnt(ent.tile, Entity.ItemEntity, item);
+  }
+
+  reqSetItem(trait, item){
+    this.addReq(new Request.SetItem(this, trait, item));
+  }
+
+  reqDelItem(item){
+    this.addReq(new Request.DeleteItem(this, item));
   }
 
   reqPushRoom(ent, gridCtor, gridCtorArgs, builder){

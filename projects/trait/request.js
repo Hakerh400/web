@@ -248,6 +248,115 @@ class RemoveEntity extends Request{
   }
 }
 
+class SetItem extends Request{
+  static exec(reqs){
+    const traitItemMap = new Map();
+    const itemTraitMap = new Map();
+    const allItems = new Set();
+
+    const add = (map, key, val) => {
+      if(!map.has(key))
+        map.set(key, new Set());
+
+      map.get(key).add(val);
+    };
+
+    for(const req of reqs){
+      const {trait, item} = req;
+
+      if(!trait.valid) continue;
+      if(item !== null && !item.valid) continue;
+
+      add(traitItemMap, trait, item);
+      add(itemTraitMap, item, trait);
+
+      allItems.add(trait.item);
+      allItems.add(item);
+    }
+
+    // const processedTraits = new Set();
+    // const processedItems = new Set();
+    //
+    // const addProcessed = (trait, item) => {
+    //   assert(!processedTraits.has(trait));
+    //   processedTraits.add(trait);
+    //
+    //   if(item !== null){
+    //     assert(!processedItems.has(item));
+    //     processedItems.add(item);
+    //   }
+    // };
+
+    for(const [trait, items] of traitItemMap){
+      assert(items.size !== 0);
+      if(items.size !== 1) continue;
+
+      const item = O.uni(items);
+
+      if(item === null){
+        if(trait.item !== null)
+          trait.item = null;
+
+        // addProcessed(trait, item);
+        continue;
+      }
+
+      assert(itemTraitMap.has(item));
+      const traits = itemTraitMap.get(item);
+
+      assert(traits.size !== 0);
+      if(traits.size !== 1) continue;
+
+      assert(O.uni(traits) === trait);
+
+      if(trait.item !== null)
+        trait.item = null;
+
+      const trait1 = item.trait;
+
+      if(trait1 !== null)
+        trait1.item = null;
+
+      trait.item = item;
+
+      // addProcessed(trait, item);
+    }
+
+    allItems.delete(null);
+
+    for(const item of allItems){
+      if(item.trait !== null){
+        assert(item.valid);
+        continue;
+      }
+
+      item.delete();
+    }
+  }
+
+  constructor(world, trait, item){
+    super(world);
+    this.trait = trait;
+    this.item = item;
+  }
+}
+
+class DeleteItem extends Request{
+  static exec(reqs){
+    for(const req of reqs){
+      const {item} = req;
+      if(!item.valid) continue;
+
+      item.delete();
+    }
+  }
+
+  constructor(world, item){
+    super(world);
+    this.item = item;
+  }
+}
+
 class PushRoom extends Request{
   static exec(reqs){
     if(reqs.size !== 1) O.noimpl();
@@ -305,6 +414,8 @@ const ctorsArr = [
   // ModifyEntLocData,
   CreateEntity,
   MoveEntity,
+  DeleteItem,
+  SetItem,
   RemoveEntity,
   PushRoom,
   PopRoom,

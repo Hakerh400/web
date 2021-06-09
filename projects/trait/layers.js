@@ -5,6 +5,7 @@ const layers = O.enum([
   'Ground',
   'GroundObj',
   'Item',
+  'Treasure',
   'Object',
   'Wall',
   'Sky',

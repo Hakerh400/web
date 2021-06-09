@@ -123,7 +123,19 @@ const onKeyDown = evt => {
       nav(3);
       break;
 
-    case 'Enter': break;
+    case 'Space':
+      evts.pickOrDropItem = 1;
+
+      if(recording)
+        moves.push(5);
+
+      break;
+
+    case 'Enter':
+      if(recording)
+        moves.push(4);
+
+      break;
 
     case 'KeyR':
       evts.restart = 1;
@@ -140,7 +152,7 @@ const onKeyDown = evt => {
       tick = 0;
 
       if(ctrl){
-        const levelRaw = prompt('Level:');
+        const levelRaw = getCurrentLevel();
         if(levelRaw === null) break;
 
         const level = levelRaw.padStart(2, '0');
@@ -159,7 +171,30 @@ const onKeyDown = evt => {
             return;
           }
 
-          world.evts.nav = sol[solIndex++] | 0;
+          const c = sol[solIndex++];
+
+          exec: {
+            if(c >= '0' && c <= '9'){
+              const n = c | 0;
+
+              if(n <= 3){
+                world.evts.nav = n;
+                break exec;
+              }
+
+              if(n === 4) break exec;
+
+              if(n === 5){
+                evts.pickOrDropItem = 1;
+                break exec;
+              }
+
+              assert.fail();
+            }
+
+            assert.fail();
+          }
+
           world.tick();
           render();
         }, ANIM_INTERVAL);
@@ -236,7 +271,7 @@ const onMouseDown = evt => {
   const x = floor((evt.clientX - iw / 2) / s + w / 2);
   const y = floor((evt.clientY - ih / 2) / s + h / 2);
 
-  const tile = grid.get(pos(x, y));
+  const tile = grid.getp(x, y);
   if(tile === null) return;
 
   if(isInspect){
@@ -321,8 +356,19 @@ const render = () => {
   g.stroke();
 };
 
-const pos = (x, y) => {
-  return new Position.Rectangle(x, y);
+const getCurrentLevel = () => {
+  const {roomStack} = world;
+  const menu = O.fst(roomStack);
+  if(!menu) return null;
+
+  const {grid} = menu;
+  const entered = grid.getEnt(Trait.Entered);
+  if(!entered) return null;
+
+  const text = entered.getTrait(Trait.Text);
+  if(!text) return null;
+
+  return text.str;
 };
 
 const setInfo = info => {

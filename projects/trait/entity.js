@@ -124,7 +124,7 @@ class Entity extends Inspectable{
     this.tile.removeEnt(this);
 
     for(const trait of this.traits.vals)
-      trait.onRemove();
+      trait.remove();
 
     this.tile = null;
   }
@@ -236,7 +236,6 @@ class Diamond extends Entity{
     super.new(tile);
 
     this.createTrait(Trait.Diamond);
-    this.createTrait(Trait.Item);
   }
 }
 
@@ -367,6 +366,28 @@ class Tail extends Entity{
   }
 }
 
+class UnstableGround extends Ground{
+  new(tile){
+    super.new(tile);
+
+    this.createTrait(Trait.UnstableGround);
+  }
+}
+
+class ItemEntity extends Entity{
+  new(tile, itemCtor, ...args){
+    super.new(tile);
+
+    this.createTrait(Trait.ItemTrait, itemCtor, ...args);
+  }
+}
+
+class Hammer extends ItemEntity{
+  new(tile){
+    super.new(tile, Item.Hammer);
+  }
+}
+
 module.exports = Object.assign(Entity, {
   NavigationTarget,
   Player,
@@ -387,6 +408,11 @@ module.exports = Object.assign(Entity, {
   Conjunction,
   Water,
   Tail,
+  UnstableGround,
+
+  ItemEntity,
+  Hammer,
 });
 
 const Trait = require('./trait');
+const Item = require('./item');
