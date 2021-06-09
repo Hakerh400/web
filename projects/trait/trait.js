@@ -415,7 +415,6 @@ class Solid extends Trait{
 class Wall extends Trait{
   init(){
     super.init();
-
     this.layer = layers.Wall;
   }
 
@@ -1010,6 +1009,14 @@ class Swap extends Trait{
 
     for(const navTarget of tile.getTraits(NavigationTarget))
       moveEnt(ent, navTarget.src.tile);
+  }
+
+  checkGround(n){
+    if(n) return;
+    const {tile, ent} = this;
+
+    if(tile.hasTrait(Ground)) return;
+    ent.remove();
   }
 }
 
@@ -1701,6 +1708,28 @@ class Tail extends Trait{
   }
 }
 
+class LockedDoor extends Trait{
+  init(){
+    super.init();
+    this.layer = layers.Wall;
+  }
+
+  render(g){
+    g.fillStyle = 'rgb(240,179,112)';
+    g.fillRect(0, 0, 1, 1);
+
+    g.fillStyle = '#000';
+    g.beginPath();
+    g.moveTo(.5, .35);
+    g.lineTo(.65, .75)
+    g.lineTo(.35, .75);
+    g.closePath();
+    g.fill();
+
+    drawCirc(g, .5, .35, .08);
+  }
+}
+
 const moveEnt = (ent, tileNew, direct=0, strong=0) => {
   assert(ent instanceof Entity);
 
@@ -1797,6 +1826,7 @@ const handlersArr = [
   [Tail, 'update'],
 
   [Box, 'checkGround'],
+  [Swap, 'checkGround'],
   [Tail, 'checkGround'],
 
   [Wire, 'cooldown'],
@@ -1861,6 +1891,7 @@ const ctorsArr = [
   Swap,
   Entered,
   DigitalDoor,
+  LockedDoor,
   Tail,
 
   ElectronicBase,

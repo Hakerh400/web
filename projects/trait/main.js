@@ -62,7 +62,8 @@ const aels = () => {
   onResize();
 
   if(flags.OpenLastLevel){
-    const level = String(O.last(O.sortAsc(O.keys(levels).map(a => a | 0)))).padStart(2, 0);
+    const levelNames = O.sortAsc(O.keys(levels)).filter(a => /^\d{2}$/.test(a));
+    const level = O.last(levelNames);
 
     for(const text of world.selectedRoom.grid.getTraits(Trait.Text)){
       if(text.str !== level) continue;
@@ -168,6 +169,8 @@ const onKeyDown = evt => {
         playing = 1;
 
         playingInterval = setInterval(() => {
+          const {evts} = world;
+          
           if(solIndex === solLen){
             playing = 0;
             clearInterval(playingInterval);
@@ -181,7 +184,7 @@ const onKeyDown = evt => {
               const n = c | 0;
 
               if(n <= 3){
-                world.evts.nav = n;
+                evts.nav = n;
                 break exec;
               }
 
@@ -195,7 +198,7 @@ const onKeyDown = evt => {
               evts.nav = n - 6;
               evts.applyItem = 1;
 
-              assert.fail();
+              break exec;
             }
 
             assert.fail();

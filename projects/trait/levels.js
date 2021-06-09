@@ -185,25 +185,26 @@ const levels = {
   '06'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
-      |pu# * d          ttt|
-      |    * *d  wwww w wwt|
-      | u## **w  w d*****bu|
+      |pu# * db         ttt|
+      |    * *d   www w wwt|
+      | u## **w  wwd*****bu|
       |    #wwww w bd wwwww|
-      | u###w wd***u  d*  u|
-      |    w  w dwwwwww***u|
-      |    w  w bb  D   *ww|
-      |wwwww  w  www#ww**wc|
-      |       w ****+**dww |
-      |       wwdwdw#w ww  |
-      |        w   w###w   |
-      |        ww  wwww    |
-      |                    |
-      |                    |
-      |                    |
+      | u###whwd***u  d*  u|
+      |    wwLw dwwwwwv***u|
+      |    w  w bb> D   *ww|
+      |wwwww  w  www#w **wc|
+      |~>****uw ****+**dwww|
+      |Lw*  wdwwdwdw#w ww  |
+      |  *  w uw   w###w   |
+      |  *  w *ww  wwwww   |
+      | *d* w *****d     ww|
+      | dbd w     *w    d*u|
+      |     ^^^^^^*d u*d kk|
       +--------------------+
     `, grid => {
       grid.getp(13, 8).getTrait(Trait.WireOverlap).activeV = 1;
       grid.getp(18, 2).getEnt(Trait.Concrete).createTrait(Trait.Wire);
+      grid.getp(0, 8).createEnt(Entity.UnstableGround);
 
       const pressedButtons = [
         [1, 0],
@@ -249,6 +250,9 @@ const levels = {
         [14, 3, 2],
         [14, 4, 1],
         [13, 7, 0],
+        [9, 12, 3],
+        [11, 14, 0],
+        [15, 8, 0],
       ];
       
       for(const [x, y, dir] of oneWays)
@@ -256,14 +260,14 @@ const levels = {
     });
   },
 
-  '07'(world, ent, level){
+  '07.'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
       |                    |
       | p~ tb              |
-      |          tttt      |
+      |  s       tttt      |
       | h w      tttt      |
-      |                    |
+      |     L              |
       |                    |
       |                    |
       |                    |
@@ -304,6 +308,7 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
       t: [Entity.Tail],
       h: [Entity.Hammer],
       k: [Entity.Key],
+      L: [Entity.LockedDoor],
     };
 
     const electrical = '*+#udD';

@@ -45,7 +45,7 @@ class Item extends Inspectable{
   get room(){ return this.trait.room; }
   get world(){ return this.trait.world; }
 
-  apply(tile){ O.virtual('apply'); }
+  apply(tile, pos){ O.virtual('apply'); }
 
   delete(){
     const {trait} = this;
@@ -119,7 +119,7 @@ class Hammer extends Item{
     g.stroke();
   }
 
-  apply(tile){
+  apply(tile, pos){
     const {world} = this;
 
     if(!tile) return;
@@ -134,6 +134,9 @@ class Hammer extends Item{
 
 class Key extends Item{
   render(g){
+    g.concaveMode = 1;
+    g.fillStyle = 'rgb(240,179,112)';
+
     const drawExternalLine = () => {
       g.moveTo(.45, .45);
       g.lineTo(.95, .45);
@@ -154,9 +157,6 @@ class Key extends Item{
       g.arc(.28, .5, .1, pi2, 0, 1);
     };
 
-    g.concaveMode = 1;
-    g.fillStyle = 'rgb(240,179,112)';
-
     g.beginPath();
     drawExternalLine();
     drawInternalLine();
@@ -171,6 +171,18 @@ class Key extends Item{
     g.stroke();
 
     g.concaveMode = 0;
+  }
+
+  apply(tile, pos){
+    if(!tile) return;
+
+    const {world} = this;
+
+    const door = tile.getEnt(Trait.LockedDoor);
+    if(!door) return;
+
+    world.reqRemoveEnt(door);
+    world.reqDeleteItem(this);
   }
 }
 

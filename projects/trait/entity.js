@@ -402,6 +402,14 @@ class Key extends ItemEntity{
   }
 }
 
+class LockedDoor extends Solid{
+  new(tile){
+    super.new(tile);
+
+    this.createTrait(Trait.LockedDoor);
+  }
+}
+
 module.exports = Object.assign(Entity, {
   NavigationTarget,
   Player,
@@ -427,6 +435,8 @@ module.exports = Object.assign(Entity, {
   ItemEntity,
   Hammer,
   Key,
+
+  LockedDoor,
 });
 
 const Trait = require('./trait');
