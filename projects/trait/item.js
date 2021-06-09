@@ -45,8 +45,14 @@ class Item extends Inspectable{
   delete(){
     const {trait} = this;
 
-    if(trait !== null)
-      trait.item = null;
+    if(trait !== null){
+      if(trait.valid){
+        trait.item = null;
+      }else{
+        trait.itemRaw = null;
+        this.trait = null;
+      }
+    }
 
     this.deleted = 1;
   }

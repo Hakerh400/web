@@ -345,8 +345,6 @@ class DeleteItem extends Request{
   static exec(reqs){
     for(const req of reqs){
       const {item} = req;
-      if(!item.valid) continue;
-
       item.delete();
     }
   }
