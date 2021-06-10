@@ -260,7 +260,7 @@ const levels = {
     });
   },
 
-  '07'(world, ent, level){
+  '07.'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
       |wwwwwwwww           |
