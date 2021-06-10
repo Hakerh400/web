@@ -22,7 +22,7 @@ await O.addStyle('style.css');
 
 const ANIM_INTERVAL = 20;
 
-const s = 40;
+const s = 60;
 
 const cols = {
   bg: [169, 169, 169],
@@ -170,7 +170,7 @@ const onKeyDown = evt => {
 
         playingInterval = setInterval(() => {
           const {evts} = world;
-          
+
           if(solIndex === solLen){
             playing = 0;
             clearInterval(playingInterval);
