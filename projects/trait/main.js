@@ -20,7 +20,7 @@ const {project} = O;
 
 await O.addStyle('style.css');
 
-const ANIM_INTERVAL = 20;
+const ANIM_INTERVAL = 200;
 
 const s = 60;
 
@@ -156,6 +156,8 @@ const onKeyDown = evt => {
       tick = 0;
 
       if(ctrl){
+        if(playing) break;
+
         const levelRaw = getCurrentLevel();
         if(levelRaw === null) break;
 
