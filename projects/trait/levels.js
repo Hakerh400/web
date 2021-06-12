@@ -260,29 +260,43 @@ const levels = {
     });
   },
 
-  '07.'(world, ent, level){
+  '07'(world, ent, level){
     createLayout(world, ent, level, `
       +--------------------+
       |wwwwwwwww           |
       |www   www           |
       |ww      w           |
-      |wwBwBwB w           |
-      |ww wpB ww           |
-      |ww w wuww           |
-      |w      ww           |
-      |w   w  ww           |
-      |wwwwwwwww           |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
-      |                    |
+      |wwuwuwu w           |
+      |ww wpB*ww           |
+      |ww w wuw            |
+      |w     *w            |
+      |w   w *www          |
+      |wwwwwwvw w          |
+      |sk   duwLw          |
+      |k    www^w          |
+      |     w              |
+      |     L              |
+      |     L              |
+      |     w              |
       +--------------------+
     `, grid => {
-      grid.getp(2, 3).createEnt(Entity.Button);
-      grid.getp(4, 3).createEnt(Entity.Button);
-      grid.getp(6, 3).createEnt(Entity.Button);
+      const boxes = [
+        [2, 3],
+        [4, 3],
+        [6, 3],
+      ];
+
+      for(const [x, y] of boxes)
+        grid.getp(x, y).createEnt(Entity.Box, 1);
+
+      const wires = [
+        [3, 3],
+        [5, 3],
+        [6, 8],
+      ];
+
+      for(const [x, y] of wires)
+        grid.getp(x, y).getEnt(Trait.Concrete).createTrait(Trait.Wire);
 
       // 221100010330332322200010112122223300132211002233323301000010112322110103303211222233323301000010112122223332300022111100332011223331110000303321221100303211222233323301111210003320112233323301111210
     });

@@ -421,10 +421,11 @@ class Wall extends Trait{
   render(g){
     const {gs} = g;
 
-    g.fillStyle = '#888';
+    g.fillStyle = '#444';
     g.fillRect(0, 0, 1, 1);
 
-    g.fillStyle = '#444';
+    g.strokeStyle = '#888';
+    g.beginPath();
 
     const w = .45;
     const h = .20;
@@ -433,30 +434,27 @@ class Wall extends Trait{
     const dx = w + space;
     const dy = h + space;
 
-    const x1 = -dx / 1.4 + gs;
+    const x1 = dx * .4 / 1.4 + gs;
     const y1 = -dy / 2 + gs;
 
     let i = 0;
 
-    for(let yy = y1; yy < 1; yy += dy, i++){
-      const offset = dx / 2 * (i % 2);
+    for(let yy = y1;; yy += dy){
+      const offset = dx / 2 * (i++ % 2);
+
+      g.moveTo(0, yy);
+      g.lineTo(1, yy);
 
       for(let xx = x1 + offset; xx < 1; xx += dx){
-        const x = max(xx, 0)
-        const y = max(yy, 0);
-        const x2 = min(xx + w, 1);
-        const y2 = min(yy + h, 1);
-        const ax = x2 - x;
-        const ay = y2 - y;
-
-        if(1 - x2 < space / 5){
-          g.fillRect(x, y, 1 - x, ay);
-          break;
-        }
-        
-        g.fillRect(x, y, ax, ay);
+        g.moveTo(xx, yy - dy);
+        g.lineTo(xx, yy);
       }
+
+      if(yy > 1) break;
     }
+
+    g.stroke();
+    g.strokeStyle = '#000';
   }
 }
 
