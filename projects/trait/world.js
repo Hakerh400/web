@@ -19,16 +19,15 @@ class World extends Serializable{
   init(){
     super.init();
 
-    this.activeRooms = new Set();
-    this.passiveRooms = new Set();
+    this.rooms = new Set();
     this.selectedRoom = null;
-    this.roomStack = [];
 
     this.reqs = new CtorsMap();
     this.notifiedTiles = new Set();
     this.notifiedTilesDelayed = new Set();
     this.notifiedTraits = new CtorsMap();
     this.detachedItems = new Set();
+    this.onReqDoneCbs = [];
 
     this.tickId = null;
     this.baseReqPri = null;
@@ -50,7 +49,13 @@ class World extends Serializable{
     };
   }
 
-  createRoom(gridCtor, gridCtorArgs, mode, builder){
+  onReqDone(cb){
+    this.onReqDoneCbs.push(cb);
+  }
+
+  createRoom(gridCtor, gridCtorArgs, builder){
+    const {rooms} = this;
+
     const grid = new gridCtor(...gridCtorArgs);
     const room = new Room(this, grid);
 
@@ -58,92 +63,29 @@ class World extends Serializable{
     builder(grid);
     grid.exitBuildMode();
 
-    this.passiveRooms.add(room);
-
-    if(mode === 1) this.makeRoomActive(room);
-    else if(mode === 2) this.selectRoom(room);
+    rooms.add(room);
 
     return room;
   }
 
-  pushRoom(gridCtor, gridCtorArgs, builder){
-    if(window.z) zz
-    const {roomStack} = this;
-
-    const room = this.createRoom(gridCtor, gridCtorArgs, 2, builder);
-    roomStack.push(room);
-
-    return room;
-  }
-
-  popRoom(){
-    const {roomStack} = this;
-    assert(roomStack.length >= 2);
-
-    const room = roomStack.pop();
-    this.selectRoom(O.last(roomStack));
-    this.removeRoom(room);
-
-    return room;
-  }
-
-  makeRoomActive(room){
-    assert(room.passive);
-    assert(this.passiveRooms.has(room));
-    assert(!this.activeRooms.has(room));
-    assert(this.selectedRoom !== room);
-
-    this.passiveRooms.delete(room);
-    this.activeRooms.add(room);
-
-    room.active = 1;
-  }
-
-  makeRoomPassive(room){
-    assert(room.active);
-    assert(this.activeRooms.has(room));
-    assert(!this.passiveRooms.has(room));
-
-    if(this.selectedRoom === room)
-      this.selectedRoom = null;
-
-    this.activeRooms.delete(room);
-    this.passiveRooms.add(room);
-
-    room.active = 0;
-  }
-
-  selectRoom(room, passivize=1){
-    if(room.passive) this.makeRoomActive(room);
-    assert(this.activeRooms.has(room));
-
-    if(this.selectedRoom !== null)
-      this.unselectRoom(passivize);
-
+  selectRoom(room){
+    assert(room.valid);
     this.selectedRoom = room;
   }
 
-  unselectRoom(passivize=1){
-    const {selectedRoom} = this;
-    assert(selectedRoom !== null);
-
-    this.selectedRoom = null;
-
-    if(passivize)
-      this.makeRoomPassive(selectedRoom);
-  }
-
   removeRoom(room){
-    assert(room.passive);
-    assert(this.passiveRooms.has(room));
+    const {rooms} = this;
 
-    this.passiveRooms.delete(room);
-    room.world = null;
+    assert(rooms.has(room));
+    assert(room.valid);
+
+    room.remove();
+    rooms.delete(room);
   }
 
   tick(){
     const {
-      activeRooms,
+      rooms,
       selectedRoom,
       evts,
       reqs,
@@ -151,6 +93,7 @@ class World extends Serializable{
       notifiedTilesDelayed,
       notifiedTraits,
       detachedItems,
+      onReqDoneCbs,
     } = this;
 
     assert(selectedRoom !== null);
@@ -166,7 +109,7 @@ class World extends Serializable{
     // O.logb();
     this.tickId = O.obj();
 
-    for(const room of activeRooms)
+    for(const room of rooms)
       for(const trait of room.activeTraits)
         notifiedTraits.add(trait);
 
@@ -213,6 +156,11 @@ class World extends Serializable{
         }
 
         detachedItems.clear();
+
+        for(const cb of onReqDoneCbs)
+          cb();
+
+        onReqDoneCbs.length = 0;
 
         // reqs.clear();
 
@@ -293,6 +241,18 @@ class World extends Serializable{
     this.addReq(new Request.RemoveEntity(this, ent, ent));
   }
 
+  reqCreateRoom(gridCtor, gridCtorArgs, builder){
+    this.addReq(new Request.CreateRoom(this, gridCtor, gridCtorArgs, builder));
+  }
+
+  reqSelectRoom(room){
+    this.addReq(new Request.SelectRoom(this, room));
+  }
+
+  reqRemoveRoom(room){
+    this.addReq(new Request.RemoveRoom(this, room));
+  }
+
   reqPickItem(from, to){
     const {item} = from;
 
@@ -320,14 +280,6 @@ class World extends Serializable{
     this.addReq(new Request.DeleteItem(this, item));
   }
 
-  reqPushRoom(ent, gridCtor, gridCtorArgs, builder){
-    this.addReq(new Request.PushRoom(this, ent, gridCtor, gridCtorArgs, builder));
-  }
-
-  reqPopRoom(cb=null){
-    this.addReq(new Request.PopRoom(this, cb));
-  }
-
   *ser(ser){
     assert(this.selectedRoom !== null);
     assert(this.evts.nav === null);
@@ -338,31 +290,23 @@ class World extends Serializable{
     assert(this.tickId === null);
     assert(this.baseReqPri === null);
 
-    yield [[ser, 'writeSet'], this.activeRooms];
-    yield [[ser, 'writeSet'], this.passiveRooms];
-    yield [[ser, 'writeArr'], this.roomStack];
-    yield [[ser, 'writeSet'], this.notifiedTilesDelayed];
-
+    yield [[ser, 'writeSet'], this.rooms];
     yield [[this.selectedRoom, 'serm'], ser];
+
+    yield [[ser, 'writeSet'], this.notifiedTilesDelayed];
   }
 
   static *deser(ser){
     const world = World.new();
 
-    const activeRooms = world.activeRooms = yield [[ser, 'readSet'], Room];
-    const passiveRooms = world.passiveRooms = yield [[ser, 'readSet'], Room];
-    const roomStack = world.roomStack = yield [[ser, 'readArr'], Room];
-    const notifiedTilesDelayed = world.notifiedTilesDelayed = yield [[ser, 'readSet'], Tile];
+    const rooms = world.rooms = yield [[ser, 'readSet'], Room];
     const selectedRoom = world.selectedRoom = yield [[Room, 'deserm'], ser];
 
-    assert(activeRooms.has(selectedRoom));
+    const notifiedTilesDelayed = world.notifiedTilesDelayed = yield [[ser, 'readSet'], Tile];
 
-    for(const room of activeRooms){
-      room.world = world;
-      room.active = 1;
-    }
+    assert(rooms.has(selectedRoom));
 
-    for(const room of passiveRooms)
+    for(const room of rooms)
       room.world = world;
 
     return world;

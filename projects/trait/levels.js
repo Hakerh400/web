@@ -304,11 +304,12 @@ const levels = {
 };
 
 const createLayout = (world, ent, level, layoutRaw, cb=null) => {
-  world.reqPushRoom(ent, Grid.Rectangle, [w, h], grid => {
+  world.reqCreateRoom(Grid.Rectangle, [w, h], grid => {
+    const {room} = grid;
     const layout = O.sanl(O.ftext(layoutRaw));
 
     const csEnts = {
-      p: [Entity.Player],
+      p: [Entity.Player, ent],
       b: [Entity.Box],
       B: [Entity.Box, 1],
       w: [Entity.Wall],
@@ -363,6 +364,8 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
 
     if(cb !== null)
       cb(grid);
+    
+    world.selectedRoom = room;
   });
 };
 

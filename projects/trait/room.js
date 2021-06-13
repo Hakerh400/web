@@ -11,8 +11,6 @@ const Serializable = require('./serializable');
 const flags = require('./flags');
 
 class Room extends Serializable{
-  active = 0;
-
   init(){
     super.init();
 
@@ -31,11 +29,19 @@ class Room extends Serializable{
     return this.world !== null;
   }
 
-  get passive(){ return !this.active; }
-  set passive(a){ this.active = !a; }
+  get traits(){ return this.grid.traits; }
 
   getTile(pos){
     return this.grid.get(pos);
+  }
+
+  remove(){
+    assert(this.valid);
+
+    for(const trait of this.traits.vals)
+      trait.remove(1);
+
+    this.world = null;
   }
 
   addActiveTrait(trait){

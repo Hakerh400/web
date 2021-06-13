@@ -215,10 +215,10 @@ class Solid extends Entity{
 }
 
 class Player extends Solid{
-  new(tile){
+  new(tile, levelEnt){
     super.new(tile);
 
-    this.createTrait(Trait.Player);
+    this.createTrait(Trait.Player, levelEnt);
   }
 }
 

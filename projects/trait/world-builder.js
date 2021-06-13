@@ -38,7 +38,7 @@ const initMainRoom = world => {
   const w = 10;
   const h = 12;
 
-  const room = world.pushRoom(Grid.Rectangle, [w, h], grid => {
+  const room = world.createRoom(Grid.Rectangle, [w, h], grid => {
     const putStr = (str, x, y, traitCtor, upper=0) => {
       if(upper) str = str.toUpperCase();
 
@@ -75,6 +75,8 @@ const initMainRoom = world => {
       }
     }
   });
+
+  world.selectedRoom = room;
 };
 
 const saveWorld = world => {

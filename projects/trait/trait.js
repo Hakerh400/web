@@ -98,10 +98,10 @@ class Trait extends Inspectable{
 
   render(g){}
   onCreate(){}
-  onRemove(){}
+  onRemove(rm){}
 
-  remove(){
-    this.onRemove();
+  remove(rm=0){
+    this.onRemove(rm);
 
     const {world, item} = this;
 
@@ -206,7 +206,8 @@ class ActiveTrait extends Trait{
     this.room.addActiveTrait(this);
   }
 
-  onRemove(){
+  onRemove(rm){
+    super.onRemove(rm);
     this.room.removeActiveTrait(this);
   }
 }
@@ -232,7 +233,9 @@ class NavigationTarget extends Trait{
     world.reqRemoveEnt(navTargetEnt);
   }
 
-  onRemove(){
+  onRemove(rm){
+    super.onRemove(rm);
+
     const {world, src} = this;
     const ctor = NavigationTarget;
 
@@ -257,13 +260,22 @@ class NavigationTarget extends Trait{
 }
 
 class Player extends ActiveTrait{
+  new(ent, levelEnt){
+    super.new(ent);
+
+    assert(levelEnt instanceof Entity);
+    this.levelEnt = levelEnt;
+  }
+
   init(){
     super.init();
     this.layer = layers.Object;
   }
 
-  onRemove(){
-    super.onRemove();
+  onRemove(rm){
+    super.onRemove(rm);
+    if(rm) return;
+
     this.restart();
   }
 
@@ -360,7 +372,7 @@ class Player extends ActiveTrait{
 
     if(!world.evts.exit) return;
 
-    world.reqPopRoom();
+    exitToMenu(this.menu);
   }
 
   pickOrDropItem(n){
@@ -386,17 +398,32 @@ class Player extends ActiveTrait{
   }
 
   restart(){
-    const {world} = this;
+    const {world, levelEnt} = this;
 
-    world.reqPopRoom((grid, ent) => {
-      if(!ent) return;
+    exitToMenu(this.menu, () => {
+      if(!levelEnt) return;
 
-      const {tile} = ent;
+      const {tile} = levelEnt;
       const btn = tile.getTrait(Button);
       if(!btn) return;
 
       btn.exec();
     });
+  }
+
+  get menu(){
+    const {levelEnt} = this;
+    if(!(levelEnt && levelEnt.valid)) return null;
+
+    return levelEnt.room;
+  }
+
+  *serData(ser){
+    yield [[this.levelEnt], 'ser'];
+  }
+
+  *deserData(ser){
+    this.levelEnt = [[Entity, 'deser'], 'ser'];
   }
 }
 
@@ -661,19 +688,23 @@ class Diamond extends Trait{
 
     const {world, tile, level} = this;
 
-    if(!tile.hasTrait(Player)) return;
+    const player = tile.getTrait(Player);
+    if(!player) return;
 
-    world.reqPopRoom((grid, ent) => {
-      if(!ent) return;
+    const {menu, levelEnt} = player;
 
+    exitToMenu(menu, () => {
+      if(!levelEnt) return;
+
+      const {grid} = menu;
       const {w, h} = grid;
-      const {x, y} = ent.pos;
+      const {x, y} = levelEnt.pos;
 
       const i = x + y * w + 1;
       const x1 = i % w;
       const y1 = i / w | 0;
 
-      const text = ent.getTrait(Text);
+      const text = levelEnt.getTrait(Text);
       if(!text) return;
 
       const {str} = text;
@@ -1058,7 +1089,8 @@ class ElectronicBase extends Trait{
     ent.createTrait(Electronic);
   }
 
-  onRemove(){
+  onRemove(rm){
+    super.onRemove(rm);
     removeTraits(this.ent, Electronic);
   }
 }
@@ -1315,7 +1347,8 @@ class LogicGateBase extends DirectionalTrait{
     ent.createTrait(Electronic);
   }
 
-  onRemove(){
+  onRemove(rm){
+    super.onRemove(rm);
     removeTraits(this.ent, Electronic);
   }
 
@@ -1556,7 +1589,8 @@ class Tail extends Trait{
     this.potentialTargets = new Set();
   }
 
-  onRemove(){
+  onRemove(rm){
+    super.onRemove(rm);
     this.removeTarget();
   }
 
@@ -1806,6 +1840,25 @@ const removeEnts = (tile, traitCtor) => {
 const removeTraits = (ent, traitCtor) => {
   for(const trait of ent.getTraits(traitCtor))
     trait.remove();
+};
+
+const exitToMenu = (menu, cb=null) => {
+  const {world} = menu;
+  const {rooms} = world;
+
+  world.reqSelectRoom(menu);
+
+  for(const room of world.rooms){
+    if(room === menu) continue;
+    world.reqRemoveRoom(room);
+  }
+
+  world.onReqDone(() => {
+    if(O.uni(rooms) !== menu) return;
+    if(cb === null) return;
+
+    cb();
+  });
 };
 
 const handlersArr = [

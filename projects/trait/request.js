@@ -355,55 +355,117 @@ class DeleteItem extends Request{
   }
 }
 
-class PushRoom extends Request{
+// class PushRoom extends Request{
+//   static exec(world, reqs){
+//     if(reqs.size !== 1) O.noimpl();
+//
+//     const req = O.fst(reqs);
+//     const {ent, gridCtor, gridCtorArgs, builder} = req;
+//
+//     if(ent !== null && ent.valid)
+//       ent.createTrait(Trait.Entered);
+//
+//     world.pushRoom(gridCtor, gridCtorArgs, builder);
+//   }
+//
+//   constructor(world, ent, gridCtor, gridCtorArgs, builder){
+//     super(world);
+//
+//     if(ent !== null)
+//       assert(ent instanceof Entity);
+//
+//     this.ent = ent;
+//     this.gridCtor = gridCtor;
+//     this.gridCtorArgs = gridCtorArgs;
+//     this.builder = builder;
+//   }
+// }
+//
+// class PopRoom extends Request{
+//   static exec(world, reqs){
+//     if(reqs.size !== 1) O.noimpl();
+//
+//     const req = O.fst(reqs);
+//     const {cb} = req;
+//
+//     world.popRoom();
+//
+//     const {grid} = world.selectedRoom;
+//     const ent = grid.getEnt(Trait.Entered);
+//
+//     if(ent !== null)
+//       ent.getTrait(Trait.Entered).remove();
+//
+//     if(cb !== null)
+//       cb(grid, ent);
+//   }
+//
+//   constructor(world, cb=null){
+//     super(world);
+//
+//     this.cb = cb;
+//   }
+// }
+
+class CreateRoom extends Request{
   static exec(world, reqs){
-    if(reqs.size !== 1) O.noimpl();
-
-    const req = O.fst(reqs);
-    const {ent, gridCtor, gridCtorArgs, builder} = req;
-
-    if(ent !== null && ent.valid)
-      ent.createTrait(Trait.Entered);
-
-    world.pushRoom(gridCtor, gridCtorArgs, builder);
+    for(const req of reqs){
+      const {gridCtor, gridCtorArgs, builder} = req;
+      world.createRoom(gridCtor, gridCtorArgs, builder);
+    }
   }
 
-  constructor(world, ent, gridCtor, gridCtorArgs, builder){
+  constructor(world, gridCtor, gridCtorArgs, builder){
     super(world);
 
-    if(ent !== null)
-      assert(ent instanceof Entity);
-
-    this.ent = ent;
     this.gridCtor = gridCtor;
     this.gridCtorArgs = gridCtorArgs;
     this.builder = builder;
   }
 }
 
-class PopRoom extends Request{
+class SelectRoom extends Request{
   static exec(world, reqs){
-    if(reqs.size !== 1) O.noimpl();
+    const candidates = new Set();
 
-    const req = O.fst(reqs);
-    const {cb} = req;
+    for(const req of reqs){
+      const {room} = req;
+      if(!room.valid) continue;
 
-    world.popRoom();
+      candidates.add(room);
+    }
 
-    const {grid} = world.selectedRoom;
-    const ent = grid.getEnt(Trait.Entered);
+    const room = O.uni(candidates);
+    if(!room) return;
 
-    if(ent !== null)
-      ent.getTrait(Trait.Entered).remove();
-
-    if(cb !== null)
-      cb(grid, ent);
+    world.selectRoom(room);
   }
 
-  constructor(world, cb=null){
+  constructor(world, room){
     super(world);
 
-    this.cb = cb;
+    this.room = room;
+  }
+}
+
+class RemoveRoom extends Request{
+  static exec(world, reqs){
+    const {selectedRoom} = world;
+
+    for(const req of reqs){
+      const {room} = req;
+
+      if(!room.valid) continue;
+      if(room === selectedRoom) continue;
+
+      world.removeRoom(room);
+    }
+  }
+
+  constructor(world, room){
+    super(world);
+
+    this.room = room;
   }
 }
 
@@ -417,8 +479,12 @@ const ctorsArr = [
   CreateEntity,
   MoveEntity,
 
-  PushRoom,
-  PopRoom,
+  // PushRoom,
+  // PopRoom,
+
+  CreateRoom,
+  SelectRoom,
+  RemoveRoom,
 ];
 
 const ctorsObj = ctorsPri(ctorsArr);
