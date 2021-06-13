@@ -269,7 +269,7 @@ const levels = {
       |wwuwuwu w           |
       |ww wpB*ww           |
       |ww w wuw            |
-      |w     *w            |
+      |w  h  *w            |
       |w   w *www          |
       |wwwwwwvw w          |
       |sk   duwLw          |
@@ -297,8 +297,6 @@ const levels = {
 
       for(const [x, y] of wires)
         grid.getp(x, y).getEnt(Trait.Concrete).createTrait(Trait.Wire);
-
-      // 221100010330332322200010112122223300132211002233323301000010112322110103303211222233323301000010112122223332300022111100332011223331110000303321221100303211222233323301111210003320112233323301111210
     });
   },
 };
@@ -364,7 +362,7 @@ const createLayout = (world, ent, level, layoutRaw, cb=null) => {
 
     if(cb !== null)
       cb(grid);
-    
+
     world.selectedRoom = room;
   });
 };

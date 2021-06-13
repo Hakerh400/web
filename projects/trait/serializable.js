@@ -24,28 +24,6 @@ class Serializable extends SerializableBase{
     return O.rec([this, 'deserm'], ser);
   }
 
-  static *deserm(ser){
-    const ctor = this.baseCtor;
-    const arr = ser.getCtorArr(ctor);
-    const len = arr.length;
-    
-    if(!ser.read()){
-      assert(len !== 0);
-
-      const index = ser.read(len);
-      assert(index < len);
-
-      return arr[index];
-    }
-
-    const obj = yield [[ctor, 'deser'], ser];
-    ser.addObj(obj);
-
-    return obj;
-  }
-
-  static *deser(ser){ O.virtual('deser', 1); }
-
   static *serPri(ser){
     const {pri, ctorsNum} = this;
 
@@ -165,7 +143,28 @@ class Serializable extends SerializableBase{
 
   }
 
+  static *deserm(ser){
+    const ctor = this.baseCtor;
+    const arr = ser.getCtorArr(ctor);
+    const len = arr.length;
+    
+    if(!ser.read()){
+      assert(len !== 0);
+
+      const index = ser.read(len);
+      assert(index < len);
+
+      return arr[index];
+    }
+
+    const obj = yield [[ctor, 'deser'], ser];
+    ser.addObj(obj);
+
+    return obj;
+  }
+
   *ser(ser){ O.virtual('ser'); }
+  static *deser(ser){ O.virtual('deser', 1); }
 
   *serPri(ser){ return O.tco([this.ctor, 'serPri'], ser); }
   *serCtor(ser){ return O.tco([this.ctor, 'serCtor'], ser); }

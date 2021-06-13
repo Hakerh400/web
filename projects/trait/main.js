@@ -36,6 +36,7 @@ const {g} = O.ceCanvas(1);
 const infoContainer = O.ceDiv(O.body, 'info hidden');
 
 const world = worldBuilder.getWorld();
+const menu = world.mainRoom;
 
 const moves = flags.Record ? [] : null;
 let recording = 0;
@@ -368,18 +369,21 @@ const render = () => {
 };
 
 const getCurrentLevel = () => {
-  const {roomStack} = world;
-  const menu = O.fst(roomStack);
-  if(!menu) return null;
+  for(const room of world.rooms){
+    const {grid} = room;
 
-  const {grid} = menu;
-  const entered = grid.getEnt(Trait.Entered);
-  if(!entered) return null;
+    for(const player of grid.getTraits(Trait.Player)){
+      const {levelEnt} = player;
+      if(!levelEnt?.valid) return null;
 
-  const text = entered.getTrait(Trait.Text);
-  if(!text) return null;
+      const text = levelEnt.getTrait(Trait.Text);
+      if(!text) return null;
 
-  return text.str;
+      return text.str;
+    }
+  }
+
+  return null;
 };
 
 const setInfo = info => {

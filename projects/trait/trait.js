@@ -31,20 +31,22 @@ class Trait extends Inspectable{
     this.itemRaw = null;
   }
 
-  new(ent){
+  new(ent, dir=0){
     super.new();
 
     this.ent = ent;
+    this.baseDir = dir;
+
     this.onCreate();
   }
 
   get valid(){
     return (
-      this.ent !== null &&
-      this.tile !== null &&
-      this.grid !== null &&
-      this.room !== null &&
-      this.world !== null
+      this.ent?.
+      tile?.
+      grid?.
+      room?.
+      world
     );
   }
 
@@ -53,6 +55,10 @@ class Trait extends Inspectable{
   get grid(){ return this.ent.grid; }
   get room(){ return this.ent.room; }
   get world(){ return this.ent.world; }
+
+  get dir(){
+    return this.ent.dir + this.baseDir & 3;
+  }
 
   get item(){
     const item = this.itemRaw;
@@ -83,6 +89,13 @@ class Trait extends Inspectable{
 
     this.itemRaw = null;
     itemPrev.trait = null;
+  }
+
+  adj(dir){
+    const {tile} = this;
+
+    if(dir === null) return tile;
+    return tile.adj(this.dir + dir & 3);
   }
 
   notify(delay){ this.ent.notify(delay); }
@@ -120,6 +133,8 @@ class Trait extends Inspectable{
 
     yield [[this, 'serCtor'], ser];
 
+    ser.write(this.baseDir, 4);
+
     if(layer === null){
       ser.write(0);
     }else{
@@ -131,7 +146,7 @@ class Trait extends Inspectable{
       ser.write(0);
     }else{
       ser.write(1);
-      yield [[item, 'ser'], ser];
+      yield [[item, 'serm'], ser];
     }
 
     yield [[this, 'serData'], ser];
@@ -140,15 +155,17 @@ class Trait extends Inspectable{
   static *deser(ser){
     const ctor = yield [[this, 'deserCtor'], ser];
     const trait = ctor.new();
+    
+    ent.baseDir = ser.read(4);
 
     const layer = ctor.layer = ser.read() ?
       ser.read(layersNum) : null;
 
     const item = trait.itemRaw = ser.read() ?
-      yield [[Item, 'deser'], ser] : null;
+      yield [[Item, 'deserm'], ser] : null;
 
     if(item !== null)
-      item.trait = this;
+      item.trait = trait;
 
     yield [[trait, 'deserData'], ser];
 
@@ -162,7 +179,7 @@ class Trait extends Inspectable{
   static *deserEntGlobData(ser, data){ O.virtual('deserEntGlobData'); }
 
   *serEntLocData(ser, data){ O.virtual('serEntLocData'); }
-  *deserEntLocData(ser, data){ O.virtual('deserEntLocData'); }
+  // *deserEntLocData(ser){ O.virtual('deserEntLocData'); }
 
   *inspectData(){
     return [];
@@ -186,6 +203,7 @@ class Trait extends Inspectable{
     }
 
     return new DetailedInfo(`trait :: ${this.ctor.name}`, [
+      new BasicInfo(`baseDir = ${this.inspectDir(this.dir)}`),
       layerInfo,
       itemInfo,
       new DetailedInfo('data :: TraitData', yield [[this, 'inspectData']]),
@@ -253,8 +271,8 @@ class NavigationTarget extends Trait{
 
   *inspectData(){
     return [
-      new BasicInfo(`direct = ${inspectBool(this.direct)} :: Bool`),
-      new BasicInfo(`strong = ${inspectBool(this.strong)} :: Bool`),
+      new BasicInfo(`direct = ${this.inspectBool(this.direct)}`),
+      new BasicInfo(`strong = ${this.inspectBool(this.strong)}`),
     ];
   }
 }
@@ -327,11 +345,12 @@ class Player extends ActiveTrait{
     if(!world.evts.applyItem) return;
 
     const dir = world.evts.nav;
-    if(dir === null) return;
 
-    const adj = tile.adj(dir);
+    const target = dir !== null ?
+      this.adj(dir) :
+      tile;
 
-    item.apply(adj);
+    item.apply(target);
   }
 
   navigate(n){
@@ -343,7 +362,7 @@ class Player extends ActiveTrait{
     const dir = world.evts.nav;
     if(dir === null) return;
 
-    const tileNew = tile.adj(dir);
+    const tileNew = this.adj(dir);
     if(tileNew === null) return;
 
     moveEnt(ent, tileNew, 1, 1);
@@ -413,17 +432,17 @@ class Player extends ActiveTrait{
 
   get menu(){
     const {levelEnt} = this;
-    if(!(levelEnt && levelEnt.valid)) return null;
+    if(!levelEnt?.valid) return null;
 
     return levelEnt.room;
   }
 
   *serData(ser){
-    yield [[this.levelEnt], 'ser'];
+    yield [[this.levelEnt, 'serm'], ser];
   }
 
   *deserData(ser){
-    this.levelEnt = [[Entity, 'deser'], 'ser'];
+    this.levelEnt = yield [[Entity, 'deserm'], ser];
   }
 }
 
@@ -1049,39 +1068,6 @@ class Swap extends Trait{
   }
 }
 
-class DirectionalTrait extends Trait{
-  new(ent, dir){
-    super.new(ent);
-
-    this.dir = dir;
-  }
-
-  rendert(g){ O.virtual('rendert'); }
-
-  render(g){
-    g.save(1);
-    g.rotate(.5, .5, (-this.dir & 3) * pih);
-
-    this.rendert(g);
-
-    g.restore();
-  }
-
-  *serData(ser){
-    ser.write(this.dir, 4);
-  }
-
-  *deserData(ser){
-    this.dir = ser.read(4);
-  }
-
-  *inspectData(){
-    return [
-      new BasicInfo(`dir = ${inspectDir(this.dir)} :: Direction`),
-    ];
-  }
-}
-
 class ElectronicBase extends Trait{
   new(ent){
     super.new(ent);
@@ -1284,7 +1270,7 @@ class Wire extends WireBase{
 
   *inspectData(){
     return [
-      new BasicInfo(`active = ${inspectBool(this.active)} :: Bool`),
+      new BasicInfo(`active = ${this.inspectBool(this.active)}`),
     ];
   }
 }
@@ -1326,8 +1312,8 @@ class WireOverlap extends WireBase{
 
   *inspectData(){
     return [
-      new BasicInfo(`activeV = ${inspectBool(this.activeV)} :: Bool`),
-      new BasicInfo(`activeH = ${inspectBool(this.activeH)} :: Bool`),
+      new BasicInfo(`activeV = ${this.inspectBool(this.activeV)}`),
+      new BasicInfo(`activeH = ${this.inspectBool(this.activeH)}`),
     ];
   }
 }
@@ -1340,7 +1326,7 @@ class LogicGate extends ActiveTrait{
   }
 }
 
-class LogicGateBase extends DirectionalTrait{
+class LogicGateBase extends Trait{
   new(ent, dir){
     super.new(ent, dir);
 
@@ -1395,7 +1381,7 @@ class LogicGateBase extends DirectionalTrait{
 }
 
 class Inverter extends LogicGateBase{
-  rendert(g){
+  render(g){
     g.fillStyle = '#fff';
 
     g.beginPath();
@@ -1418,7 +1404,7 @@ class Inverter extends LogicGateBase{
 }
 
 class Disjunction extends LogicGateBase{
-  rendert(g){
+  render(g){
     g.fillStyle = '#fff';
 
     g.beginPath();
@@ -1438,7 +1424,7 @@ class Disjunction extends LogicGateBase{
 }
 
 class Conjunction extends LogicGateBase{
-  rendert(g){
+  render(g){
     g.fillStyle = '#fff';
 
     g.beginPath();
@@ -1513,14 +1499,14 @@ class DigitalDoor extends Trait{
   }
 }
 
-class OneWay extends DirectionalTrait{
+class OneWay extends Trait{
   init(){
     super.init();
 
     this.layer = layers.Wall;
   }
 
-  rendert(g){
+  render(g){
     g.globalAlpha = .3;
     g.fillStyle = '#2fa';
     g.fillRect(0, 0, 1, 1);
@@ -1728,7 +1714,7 @@ class Tail extends Trait{
 
     if(target !== null){
       ser.write(1);
-      yield [[target, 'ser'], ser];
+      yield [[target, 'serm'], ser];
     }else{
       ser.write(0);
     }
@@ -1736,7 +1722,7 @@ class Tail extends Trait{
 
   *deserData(ser){
     if(ser.read())
-      this.target = [[Entity, 'deser'], ser];
+      this.target = [[Entity, 'deserm'], ser];
   }
 }
 
@@ -1785,19 +1771,6 @@ const calcTargetTile = ent => {
   return O.fst(targets).tile;
 };
 
-const inspectBool = val => {
-  return val ? 'True' : 'False';
-};
-
-const inspectDir = dir => {
-  return [
-    'Up',
-    'Right',
-    'Down',
-    'Left',
-  ][dir];
-};
-
 const drawCirc = (g, x, y, r, col=null) => {
   if(col !== null)
     g.fillStyle = col;
@@ -1843,6 +1816,8 @@ const removeTraits = (ent, traitCtor) => {
 };
 
 const exitToMenu = (menu, cb=null) => {
+  if(!menu) return;
+
   const {world} = menu;
   const {rooms} = world;
 
@@ -1954,7 +1929,6 @@ const ctorsArr = [
 
   Text,
   OneWay,
-  DirectionalTrait,
 ];
 
 const ctorsObj = ctorsPri(ctorsArr);

@@ -11,6 +11,9 @@ const {
   DetailedInfo,
 } = info;
 
+const {min, max} = Math;
+const {pi, pih, pi2} = O;
+
 class Entity extends Inspectable{
   static get baseCtor(){ return Entity; }
 
@@ -22,10 +25,11 @@ class Entity extends Inspectable{
     this.traits = new CtorsMap();
   }
 
-  new(tile){
+  new(tile, dir=0){
     super.new();
     
     this.tile = tile;
+    this.dir = dir;
   }
 
   get valid(){
@@ -101,6 +105,9 @@ class Entity extends Inspectable{
   }
 
   render(g){
+    g.save(1);
+    g.rotate(.5, .5, (-this.dir & 3) * pih);
+
     const traits = [...this.traits.vals].sort((t1, t2) => {
       const layer1 = t1.layer;
       const layer2 = t2.layer;
@@ -116,6 +123,8 @@ class Entity extends Inspectable{
 
     for(const trait of traits)
       trait.render(g);
+
+    g.restore();
   }
 
   notify(delay){ this.tile.notify(delay); }
@@ -137,6 +146,8 @@ class Entity extends Inspectable{
   *ser(ser){
     const {globData, locData} = this;
 
+    ser.write(this.dir, 4);
+
     ser.writeInt(globData.size);
     
     for(const [ctor, data] of globData){
@@ -156,6 +167,8 @@ class Entity extends Inspectable{
 
   static *deser(ser){
     const ent = Entity.new();
+
+    ent.dir = ser.read(4);
 
     const globDataSize = ser.readInt();
     const globData = ent.globData = new Map();
@@ -189,6 +202,7 @@ class Entity extends Inspectable{
 
   *inspect(){
     return new DetailedInfo('ent :: Entity', [
+      new BasicInfo(`dir = ${this.inspectDir(this.dir)}`),
       new DetailedInfo('traits :: Set Trait', yield [O.mapr, this.traits.vals, function*(trait){
         return O.tco([trait, 'inspect']);
       }]),
@@ -319,15 +333,15 @@ class DigitalDoor extends Entity{
 
 class OneWay extends Entity{
   new(tile, dir){
-    super.new(tile);
+    super.new(tile, dir);
 
-    this.createTrait(Trait.OneWay, dir);
+    this.createTrait(Trait.OneWay);
   }
 }
 
 class LogicGate extends Entity{
-  new(tile){
-    super.new(tile);
+  new(tile, dir){
+    super.new(tile, dir);
 
     this.createTrait(Trait.LogicGate);
   }
@@ -335,30 +349,30 @@ class LogicGate extends Entity{
 
 class Inverter extends LogicGate{
   new(tile, dir){
-    super.new(tile);
+    super.new(tile, dir);
 
-    this.createTrait(Trait.Inverter, dir);
+    this.createTrait(Trait.Inverter);
   }
 }
 
 class Disjunction extends LogicGate{
   new(tile, dir){
-    super.new(tile);
+    super.new(tile, dir);
 
-    this.createTrait(Trait.Disjunction, dir);
+    this.createTrait(Trait.Disjunction);
   }
 }
 
 class Conjunction extends LogicGate{
   new(tile, dir){
-    super.new(tile);
+    super.new(tile, dir);
 
-    this.createTrait(Trait.Conjunction, dir);
+    this.createTrait(Trait.Conjunction);
   }
 }
 
 class Water extends Entity{
-  new(tile, dir){
+  new(tile){
     super.new(tile);
 
     this.createTrait(Trait.Water);

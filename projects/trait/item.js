@@ -29,12 +29,12 @@ class Item extends Inspectable{
   get valid(){
     return (
       !this.deleted &&
-      this.trait !== null &&
-      this.ent !== null &&
-      this.tile !== null &&
-      this.grid !== null &&
-      this.room !== null &&
-      this.world !== null
+      this.trait?.
+      ent?.
+      tile?.
+      grid?.
+      room?.
+      world
     );
   }
 
@@ -125,9 +125,20 @@ class Hammer extends Item{
     if(!tile) return;
 
     const solid = tile.getEnt(Trait.Solid);
-    if(!solid) return;
 
-    world.reqRemoveEnt(solid);
+    if(solid){
+      world.reqRemoveEnt(solid);
+      world.reqDeleteItem(this);
+      return;
+    }
+
+    const oneWay = tile.getTrait(Trait.OneWay);
+    if(!oneWay) return;
+
+    const dir = this.trait.tile.adj2dir(tile);
+    if(oneWay.dir !== (dir + 2 & 3)) return;
+
+    world.reqRemoveEnt(oneWay.ent);
     world.reqDeleteItem(this);
   }
 }

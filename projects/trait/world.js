@@ -20,6 +20,7 @@ class World extends Serializable{
     super.init();
 
     this.rooms = new Set();
+    this.mainRoom = null;
     this.selectedRoom = null;
 
     this.reqs = new CtorsMap();
@@ -64,6 +65,8 @@ class World extends Serializable{
     grid.exitBuildMode();
 
     rooms.add(room);
+
+    this.mainRoom ??= room;
 
     return room;
   }
@@ -281,6 +284,7 @@ class World extends Serializable{
   }
 
   *ser(ser){
+    assert(this.mainRoom !== null);
     assert(this.selectedRoom !== null);
     assert(this.evts.nav === null);
     assert(this.notifiedTiles.size === 0);
@@ -291,6 +295,7 @@ class World extends Serializable{
     assert(this.baseReqPri === null);
 
     yield [[ser, 'writeSet'], this.rooms];
+    yield [[this.mainRoom, 'serm'], ser];
     yield [[this.selectedRoom, 'serm'], ser];
 
     yield [[ser, 'writeSet'], this.notifiedTilesDelayed];
@@ -300,14 +305,18 @@ class World extends Serializable{
     const world = World.new();
 
     const rooms = world.rooms = yield [[ser, 'readSet'], Room];
+    const mainRoom = world.mainRoom = yield [[Room, 'deserm'], ser];
     const selectedRoom = world.selectedRoom = yield [[Room, 'deserm'], ser];
 
     const notifiedTilesDelayed = world.notifiedTilesDelayed = yield [[ser, 'readSet'], Tile];
 
+    assert(rooms.has(mainRoom));
     assert(rooms.has(selectedRoom));
 
     for(const room of rooms)
       room.world = world;
+
+    world.mainRoom = O.fst(rooms);
 
     return world;
   }
