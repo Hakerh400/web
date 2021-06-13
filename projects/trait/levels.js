@@ -267,12 +267,12 @@ const levels = {
       |www   www           |
       |ww      w           |
       |wwuwuwu w           |
-      |ww wpB*ww           |
+      |ww w B*ww           |
       |ww w wuw            |
       |w     *w            |
       |w   w *www          |
       |wwwwwwvw w          |
-      |sk   duwLw          |
+      |sk  pduwLw          |
       |k    www^w          |
       |     w              |
       |     L              |
