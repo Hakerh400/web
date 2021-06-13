@@ -480,8 +480,8 @@ class Wall extends Trait{
     const dx = w + space;
     const dy = h + space;
 
-    const x1 = dx * .4 / 1.4 + gs;
-    const y1 = -dy / 2 + gs;
+    const x1 = dx * .2 + gs;
+    const y1 = -dy / 2;
 
     let i = 0;
 
