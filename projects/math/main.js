@@ -8,15 +8,15 @@ await O.addStyle('style.css');
 const cssHidden = 'hidden';
 
 const mainDiv = O.ceDiv(O.body, 'main');
-const mainFrame = O.ceDiv(mainDiv, 'main-frame');
-const locationBar = O.ceDiv(mainFrame, 'location-bar');
-const contentDiv = O.ceDiv(mainFrame, 'content');
-const consoleDiv = O.ceDiv(mainDiv, 'console');
+const mainFrame = O.ceDiv(mainDiv, 'frame main-frame');
+const locationBar = O.ceDiv(mainFrame, 'header location-bar');
+const contentDiv = O.ceDiv(mainFrame, 'content main-content');
+const consoleDiv = O.ceDiv(mainDiv, 'frame console');
+const consoleInput = O.ceDiv(consoleDiv, 'header console-input');
+const consoleContent = O.ceDiv(consoleDiv, 'content console-content');
 
 const main = () => {
-  hide(consoleDiv);
-  setLocation('/systems');
-  clearContent();
+  setLocation('/');
 
   aels();
 };
@@ -37,7 +37,7 @@ const aels = () => {
 
     if(flags === 4){
       if(code === 'KeyN'){
-        O.pd(evt);;
+        O.pd(evt);
         log(fs.readdir('/'));
         return;
       }
@@ -45,10 +45,6 @@ const aels = () => {
       return;
     }
   });
-};
-
-const clearContent = () => {
-  clear(contentDiv);
 };
 
 const clear = elem => {
