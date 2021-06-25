@@ -17,7 +17,6 @@ const consoleContent = O.ceDiv(consoleDiv, 'content console-content');
 
 const main = () => {
   setLocation('/');
-
   aels();
 };
 
