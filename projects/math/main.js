@@ -1,20 +1,31 @@
 'use strict';
 
 const {min, max} = Math;
+const {project} = O;
 
 const {g} = O.ceCanvas(1);
 
 const ws = 12;
 const hs = 25;
-const offset = 15;
+const canvasOffset = 15;
+const tabSize = 2;
 
 const cols = {
   bg: 'white',
   text: 'black',
 };
 
-const lines = [];
+const specialChars = [
+  ['lam', 'λ'],
+  ['all', '∀'],
+  ['exi', '∃'],
+];
 
+const openParenChars = '([{';
+const closedParenChars = ')]}';
+const strLiteralDelimChars = '\'"`';
+
+let lines = [];
 let cx = 0;
 let cy = 0;
 let cxPrev = 0;
@@ -22,15 +33,17 @@ let cxPrev = 0;
 let w, h;
 
 const main = () => {
+  if(O.has(localStorage, project))
+    load();
+
   initCanvas();
   aels();
 
   onResize();
-  render();
 };
 
 const initCanvas = () => {
-  g.translate(offset, offset);
+  g.translate(canvasOffset, canvasOffset);
   g.scale(ws, hs);
 
   g.textBaseline = 'middle';
@@ -50,10 +63,25 @@ const onKeyDown = evt => {
   const {ctrlKey, shiftKey, altKey, code} = evt;
   const flags = (ctrlKey << 2) | (shiftKey << 1) | altKey;
 
-  flags0: if(flags === 0){
-    if(/^Arrow|^(?:Backspace|Home|End|Delete)$/.test(code)){
-      processKey(code);
-      break flags0;
+  flagCases: {
+    noFlags: if(flags === 0){
+      if(/^Arrow|^(?:Backspace|Home|End|Delete|Tab)$/.test(code)){
+        O.pd(evt);
+        processKey(code);
+        break noFlags;
+      }
+
+      break flagCases;
+    }
+
+    ctrl: if(flags === 4){
+      if(code === 'KeyS'){
+        O.pd(evt);
+        save();
+        break ctrl;
+      }
+
+      break flagCases;
     }
   }
 
@@ -64,17 +92,6 @@ const onKeyPress = evt => {
   const {key} = evt;
 
   processKey(key);
-
-  if(key.length === 1){
-    const openParens = '([{';
-    const openParenType = openParens.indexOf(key);
-
-    if(openParenType !== -1){
-      processKey(')]}'[openParenType]);
-      processKey('ArrowLeft');
-    }
-  }
-
   render();
 };
 
@@ -87,20 +104,35 @@ const processKey = key => {
   const linesNum = lines.length;
   const linesNum1 = linesNum - 1;
 
+  const tSize = getTabSize(line);
+  const tStr = getTabStr(line);
+
   const p1 = line.slice(0, cx);
   const p2 = line.slice(cx);
 
   if(key === 'Enter'){
     lines[cy] = p1;
-    lines.splice(++cy, 0, p2);
-    setCx(0);
+
+    if(cx !== 0){
+      const char = p1.slice(-1);
+      const pt = getOpenParenType(char);
+
+      if(pt !== null && p2.startsWith(closedParenChars[pt])){
+        lines.splice(++cy, 0, tStr + tabStr, tStr + p2);
+        setCx(tSize + tabSize);
+        return;
+      }
+    }
+
+    lines.splice(++cy, 0, tStr + p2);
+    setCx(tSize);
     return;
   }
 
   if(key === 'Backspace'){
     if(cx === 0){
       if(cy === 0){
-        setCx(0);
+        // setCx();
         return;
       }
 
@@ -110,15 +142,18 @@ const processKey = key => {
       return;
     }
 
+    const cp = getCorrespondingClosedParen(line[cx - 1]);
+    const p2New = cp && p2.startsWith(cp) ? p2.slice(1) : p2;
+
     decCx();
-    lines[cy] = p1.slice(0, -1) + p2;
+    lines[cy] = p1.slice(0, -1) + p2New;
     return;
   }
 
   if(key === 'Delete'){
     if(cx === lineLen){
       if(cy === linesNum1){
-        setCx();
+        // setCx();
         return;
       }
 
@@ -131,12 +166,18 @@ const processKey = key => {
   }
 
   if(key === 'Home'){
-    setCx(0);
+    setCx(cx !== tSize ? tSize : 0);
     return;
   }
 
   if(key === 'End'){
     setCx(lineLen);
+    return;
+  }
+
+  if(key === 'Tab'){
+    lines[cy] = p1 + tabStr + p2;
+    setCx(cx + tabSize);
     return;
   }
 
@@ -189,8 +230,95 @@ const processKey = key => {
     return;
   }
 
-  lines[cy] = p1 + key + p2
+  let str = isStrLiteralDelim(key) ? key + key :
+    isClosedParen(key) && p2.startsWith(key) ? '' :
+    key + getCorrespondingClosedParen(key);
+
+  if(str === key){
+    const p1New = p1 + key;
+
+    for(const [code, char] of specialChars){
+      if(!p1New.endsWith(`\\${code}`)) continue;
+
+      const codeLen = code.length;
+      lines[cy] = p1.slice(0, -codeLen) + char + p2;
+      setCx(cx - codeLen + 1);
+      return;
+    }
+  }
+
+  lines[cy] = p1 + str + p2;
   incCx();
+};
+
+const save = () => {
+  localStorage[project] = JSON.stringify({
+    lines,
+    cx,
+    cy,
+    cxPrev,
+  });
+};
+
+const load = () => {
+  ({
+    lines,
+    cx,
+    cy,
+    cxPrev,
+  } = JSON.parse(localStorage[project]));
+};
+
+const isStrLiteralDelim = char => {
+  return strLiteralDelimChars.includes(char);
+};
+
+const getTabSize = line => {
+  const lineLen = line.length;
+
+  for(let i = 0; i !== lineLen; i++)
+    if(line[i] !== ' ')
+      return i;
+
+  return lineLen;
+};
+
+const getTabStr = line => {
+  return tabFromSize(getTabSize(line));
+};
+
+const tabFromSize = size => {
+  return ' '.repeat(size);
+};
+
+const getCorrespondingClosedParen = char => {
+  const openParenType = getOpenParenType(char);
+  const closedParen = openParenType !== null ?
+    closedParenChars[openParenType] : ''
+
+  return closedParen;
+};
+
+const isOpenParen = char => {
+  return getOpenParenType(char) !== null;
+};
+
+const isClosedParen = char => {
+  return getClosedParenType(char) !== null;
+};
+
+const getOpenParenType = char => {
+  return indexOf(openParenChars, char);
+};
+
+const getClosedParenType = char => {
+  return indexOf(closedParenChars, char);
+};
+
+const indexOf = (arr, elem) => {
+  const index = arr.indexOf(elem);
+  if(index === -1) return null;
+  return index;
 };
 
 const setCx = (cxNew=cx) => {
@@ -210,6 +338,7 @@ const onResize = evt => {
   h = O.ih;
 
   g.resize(w, h);
+  render();
 };
 
 const render = () => {
@@ -233,5 +362,7 @@ const drawCursor = () => {
   g.lineTo(cx, cy + 1);
   g.stroke();
 };
+
+const tabStr = tabFromSize(tabSize);
 
 main();
