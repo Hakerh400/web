@@ -16,14 +16,24 @@ const cols = {
 };
 
 const specialChars = [
-  ['lam', 'λ'],
-  ['all', '∀'],
-  ['exi', '∃'],
+  ['\\lam', 'λ'],
+  ['\\for', '∀'],
+  ['\\exi', '∃'],
+  ['\\tau', 'τ'],
+  ['<->', addSpaces('⟷')],
+  ['->', addSpaces('⟶')],
+  ['=>', addSpaces('⟹')],
+  ['<=>', addSpaces('⟺')],
+  ['/\\', '∧'],
+  ['\\/', '∨'],
+  ['\\not', '¬'],
 ];
 
 const openParenChars = '([{';
 const closedParenChars = ')]}';
-const strLiteralDelimChars = '\'"`';
+const strLiteralDelimChars = '"`';
+
+const tabStr = tabFromSize(tabSize);
 
 let lines = [];
 let cx = 0;
@@ -142,8 +152,9 @@ const processKey = key => {
       return;
     }
 
-    const cp = getCorrespondingClosedParen(line[cx - 1]);
-    const p2New = cp && p2.startsWith(cp) ? p2.slice(1) : p2;
+    const pt = getOpenParenType(line[cx - 1]);
+    const p2New = pt  !== null && p2.startsWith(closedParenChars[pt]) ?
+      p2.slice(1) : p2;
 
     decCx();
     lines[cy] = p1.slice(0, -1) + p2New;
@@ -230,19 +241,39 @@ const processKey = key => {
     return;
   }
 
-  let str = isStrLiteralDelim(key) ? key + key :
-    isClosedParen(key) && p2.startsWith(key) ? '' :
-    key + getCorrespondingClosedParen(key);
+  const char = key;
+  let str = char;
 
-  if(str === key){
-    const p1New = p1 + key;
+  setStr: {
+    if(isStrLiteralDelim(char)){
+      str = char + char;
+      break setStr;
+    }
 
-    for(const [code, char] of specialChars){
-      if(!p1New.endsWith(`\\${code}`)) continue;
+    const openParenType = getOpenParenType(char);
+
+    if(openParenType !== null){
+      const nextChar = cx !== lineLen ? p2[0] : null;
+
+      if(nextChar === null || isClosedParen(nextChar) || nextChar === ' ')
+        str = char + closedParenChars[openParenType];
+
+      break setStr;
+    }
+
+    if(isClosedParen(char)){
+      if(p2.startsWith(char)) str = '';
+      break setStr;
+    }
+
+    const p1New = p1 + char;
+
+    for(const [code, ss] of specialChars){
+      if(!p1New.endsWith(code)) continue;
 
       const codeLen = code.length;
-      lines[cy] = p1.slice(0, -codeLen) + char + p2;
-      setCx(cx - codeLen + 1);
+      lines[cy] = p1.slice(0, 1 - codeLen) + ss + p2;
+      setCx(cx - codeLen + ss.length + 1);
       return;
     }
   }
@@ -269,11 +300,15 @@ const load = () => {
   } = JSON.parse(localStorage[project]));
 };
 
+function addSpaces(str, before=1, after=1){
+  return tabFromSize(before) + str + tabFromSize(after);
+}
+
 const isStrLiteralDelim = char => {
   return strLiteralDelimChars.includes(char);
 };
 
-const getTabSize = line => {
+function getTabSize(line){
   const lineLen = line.length;
 
   for(let i = 0; i !== lineLen; i++)
@@ -281,23 +316,15 @@ const getTabSize = line => {
       return i;
 
   return lineLen;
-};
+}
 
-const getTabStr = line => {
+function getTabStr(line){
   return tabFromSize(getTabSize(line));
-};
+}
 
-const tabFromSize = size => {
+function tabFromSize(size){
   return ' '.repeat(size);
-};
-
-const getCorrespondingClosedParen = char => {
-  const openParenType = getOpenParenType(char);
-  const closedParen = openParenType !== null ?
-    closedParenChars[openParenType] : ''
-
-  return closedParen;
-};
+}
 
 const isOpenParen = char => {
   return getOpenParenType(char) !== null;
@@ -362,7 +389,5 @@ const drawCursor = () => {
   g.lineTo(cx, cy + 1);
   g.stroke();
 };
-
-const tabStr = tabFromSize(tabSize);
 
 main();
