@@ -1,7 +1,12 @@
 'use strict';
 
+const assert = require('assert');
+
+const Expr = require('./expr');
+
 const {min, max} = Math;
 const {project} = O;
+const {Ident, Call, Lambda} = Expr;
 
 const {g} = O.ceCanvas(1);
 
@@ -15,15 +20,37 @@ const cols = {
   text: 'black',
 };
 
+const ops = {
+  '⟶': [25, [1, 0]],
+  '⟷': [24, [0, 1]],
+  '∧': [35, [0, 1]],
+  '∨': [30, [0, 1]],
+  '¬': [40, [40]],
+  '=': [50, [0, 1]],
+  ' ': [100, [0, 1]],
+};
+
+const binders = {
+  'λ': [0, [0]],
+  '∀': [0, [0]],
+  '∃': [0, [0]],
+  '∃!': [0, [0]],
+};
+
+const longOpNames = {
+  '⟶': 1,
+  '⟷': 1,
+};
+
 const specialChars = [
   ['\\lam', 'λ'],
   ['\\for', '∀'],
   ['\\exi', '∃'],
+  ['\\uniq', '∃!'],
   ['\\tau', 'τ'],
   ['<->', addSpaces('⟷')],
   ['->', addSpaces('⟶')],
   ['=>', addSpaces('⟹')],
-  ['<=>', addSpaces('⟺')],
   ['/\\', '∧'],
   ['\\/', '∨'],
   ['\\not', '¬'],
@@ -46,10 +73,175 @@ const main = () => {
   if(O.has(localStorage, project))
     load();
 
+  const exi = (a, b) => {
+    return new Call(new Ident('∃'), new Lambda(a, b));
+  };
+
+  const all = (a, b) => {
+    return new Call(new Ident('∀'), new Lambda(a, b));
+  };
+
+  lines = [
+    O.rec(expr2str, new Call(new Call(new Ident('⟶'), new Ident('P')), new Call(new Call(new Ident('='), new Ident('Q')), new Ident('R')))),
+    O.rec(expr2str, new Call(new Call(new Ident('='), new Call(new Call(new Ident('⟶'), new Ident('P')), new Ident('Q'))), new Ident('R'))),
+    '',
+    O.rec(expr2str, new Call(new Call(new Ident('⟶'), new Ident('P')), new Call(new Call(new Ident('⟶'), new Ident('Q')), new Ident('R')))),
+    O.rec(expr2str, new Call(new Call(new Ident('⟶'), new Call(new Call(new Ident('⟶'), new Ident('P')), new Ident('Q'))), new Ident('R'))),
+    '',
+    O.rec(expr2str, new Call(new Call(new Ident('⟷'), new Lambda('x', new Call(new Call(new Ident('⟶'), new Call(new Call(new Ident('⟶'), new Ident('P')), new Ident('Q'))), new Ident('R')))), new Ident('M'))),
+    O.rec(expr2str, all('a', all('b', exi('T', new Lambda('t', new Call(new Call(new Ident('⟷'), all('x', new Call(new Call(new Ident('⟶'), new Call(new Call(new Ident('⟶'), new Ident('P')), new Ident('Q'))), new Ident('R')))), new Ident('M'))))))),
+  ];
+
   initCanvas();
   aels();
 
   onResize();
+};
+
+const expr2str = function*(expr, prec=0){
+  const toStr = function*(expr){
+    if(expr.isIdent){
+      const {name} = expr;
+      const name1 = name2str(name);
+
+      if(isOpOrBinder(name)) return [null, addParens(name1)];
+      return [null, name1];
+    }
+
+    if(expr.isLam){
+      const names = [];
+      let e = expr;
+
+      while(e.isLam){
+        names.push(e.name);
+        e = e.expr;
+      }
+
+      return [getPrec('λ'), `λ${names.join(' ')}. ${yield [expr2str, e]}`];
+    }
+
+    if(expr.isCall){
+      const {target, arg} = expr;
+
+      let op = null;
+      let args = [];
+      let e = expr;
+
+      while(e.isCall){
+        args.push(e.arg);
+        e = e.target;
+        if(e.isIdent) op = e.name;
+      }
+
+      if(op !== null){
+        checkOp: if(isOp(op)){
+          const p = getPrec(op);
+          assert(p !== null);
+
+          const arity = getArity(op);
+          if(args.length !== arity) break checkOp;
+
+          const ps = getPrecs(op);
+          assert(ps.length === arity);
+
+          args.reverse();
+
+          if(arity === 1)
+            return [p, yield [expr2str, args[0], ps[0]]];
+
+          if(arity === 2)
+            return [p, `${yield [expr2str, args[0], ps[0]]} ${name2str(op)} ${yield [expr2str, args[1], ps[1]]}`];
+
+          assert.fail();
+        }
+
+        checkBinder: if(isBinder(op)){
+          const p = getPrec(op);
+          assert(p !== null);
+
+          const arity = getArity(op);
+          if(args.length !== arity) break checkBinder;
+
+          const ps = getPrecs(op);
+          assert(ps.length === arity);
+
+          args.reverse();
+
+          if(arity === 1){
+            const arg = args[0];
+            if(!arg.isLam) break checkBinder;
+
+            const {name} = arg;
+            const str = yield [expr2str, arg.expr];
+
+            if(str.startsWith(op))
+              return [p, str.replace(op, `${op}${name} `)];
+
+            return [p, `${op}${name}. ${str}`];
+          }
+
+          assert.fail();
+        }
+      }
+
+      const ps = getPrecs(' ');
+      return [getPrec(' '), `${yield [expr2str, target, ps[0]]} ${yield [expr2str, arg, ps[1]]}`];
+    }
+
+    assert.fail();
+  };
+
+  const [precNew, str] = yield [toStr, expr];
+
+  if(precNew !== null && precNew < prec) return addParens(str);
+  return str;
+};
+
+const name2str = name => {
+  if(O.has(longOpNames, name))
+    return addSpaces(name);
+
+  return name;
+};
+
+const getArity = op => {
+  const info = getOpOrBinderInfo(op);
+  if(info) return info[1].length;
+  return null;
+};
+
+const getOpOrBinderInfo = op => {
+  if(isOp(op)) return ops[op];
+  if(isBinder(op)) return binders[op];
+  return null;
+};
+
+const getPrec = op => {
+  const info = getOpOrBinderInfo(op);
+  if(info) return info[0];
+  return null;
+};
+
+const getPrecs = op => {
+  const info = getOpOrBinderInfo(op);
+  if(info) return info[1].map(a => a + info[0]);
+  return null;
+};
+
+const isOpOrBinder = name => {
+  return isOp(name) || isBinder(name);
+};
+
+const isOp = name => {
+  return O.has(ops, name);
+};
+
+const isBinder = name => {
+  return O.has(binders, name);
+};
+
+const addParens = str => {
+  return `(${str})`;
 };
 
 const initCanvas = () => {
@@ -78,7 +270,7 @@ const onKeyDown = evt => {
       if(/^Arrow|^(?:Backspace|Home|End|Delete|Tab)$/.test(code)){
         O.pd(evt);
         processKey(code);
-        break noFlags;
+        break flagCases;
       }
 
       break flagCases;
@@ -88,7 +280,29 @@ const onKeyDown = evt => {
       if(code === 'KeyS'){
         O.pd(evt);
         save();
-        break ctrl;
+        break flagCases;
+      }
+
+      break flagCases;
+    }
+
+    ctrlShift: if(flags === 6){
+      if(code === 'KeyD'){
+        O.pd(evt);
+        processKey('Duplicate');
+        break flagCases;
+      }
+
+      if(code === 'ArrowUp'){
+        O.pd(evt);
+        processKey('MoveUp');
+        break flagCases;
+      }
+
+      if(code === 'ArrowDown'){
+        O.pd(evt);
+        processKey('MoveDown');
+        break flagCases;
       }
 
       break flagCases;
@@ -189,6 +403,36 @@ const processKey = key => {
   if(key === 'Tab'){
     lines[cy] = p1 + tabStr + p2;
     setCx(cx + tabSize);
+    return;
+  }
+
+  if(key === 'Duplicate'){
+    lines.splice(++cy, 0, line);
+    setCx();
+    return;
+  }
+
+  if(key.startsWith('Move')){
+    const dir = key.slice(4) === 'Up' ? 0 : 2;
+
+    if(dir === 0){
+      if(cy === 0){
+        // setCx();
+        return;
+      }
+
+      [lines[cy - 1], lines[cy]] = [line, lines[cy - 1]];
+      cy--;
+      // setCx();
+      return;
+    }
+
+    if(cy === linesNum1)
+      lines.push('');
+
+    [lines[cy + 1], lines[cy]] = [line, lines[cy + 1]];
+    cy++;
+    // setCx();
     return;
   }
 
