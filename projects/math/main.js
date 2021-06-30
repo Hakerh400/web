@@ -1,11 +1,13 @@
 'use strict';
 
 const assert = require('assert');
-
+const parser = require('./parser');
 const Expr = require('./expr');
+const su = require('./str-util');
 
 const {min, max} = Math;
 const {project} = O;
+const {Context} = parser;
 const {Ident, Call, Lambda} = Expr;
 
 const {g} = O.ceCanvas(1);
@@ -13,14 +15,16 @@ const {g} = O.ceCanvas(1);
 const ws = 12;
 const hs = 25;
 const canvasOffset = 15;
-const tabSize = 2;
 
 const cols = {
   bg: 'white',
   text: 'black',
 };
 
+const idents = {};
+
 const ops = {
+  '⟹': [25, [1, 0]],
   '⟶': [25, [1, 0]],
   '⟷': [24, [0, 1]],
   '∧': [35, [0, 1]],
@@ -38,6 +42,7 @@ const binders = {
 };
 
 const longOpNames = {
+  '⟹': 1,
   '⟶': 1,
   '⟷': 1,
 };
@@ -48,49 +53,27 @@ const specialChars = [
   ['\\exi', '∃'],
   ['\\uniq', '∃!'],
   ['\\tau', 'τ'],
-  ['<->', addSpaces('⟷')],
-  ['->', addSpaces('⟶')],
-  ['=>', addSpaces('⟹')],
+  ['<->', su.addSpaces('⟷')],
+  ['->', su.addSpaces('⟶')],
+  ['=>', su.addSpaces('⟹')],
   ['/\\', '∧'],
   ['\\/', '∨'],
   ['\\not', '¬'],
 ];
 
-const openParenChars = '([{';
-const closedParenChars = ')]}';
-const strLiteralDelimChars = '"`';
-
-const tabStr = tabFromSize(tabSize);
+const ctx = new Context(idents, ops, binders, longOpNames);
 
 let lines = [];
 let cx = 0;
 let cy = 0;
 let cxPrev = 0;
+let updatedLine = null;
 
 let w, h;
 
 const main = () => {
   if(O.has(localStorage, project))
     load();
-
-  const exi = (a, b) => {
-    return new Call(new Ident('∃'), new Lambda(a, b));
-  };
-
-  const all = (a, b) => {
-    return new Call(new Ident('∀'), new Lambda(a, b));
-  };
-
-  lines = [
-    O.rec(expr2str, new Call(new Call(new Ident('⟶'), new Ident('P')), new Call(new Call(new Ident('='), new Ident('Q')), new Ident('R')))),
-    O.rec(expr2str, new Call(new Call(new Ident('='), new Call(new Call(new Ident('⟶'), new Ident('P')), new Ident('Q'))), new Ident('R'))),
-    '',
-    O.rec(expr2str, new Call(new Call(new Ident('⟶'), new Ident('P')), new Call(new Call(new Ident('⟶'), new Ident('Q')), new Ident('R')))),
-    O.rec(expr2str, new Call(new Call(new Ident('⟶'), new Call(new Call(new Ident('⟶'), new Ident('P')), new Ident('Q'))), new Ident('R'))),
-    '',
-    O.rec(expr2str, new Call(new Call(new Ident('⟷'), new Lambda('x', new Call(new Call(new Ident('⟶'), new Call(new Call(new Ident('⟶'), new Ident('P')), new Ident('Q'))), new Ident('R')))), new Ident('M'))),
-    O.rec(expr2str, all('a', all('b', exi('T', new Lambda('t', new Call(new Call(new Ident('⟷'), all('x', new Call(new Call(new Ident('⟶'), new Call(new Call(new Ident('⟶'), new Ident('P')), new Ident('Q'))), new Ident('R')))), new Ident('M'))))))),
-  ];
 
   initCanvas();
   aels();
@@ -102,9 +85,9 @@ const expr2str = function*(expr, prec=0){
   const toStr = function*(expr){
     if(expr.isIdent){
       const {name} = expr;
-      const name1 = name2str(name);
+      const name1 = ctx.name2str(name);
 
-      if(isOpOrBinder(name)) return [null, addParens(name1)];
+      if(ctx.isOpOrBinder(name)) return [null, su.addParens(name1)];
       return [null, name1];
     }
 
@@ -150,7 +133,7 @@ const expr2str = function*(expr, prec=0){
             return [p, yield [expr2str, args[0], ps[0]]];
 
           if(arity === 2)
-            return [p, `${yield [expr2str, args[0], ps[0]]} ${name2str(op)} ${yield [expr2str, args[1], ps[1]]}`];
+            return [p, `${yield [expr2str, args[0], ps[0]]} ${ctx.name2str(op)} ${yield [expr2str, args[1], ps[1]]}`];
 
           assert.fail();
         }
@@ -197,53 +180,6 @@ const expr2str = function*(expr, prec=0){
   return str;
 };
 
-const name2str = name => {
-  if(O.has(longOpNames, name))
-    return addSpaces(name);
-
-  return name;
-};
-
-const getArity = op => {
-  const info = getOpOrBinderInfo(op);
-  if(info) return info[1].length;
-  return null;
-};
-
-const getOpOrBinderInfo = op => {
-  if(isOp(op)) return ops[op];
-  if(isBinder(op)) return binders[op];
-  return null;
-};
-
-const getPrec = op => {
-  const info = getOpOrBinderInfo(op);
-  if(info) return info[0];
-  return null;
-};
-
-const getPrecs = op => {
-  const info = getOpOrBinderInfo(op);
-  if(info) return info[1].map(a => a + info[0]);
-  return null;
-};
-
-const isOpOrBinder = name => {
-  return isOp(name) || isBinder(name);
-};
-
-const isOp = name => {
-  return O.has(ops, name);
-};
-
-const isBinder = name => {
-  return O.has(binders, name);
-};
-
-const addParens = str => {
-  return `(${str})`;
-};
-
 const initCanvas = () => {
   g.translate(canvasOffset, canvasOffset);
   g.scale(ws, hs);
@@ -259,6 +195,32 @@ const aels = () => {
   O.ael('keydown', onKeyDown);
   O.ael('keypress', onKeyPress);
   O.ael('resize', onResize);
+};
+
+const onUpdatedLine = lineIndex => {
+  if(lineIndex !== 0) return;
+
+  const str = getLine(0);
+  const result = parser.parse(ctx, str);
+
+  if(result[0] === 0){
+    const err = result[1];
+    setLine(1, su.tab(err.pos, `^ ${err.msg}`));
+    return;
+  }
+
+  const expr = result[1];
+  setLine(1, O.rec(expr2str, expr));
+};
+
+const updateDisplay = () => {
+  try{
+    if(updatedLine !== null)
+      onUpdatedLine(updatedLine);
+  }finally{
+    updatedLine = null;
+    render();
+  }
 };
 
 const onKeyDown = evt => {
@@ -309,46 +271,41 @@ const onKeyDown = evt => {
     }
   }
 
-  render();
+  updateDisplay();
 };
 
 const onKeyPress = evt => {
   const {key} = evt;
 
   processKey(key);
-  render();
+  updateDisplay();
 };
 
 const processKey = key => {
-  while(lines.length <= cy)
-    lines.push('');
-
-  const line = lines[cy];
+  const line = getLine(cy);
   const lineLen = line.length;
-  const linesNum = lines.length;
-  const linesNum1 = linesNum - 1;
 
-  const tSize = getTabSize(line);
-  const tStr = getTabStr(line);
+  const tSize = su.getTabSize(line);
+  const tStr = su.getTabStr(line);
 
   const p1 = line.slice(0, cx);
   const p2 = line.slice(cx);
 
   if(key === 'Enter'){
-    lines[cy] = p1;
+    setLine(cy, p1);
 
     if(cx !== 0){
       const char = p1.slice(-1);
-      const pt = getOpenParenType(char);
+      const pt = su.getOpenParenType(char);
 
-      if(pt !== null && p2.startsWith(closedParenChars[pt])){
-        lines.splice(++cy, 0, tStr + tabStr, tStr + p2);
-        setCx(tSize + tabSize);
+      if(pt !== null && p2.startsWith(su.closedParenChars[pt])){
+        insertLines(++cy, tStr + su.tabStr, tStr + p2);
+        setCx(tSize + su.tabSize);
         return;
       }
     }
 
-    lines.splice(++cy, 0, tStr + p2);
+    insertLine(++cy, tStr + p2);
     setCx(tSize);
     return;
   }
@@ -360,33 +317,28 @@ const processKey = key => {
         return;
       }
 
-      lines.splice(cy, 1);
-      setCx(lines[--cy].length);
-      lines[cy] += line;
+      removeLine(cy);
+      setCx(getLineLen(--cy));
+      appendLine(cy, line);
       return;
     }
 
-    const pt = getOpenParenType(line[cx - 1]);
-    const p2New = pt  !== null && p2.startsWith(closedParenChars[pt]) ?
+    const pt = su.getOpenParenType(line[cx - 1]);
+    const p2New = pt  !== null && p2.startsWith(su.closedParenChars[pt]) ?
       p2.slice(1) : p2;
 
     decCx();
-    lines[cy] = p1.slice(0, -1) + p2New;
+    setLine(cy, p1.slice(0, -1) + p2New);
     return;
   }
 
   if(key === 'Delete'){
     if(cx === lineLen){
-      if(cy === linesNum1){
-        // setCx();
-        return;
-      }
-
-      lines[cy] += lines.splice(cy + 1, 1)[0];
+      appendLine(cy, removeLine(cy + 1));
       return;
     }
 
-    lines[cy] = p1 + p2.slice(1);
+    setLine(cy, p1 + p2.slice(1));
     return;
   }
 
@@ -401,13 +353,13 @@ const processKey = key => {
   }
 
   if(key === 'Tab'){
-    lines[cy] = p1 + tabStr + p2;
-    setCx(cx + tabSize);
+    setLine(cy, p1 + su.tabStr + p2);
+    setCx(cx + su.tabSize);
     return;
   }
 
   if(key === 'Duplicate'){
-    lines.splice(++cy, 0, line);
+    insertLine(++cy, line);
     setCx();
     return;
   }
@@ -421,17 +373,12 @@ const processKey = key => {
         return;
       }
 
-      [lines[cy - 1], lines[cy]] = [line, lines[cy - 1]];
-      cy--;
+      swapLines(cy, --cy);
       // setCx();
       return;
     }
 
-    if(cy === linesNum1)
-      lines.push('');
-
-    [lines[cy + 1], lines[cy]] = [line, lines[cy + 1]];
-    cy++;
+    swapLines(cy, ++cy);
     // setCx();
     return;
   }
@@ -448,7 +395,7 @@ const processKey = key => {
             return;
           }
 
-          setCx(lines[--cy].length);
+          setCx(getLineLen(--cy));
           return;
         }
 
@@ -469,14 +416,11 @@ const processKey = key => {
     if(dir === 0){
       if(cy === 0) return;
 
-      cx = min(lines[--cy].length, cxPrev);
+      cx = min(getLineLen(--cy), cxPrev);
       return;
     }
 
-    if(cy === linesNum1)
-      return;
-
-    cx = min(lines[++cy].length, cxPrev);
+    cx = min(getLineLen(++cy), cxPrev);
     return;
   }
 
@@ -489,41 +433,108 @@ const processKey = key => {
   let str = char;
 
   setStr: {
-    if(isStrLiteralDelim(char)){
+    if(su.isStrLiteralDelim(char)){
       str = char + char;
       break setStr;
     }
 
-    const openParenType = getOpenParenType(char);
+    const openParenType = su.getOpenParenType(char);
 
     if(openParenType !== null){
       const nextChar = cx !== lineLen ? p2[0] : null;
 
-      if(nextChar === null || isClosedParen(nextChar) || nextChar === ' ')
-        str = char + closedParenChars[openParenType];
+      if(nextChar === null || su.isClosedParen(nextChar) || nextChar === ' ')
+        str = char + su.closedParenChars[openParenType];
 
       break setStr;
     }
 
-    if(isClosedParen(char)){
+    if(su.isClosedParen(char)){
       if(p2.startsWith(char)) str = '';
       break setStr;
     }
 
     const p1New = p1 + char;
 
-    for(const [code, ss] of specialChars){
+    for(const [code, su] of specialChars){
       if(!p1New.endsWith(code)) continue;
 
       const codeLen = code.length;
-      lines[cy] = p1.slice(0, 1 - codeLen) + ss + p2;
-      setCx(cx - codeLen + ss.length + 1);
+      setLine(cy, p1.slice(0, 1 - codeLen) + su + p2);
+      setCx(cx - codeLen + su.length + 1);
       return;
     }
   }
 
-  lines[cy] = p1 + str + p2;
+  setLine(cy, p1 + str + p2);
   incCx();
+};
+
+const appendLine = (index, str) => {
+  setLine(index, getLine(index) + str);
+};
+
+const swapLines = (index1, index2) => {
+  const line1 = getLine(index1);
+  const line2 = getLine(index2);
+
+  setLine(index1, line2);
+  setLine(index2, line1);
+};
+
+const getLineLen = index => {
+  return getLine(index).length;
+};
+
+const getLine = index => {
+  if(index >= lines.length)
+    return '';
+
+  return lines[index];
+};
+
+const setLine = (index, str) => {
+  assert(typeof str === 'string');
+
+  if(lines.length <= index && str.length === 0)
+    return;
+
+  expandLines(index);
+
+  if(str === lines[index]) return;
+
+  lines[index] = str;
+  updateLine(index);
+};
+
+const insertLine = (index, line) => {
+  insertLines(index, line);
+};
+
+const removeLine = index => {
+  return removeLines(index)[0];
+};
+
+const insertLines = (index, ...xs) => {
+  expandLines(index);
+  updateLine(index);
+  lines.splice(index, 0, ...xs);
+};
+
+const removeLines = (index, num=1) => {
+  expandLines(index);
+  updateLine(index);
+  return lines.splice(index, num);
+};
+
+const expandLines = index => {
+  while(lines.length <= index)
+    lines.push('');
+};
+
+const updateLine = index => {
+  if(updatedLine === null || index < updatedLine)
+    updatedLine = index;
 };
 
 const save = () => {
@@ -542,54 +553,8 @@ const load = () => {
     cy,
     cxPrev,
   } = JSON.parse(localStorage[project]));
-};
 
-function addSpaces(str, before=1, after=1){
-  return tabFromSize(before) + str + tabFromSize(after);
-}
-
-const isStrLiteralDelim = char => {
-  return strLiteralDelimChars.includes(char);
-};
-
-function getTabSize(line){
-  const lineLen = line.length;
-
-  for(let i = 0; i !== lineLen; i++)
-    if(line[i] !== ' ')
-      return i;
-
-  return lineLen;
-}
-
-function getTabStr(line){
-  return tabFromSize(getTabSize(line));
-}
-
-function tabFromSize(size){
-  return ' '.repeat(size);
-}
-
-const isOpenParen = char => {
-  return getOpenParenType(char) !== null;
-};
-
-const isClosedParen = char => {
-  return getClosedParenType(char) !== null;
-};
-
-const getOpenParenType = char => {
-  return indexOf(openParenChars, char);
-};
-
-const getClosedParenType = char => {
-  return indexOf(closedParenChars, char);
-};
-
-const indexOf = (arr, elem) => {
-  const index = arr.indexOf(elem);
-  if(index === -1) return null;
-  return index;
+  updatedLine = 0;
 };
 
 const setCx = (cxNew=cx) => {
@@ -609,7 +574,7 @@ const onResize = evt => {
   h = O.ih;
 
   g.resize(w, h);
-  render();
+  updateDisplay();
 };
 
 const render = () => {
