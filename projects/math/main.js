@@ -87,7 +87,7 @@ const expr2str = function*(expr, prec=0){
       const {name} = expr;
       const name1 = ctx.name2str(name);
 
-      if(ctx.isOpOrBinder(name)) return [null, su.addParens(name1)];
+      if(ctx.hasOpOrBinder(name)) return [null, su.addParens(name1)];
       return [null, name1];
     }
 
@@ -100,7 +100,7 @@ const expr2str = function*(expr, prec=0){
         e = e.expr;
       }
 
-      return [getPrec('λ'), `λ${names.join(' ')}. ${yield [expr2str, e]}`];
+      return [ctx.getPrec('λ'), `λ${names.join(' ')}. ${yield [expr2str, e]}`];
     }
 
     if(expr.isCall){
@@ -117,14 +117,14 @@ const expr2str = function*(expr, prec=0){
       }
 
       if(op !== null){
-        checkOp: if(isOp(op)){
-          const p = getPrec(op);
+        checkOp: if(ctx.hasOp(op)){
+          const p = ctx.getPrec(op);
           assert(p !== null);
 
-          const arity = getArity(op);
+          const arity = ctx.getArity(op);
           if(args.length !== arity) break checkOp;
 
-          const ps = getPrecs(op);
+          const ps = ctx.getPrecs(op);
           assert(ps.length === arity);
 
           args.reverse();
@@ -138,14 +138,14 @@ const expr2str = function*(expr, prec=0){
           assert.fail();
         }
 
-        checkBinder: if(isBinder(op)){
-          const p = getPrec(op);
+        checkBinder: if(ctx.hasBinder(op)){
+          const p = ctx.getPrec(op);
           assert(p !== null);
 
-          const arity = getArity(op);
+          const arity = ctx.getArity(op);
           if(args.length !== arity) break checkBinder;
 
-          const ps = getPrecs(op);
+          const ps = ctx.getPrecs(op);
           assert(ps.length === arity);
 
           args.reverse();
@@ -167,8 +167,8 @@ const expr2str = function*(expr, prec=0){
         }
       }
 
-      const ps = getPrecs(' ');
-      return [getPrec(' '), `${yield [expr2str, target, ps[0]]} ${yield [expr2str, arg, ps[1]]}`];
+      const ps = ctx.getPrecs(' ');
+      return [ctx.getPrec(' '), `${yield [expr2str, target, ps[0]]} ${yield [expr2str, arg, ps[1]]}`];
     }
 
     assert.fail();
@@ -176,7 +176,7 @@ const expr2str = function*(expr, prec=0){
 
   const [precNew, str] = yield [toStr, expr];
 
-  if(precNew !== null && precNew < prec) return addParens(str);
+  if(precNew !== null && precNew < prec) return su.addParens(str);
   return str;
 };
 

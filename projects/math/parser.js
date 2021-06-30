@@ -28,12 +28,12 @@ class Context{
     return 0;
   }
 
-  isUnaryOp(name){
-    return this.isOp(name) && this.getArity(name) === 1;
+  hasUnaryOp(name){
+    return this.hasOp(name) && this.getArity(name) === 1;
   }
 
-  isBinaryOp(name){
-    return this.isOp(name) && this.getArity(name) === 2;
+  hasBinaryOp(name){
+    return this.hasOp(name) && this.getArity(name) === 2;
   }
 
   name2str(name){
@@ -50,8 +50,8 @@ class Context{
   }
 
   getOpOrBinderInfo(name){
-    if(this.isOp(name)) return this.ops[name];
-    if(this.isBinder(name)) return this.binders[name];
+    if(this.hasOp(name)) return this.ops[name];
+    if(this.hasBinder(name)) return this.binders[name];
     return null;
   }
 
@@ -67,15 +67,15 @@ class Context{
     return null;
   }
 
-  isOpOrBinder(name){
-    return this.isOp(name) || this.isBinder(name);
+  hasOpOrBinder(name){
+    return this.hasOp(name) || this.hasBinder(name);
   }
 
-  isOp(name){
+  hasOp(name){
     return O.has(this.ops, name);
   }
 
-  isBinder(name){
+  hasBinder(name){
     return O.has(this.binders, name);
   }
 }
