@@ -21,7 +21,9 @@ const cols = {
   text: 'black',
 };
 
-const idents = {};
+const idents = {
+  'a': 1,
+};
 
 const ops = {
   '⟹': [25, [1, 0]],
