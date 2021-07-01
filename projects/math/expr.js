@@ -1,5 +1,7 @@
 'use strict';
 
+const assert = require('assert');
+
 class Expr{
   get isIdent(){ return 0; }
   get isLam(){ return 0; }
@@ -9,6 +11,7 @@ class Expr{
 class Ident extends Expr{
   constructor(name){
     super();
+    assert(typeof name === 'string');
     this.name = name;
   }
 

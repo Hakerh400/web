@@ -5,7 +5,7 @@ const Expr = require('./expr');
 const cs = require('./parser-ctors');
 const su = require('./str-util');
 
-const {Term, Unary, Binary, Binder} = cs;
+const {Term, Op, Binder, End} = cs;
 const {Ident, Call, Lambda} = Expr;
 
 const parse = (ctx, str) => {
@@ -61,6 +61,10 @@ const parse = (ctx, str) => {
     return name;
   };
 
+  const op2str = name => {
+    return su.addParens(ctx.name2str(name));
+  };
+
   const parse = function*(idents=O.obj()){
     const stack = [];
 
@@ -80,25 +84,68 @@ const parse = (ctx, str) => {
       return elem;
     };
 
+    const combineStackElems = () => {
+      const slen = stack.length;
+      assert(slen >= 2);
+
+      const top = pop();
+      const {prec} = top;
+
+      while(1){
+        const slen = stack.length;
+        assert(slen >= 1);
+
+        const opnd2 = stack[slen - 1];
+        assert(opnd2.isTerm);
+
+        if(slen === 1) break;
+        assert(slen >= 3);
+
+        const op = stack[slen - 2];
+
+        if(op.isUnary){
+          pop(2);
+          push(new Term(new Call(new Ident(op.name), opnd2.expr)));
+          return;
+        }
+
+        assert(op.isBinary);
+
+        const opPrec = op.precs[1];
+        if(prec >= opPrec) break;
+
+        const opnd1 = stack[slen - 3];
+        assert(opnd1.isTerm);
+
+        const expr1 = opnd1.expr;
+        const expr2 = opnd2.expr;
+
+        pop(3);
+        push(new Term(new Call(new Call(new Ident(op.name), expr1), expr2)));
+      }
+
+      stack.push(top);
+    };
+
     const reduceStack = () => {
       let first = 1;
 
       while(1){
-        const len = stack.length;
+        const slen = stack.length;
 
-        if(len === 0){
+        if(slen === 0){
           assert(first);
           break;
         }
 
         first = 0;
 
-        const top = stack[len - 1];
+        const top = stack[slen - 1];
 
         if(top.isTerm){
-          if(len === 1) break;
+          if(slen === 1) break;
 
-          const prev = stack[len - 2];
+          const prev = stack[slen - 2];
 
           if(prev.isTerm){
             pop(2);
@@ -109,14 +156,34 @@ const parse = (ctx, str) => {
           break;
         }
 
-        if(top.isUnary)
-          break;
+        if(top.isOp){
+          if(top.isUnary)
+            break;
 
-        if(top.isBinary){
-          O.noimpl();
+          if(top.isBinary){
+            if(slen === 1)
+              err(`Binary operator ${op2str(top.name)} at the beginning of a group`);
+
+            const prev = stack[slen - 2];
+
+            if(prev.isOp){
+              const {isUnary, isBinary} = prev;
+              assert(isUnary || isBinary);
+
+              err(`Binary operator ${op2str(top.name)} immediately after ${
+                isUnary ? 'unary' : 'binary'} operator ${op2str(prev.name)}`);
+            }
+
+            assert(prev.isTerm);
+            combineStackElems();
+
+            break;
+          }
+
+          assert.fail();
         }
 
-        if(top.isLambda){
+        if(top.isBinder){
           O.noimpl();
         }
 
@@ -135,7 +202,7 @@ const parse = (ctx, str) => {
 
         if(i === strLen){
           iPrev = parens.pop();
-          err('Unmatched open parenthese');
+          err(`Unmatched open parenthese`);
         }
         
         assert(str[inc()] === ')');
@@ -144,34 +211,48 @@ const parse = (ctx, str) => {
         continue;
       }
 
-      if(ctx.hasOp(tk)){
-        if(ctx.hasUnaryOp(tk)){
-          push(new Unary(tk));
+      if(ctx.hasOpOrBinder(tk)){
+        const info = ctx.getInfo(tk);
+
+        if(ctx.hasOp(tk)){
+          push(new Op(tk, info));
           continue;
         }
 
-        if(ctx.hasBinaryOp(tk)){
-          push(new Binary(tk));
+        if(ctx.hasBinder(tk)){
+          O.noimpl();
           continue;
         }
 
         assert.fail();
       }
 
-      if(ctx.hasBinder(tk)){
-        continue;
-      }
-
       if(!(ctx.hasIdent(tk) || O.has(idents, tk)))
         err(`Undefined identifier ${O.sf(tk)}`);
 
-      push(new Term(new Ident()));
+      push(new Term(new Ident(tk)));
     }
 
     if(stack.length === 0)
-      err('Empty group');
+      err(`Empty group`);
 
-    return new Ident('test');
+    const last = O.last(stack);
+
+    if(last.isOp)
+      err(`Operator ${op2str(last.name)} at the end of a group`);
+
+    assert(last.isTerm);
+
+    push(new End());
+    combineStackElems();
+
+    assert(stack.length === 2);
+    assert(pop().isEnd);
+
+    const result = stack[0];
+    assert(result.isTerm);
+
+    return result.expr;
   };
 
   try{
@@ -179,7 +260,8 @@ const parse = (ctx, str) => {
 
     if(i !== str.length){
       assert(str[i] === ')');
-      err('Unmatched closed parenthese');
+      iPrev = i;
+      err(`Unmatched closed parenthese`);
     }
 
     return [1, expr];
@@ -224,26 +306,26 @@ class Context{
   }
 
   getArity(name){
-    const info = this.getOpOrBinderInfo(name);
+    const info = this.getInfo(name);
     if(info) return info[1].length;
     return null;
   }
 
-  getOpOrBinderInfo(name){
+  getInfo(name){
     if(this.hasOp(name)) return this.ops[name];
     if(this.hasBinder(name)) return this.binders[name];
     return null;
   }
 
   getPrec(name){
-    const info = this.getOpOrBinderInfo(name);
+    const info = this.getInfo(name);
     if(info) return info[0];
     return null;
   }
 
   getPrecs(name){
-    const info = this.getOpOrBinderInfo(name);
-    if(info) return info[1].map(a => a + info[0]);
+    const info = this.getInfo(name);
+    if(info) return info[1];
     return null;
   }
 

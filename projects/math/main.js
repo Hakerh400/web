@@ -23,6 +23,10 @@ const cols = {
 
 const idents = {
   'a': 1,
+  'b': 1,
+  'c': 1,
+  'd': 1,
+  'e': 1,
 };
 
 const ops = {
@@ -31,9 +35,13 @@ const ops = {
   '⟷': [24, [0, 1]],
   '∧': [35, [0, 1]],
   '∨': [30, [0, 1]],
-  '¬': [40, [40]],
+  '¬': [40, [0]],
   '=': [50, [0, 1]],
   ' ': [100, [0, 1]],
+
+  '+': [5, [0, 1]],
+  '*': [6, [0, 1]],
+  '^': [7, [1, 0]],
 };
 
 const binders = {
@@ -48,6 +56,19 @@ const longOpNames = {
   '⟶': 1,
   '⟷': 1,
 };
+
+for(const obj of [ops, binders]){
+  for(const key of O.keys(obj)){
+    const info = obj[key];
+    const [prec, precs] = info;
+
+    const sum = precs.reduce((a, b) => a + b, 0);
+    const div = sum * 2;
+
+    for(let i = 0; i !== precs.length; i++)
+      precs[i] = prec + precs[i] / div;
+  }
+}
 
 const specialChars = [
   ['\\lam', 'λ'],
@@ -212,6 +233,7 @@ const onUpdatedLine = lineIndex => {
   }
 
   const expr = result[1];
+  log(expr);
   setLine(1, O.rec(expr2str, expr));
 };
 
