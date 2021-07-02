@@ -42,7 +42,7 @@ const parse = (ctx, str) => {
     let name = c;
     let j = i - 1;
 
-    while(1){
+    loop: while(1){
       if(ctx.hasOpOrBinder(name)){
         iPrev = j;
         return name;
@@ -53,7 +53,13 @@ const parse = (ctx, str) => {
       const c = str[i];
       if(/[\s\(\)\.]/.test(c)) break;
 
-      name += c;
+      const nameNew = name + c;
+
+      for(let i = 1; i !== nameNew.length; i++)
+        if(ctx.hasOpOrBinder(nameNew.slice(i)))
+          break loop;
+
+      name = nameNew;
       inc();
     }
 
@@ -61,11 +67,23 @@ const parse = (ctx, str) => {
     return name;
   };
 
+  const queryToken = () => {
+    let j = i;
+    let jPrev = iPrev;
+
+    const tk = getToken();
+
+    i = j;
+    iPrev = jPrev;
+
+    return tk;
+  };
+
   const op2str = name => {
     return su.addParens(ctx.name2str(name));
   };
 
-  const parse = function*(idents=O.obj()){
+  const parse = function*(idents=O.obj(), isGroup=0){
     const stack = [];
 
     const push = elem => {
@@ -102,13 +120,6 @@ const parse = (ctx, str) => {
         assert(slen >= 3);
 
         const op = stack[slen - 2];
-
-        if(op.isUnary){
-          pop(2);
-          push(new Term(new Call(new Ident(op.name), opnd2.expr)));
-          return;
-        }
-
         assert(op.isBinary);
 
         const opPrec = op.precs[1];
@@ -148,8 +159,23 @@ const parse = (ctx, str) => {
           const prev = stack[slen - 2];
 
           if(prev.isTerm){
+            const name = prev.obtainedByUnaryOp;
+
+            if(name !== null)
+              err(`Cannot mix unary operator ${op2str(name)} with function application`);
+
             pop(2);
             push(new Term(new Call(prev.expr, top.expr)));
+
+            continue;
+          }
+
+          if(prev.isUnary){
+            const {name} = prev;
+
+            pop(2);
+            push(new Term(new Call(new Ident(name), top.expr), name));
+
             continue;
           }
 
@@ -157,12 +183,24 @@ const parse = (ctx, str) => {
         }
 
         if(top.isOp){
-          if(top.isUnary)
+          if(top.isUnary){
+            if(slen === 1) break;
+
+            const prev = stack[slen - 2];
+
+            if(prev.isTerm)
+              err(`Unary operator ${op2str(top.name)} immediately after a term`);
+
             break;
+          }
 
           if(top.isBinary){
-            if(slen === 1)
+            if(slen === 1){
+              if(isOnlyInGroup())
+                return new Ident(top.name);
+
               err(`Binary operator ${op2str(top.name)} at the beginning of a group`);
+            }
 
             const prev = stack[slen - 2];
 
@@ -183,25 +221,32 @@ const parse = (ctx, str) => {
           assert.fail();
         }
 
-        if(top.isBinder){
-          O.noimpl();
-        }
-
         assert.fail();
       }
     };
+
+    const isOnlyInGroup = () => {
+      if(!isGroup) return 0;
+      const tkNext = queryToken();
+
+      if(tkNext !== ')') return; 0;
+
+      getToken();
+      return 1;
+    };
     
     while(1){
-      reduceStack();
+      const ret = reduceStack();
+      if(ret) return ret;
 
       const tk = getToken();
       if(tk === ')') break;
 
       if(tk === '('){
-        const expr = yield [parse, idents];
+        const expr = yield [parse, idents, 1];
 
         if(i === strLen){
-          iPrev = parens.pop();
+          iPrev = parens[0];
           err(`Unmatched open parenthese`);
         }
         
@@ -220,7 +265,45 @@ const parse = (ctx, str) => {
         }
 
         if(ctx.hasBinder(tk)){
-          O.noimpl();
+          const name = tk;
+          const isLam = name === 'λ';
+
+          if(!isLam && isOnlyInGroup())
+            return new Ident(name);
+
+          const identsArr = [];
+
+          while(1){
+            const tk = getToken();
+            if(tk === '.') break;
+
+            if(/[\(\)]/.test(tk))
+              err(`Missing dot separator for ${op2str(name)}`);
+
+            if(ctx.hasOpOrBinder(tk))
+              err(`Identifier ${
+                op2str(tk)} cannot be used as a bound variable, because it has already been defined as ${
+                ctx.hasOp(tk) ? 'an operator' : 'a binder'}`);
+
+            identsArr.push(tk);
+          }
+
+          if(identsArr.length === 0)
+            err(`Binder ${op2str(name)} must have at least one bound variable`);
+
+          const identsNew = Object.assign(O.arr2obj(identsArr), idents);
+          const expr = yield [parse, identsNew];
+
+          const expr1 = identsArr.reduceRight((expr, ident) => {
+            const lam = new Lambda(ident, expr);
+
+            if(isLam) return lam;
+            return new Call(new Ident(name), lam);
+          }, expr);
+
+          push(new Term(expr1));
+          reduceStack();
+
           continue;
         }
 
@@ -234,7 +317,7 @@ const parse = (ctx, str) => {
     }
 
     if(stack.length === 0)
-      err(`Empty group`);
+      err(`Empty ${isGroup ? 'group' : 'expression'}`);
 
     const last = O.last(stack);
 

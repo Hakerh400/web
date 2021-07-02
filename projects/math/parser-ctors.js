@@ -16,9 +16,10 @@ class Base{
 }
 
 class Term extends Base{
-  constructor(expr){
+  constructor(expr, obtainedByUnaryOp=null){
     super();
     this.expr = expr;
+    this.obtainedByUnaryOp = obtainedByUnaryOp;
   }
 
   get isTerm(){ return 1; }

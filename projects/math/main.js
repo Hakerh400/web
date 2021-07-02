@@ -21,13 +21,7 @@ const cols = {
   text: 'black',
 };
 
-const idents = {
-  'a': 1,
-  'b': 1,
-  'c': 1,
-  'd': 1,
-  'e': 1,
-};
+const idents = {};
 
 const ops = {
   '⟹': [25, [1, 0]],
@@ -38,10 +32,6 @@ const ops = {
   '¬': [40, [0]],
   '=': [50, [0, 1]],
   ' ': [100, [0, 1]],
-
-  '+': [5, [0, 1]],
-  '*': [6, [0, 1]],
-  '^': [7, [1, 0]],
 };
 
 const binders = {
@@ -95,6 +85,8 @@ let updatedLine = null;
 let w, h;
 
 const main = () => {
+  O.dbgAssert = 1;
+
   if(O.has(localStorage, project))
     load();
 
@@ -152,8 +144,9 @@ const expr2str = function*(expr, prec=0){
 
           args.reverse();
 
-          if(arity === 1)
-            return [p, yield [expr2str, args[0], ps[0]]];
+          if(arity === 1){
+            return [p, `${ctx.name2str(op)} ${yield [expr2str, args[0], ps[0]]}`];
+          }
 
           if(arity === 2)
             return [p, `${yield [expr2str, args[0], ps[0]]} ${ctx.name2str(op)} ${yield [expr2str, args[1], ps[1]]}`];
@@ -233,7 +226,6 @@ const onUpdatedLine = lineIndex => {
   }
 
   const expr = result[1];
-  log(expr);
   setLine(1, O.rec(expr2str, expr));
 };
 
