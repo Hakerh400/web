@@ -31,6 +31,7 @@ const ops = {
   '∨': [30, [0, 1]],
   '¬': [40, [0]],
   '=': [50, [0, 1]],
+  '≠': [50, [0, 1]],
   ' ': [1e3, [0, 1]],
 };
 
@@ -72,6 +73,7 @@ const specialChars = [
   ['/\\', '∧'],
   ['\\/', '∨'],
   ['\\not', '¬'],
+  ['\\neq', '≠'],
 ];
 
 const ctx = new Context(idents, ops, binders, longOpNames);
@@ -81,6 +83,7 @@ let cx = 0;
 let cy = 0;
 let cxPrev = 0;
 let updatedLine = null;
+let scrollY = 0;
 
 let w, h;
 
@@ -259,6 +262,16 @@ const onKeyDown = evt => {
       if(code === 'KeyS'){
         O.pd(evt);
         save();
+        break flagCases;
+      }
+
+      if(code === 'ArrowUp'){
+        if(scrollY !== 0) scrollY--;
+        break flagCases;
+      }
+
+      if(code === 'ArrowDown'){
+        scrollY++;
         break flagCases;
       }
 
@@ -563,6 +576,7 @@ const save = () => {
     cx,
     cy,
     cxPrev,
+    scrollY,
   });
 };
 
@@ -572,6 +586,7 @@ const load = () => {
     cx,
     cy,
     cxPrev,
+    scrollY,
   } = JSON.parse(localStorage[project]));
 
   updatedLine = 0;
@@ -602,20 +617,22 @@ const render = () => {
 
   g.fillStyle = cols.text;
 
-  for(let y = 0; y !== lines.length; y++){
+  for(let y = scrollY; y < lines.length; y++){
     const line = lines[y];
 
     for(let x = 0; x !== line.length; x++)
-      g.fillText(line[x], x + .5, y + .5);
+      g.fillText(line[x], x + .5, y - scrollY + .5);
   }
 
   drawCursor();
 };
 
 const drawCursor = () => {
+  const y = cy - scrollY;
+
   g.beginPath();
-  g.moveTo(cx, cy);
-  g.lineTo(cx, cy + 1);
+  g.moveTo(cx, y);
+  g.lineTo(cx, y + 1);
   g.stroke();
 };
 
