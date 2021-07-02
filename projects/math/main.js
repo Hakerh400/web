@@ -31,7 +31,7 @@ const ops = {
   '∨': [30, [0, 1]],
   '¬': [40, [0]],
   '=': [50, [0, 1]],
-  ' ': [100, [0, 1]],
+  ' ': [1e3, [0, 1]],
 };
 
 const binders = {
@@ -214,6 +214,7 @@ const aels = () => {
 };
 
 const onUpdatedLine = lineIndex => {
+  return;
   if(lineIndex !== 0) return;
 
   const str = getLine(0);
@@ -510,6 +511,7 @@ const getLine = index => {
 };
 
 const setLine = (index, str) => {
+  // if(readOnly) return;
   assert(typeof str === 'string');
 
   if(lines.length <= index && str.length === 0)
@@ -532,12 +534,14 @@ const removeLine = index => {
 };
 
 const insertLines = (index, ...xs) => {
+  // if(readOnly) return;
   expandLines(index);
   updateLine(index);
   lines.splice(index, 0, ...xs);
 };
 
 const removeLines = (index, num=1) => {
+  // if(readOnly) return;
   expandLines(index);
   updateLine(index);
   return lines.splice(index, num);

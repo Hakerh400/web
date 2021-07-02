@@ -45,6 +45,15 @@ const parse = (ctx, str) => {
     loop: while(1){
       if(ctx.hasOpOrBinder(name)){
         iPrev = j;
+
+        while(i !== strLen){
+          const c = str[i];
+          if(!ctx.hasOpOrBinder(name + c)) break;
+          
+          name += c;
+          inc();
+        }
+
         return name;
       }
 
@@ -282,7 +291,7 @@ const parse = (ctx, str) => {
 
             if(ctx.hasOpOrBinder(tk))
               err(`Identifier ${
-                op2str(tk)} cannot be used as a bound variable, because it has already been defined as ${
+                op2str(tk)} cannot be used as a bound variable, because it has already been declared as ${
                 ctx.hasOp(tk) ? 'an operator' : 'a binder'}`);
 
             identsArr.push(tk);
