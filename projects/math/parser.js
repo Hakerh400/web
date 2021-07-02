@@ -48,9 +48,11 @@ const parse = (ctx, str) => {
 
         while(i !== strLen){
           const c = str[i];
-          if(!ctx.hasOpOrBinder(name + c)) break;
+          const nameNew = name + c;
           
-          name += c;
+          if(!ctx.hasOpOrBinder(nameNew)) break;
+
+          name = nameNew;
           inc();
         }
 
