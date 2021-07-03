@@ -21,9 +21,8 @@ const adj = (x, y, f) => {
 game.draw = (x, y, d, g) => {
   const d1 = d[1];
   const d2 = d[2];
-  const d3 = d[3];
 
-  g.fillStyle = d3 ? '#ff0000' : d1 ?
+  g.fillStyle = d1 ?
     d1 > 1 ? '#404040' : '#808080' :
     '#c0c0c0';
 
@@ -47,7 +46,6 @@ game.export = (x, y, d, bs) => {
   bs.write(d[0], 15);
   bs.write(d[1], 1e3);
   bs.write(d[2], 1);
-  bs.write(d[3], 1);
 };
 
 game.import = (x, y, d, bs) => {
@@ -61,14 +59,13 @@ game.import = (x, y, d, bs) => {
   d[0] = bs.read(15);
   d[1] = bs.read(1e3);
   d[2] = bs.read(1);
-  d[3] = bs.read(1);
 };
 
 game.generate = () => {
   const {w, h, grid} = game;
 
   game.iterate((x, y, d) => {
-    d[0] = d[1] = d[2] = d[3] = 0;
+    d[0] = d[1] = d[2] = 0;
   });
 
   if(w === 1 && h === 1) return;
@@ -209,11 +206,10 @@ game.mouse.rmb = (x, y, d) => {
 
   if(d[1] === 1){
     d[1] = 0;
-    d[3] = 0;
     return;
   }
 
-  d[1] = 1;
+  let err = 0;
 
   adj(x, y, (x, y, d1, dir) => {
     if(!d1[1]) return;
@@ -223,8 +219,12 @@ game.mouse.rmb = (x, y, d) => {
       !(d1[0] & (1 << (dir + 2 & 3)))
     );
 
-    if(a) d[3] = 1;
+    if(a) err = 1;
   });
+
+  if(err) return;
+
+  d[1] = 1;
 };
 
 game.kb.KeyR = () => {
@@ -301,7 +301,7 @@ const scroll = (dx, dy) => {
     const y1 = ((y + dy) % h + h) % h;
     const d1 = game.get(x1, y1);
 
-    map.set(d1, [d[0], d[1], d[2], d[3]]);
+    map.set(d1, [d[0], d[1], d[2]]);
   });
 
   game.iterate((x, y, d) => {
@@ -310,7 +310,6 @@ const scroll = (dx, dy) => {
     d[0] = d1[0];
     d[1] = d1[1];
     d[2] = d1[2];
-    d[3] = d1[3];
   });
 };
 

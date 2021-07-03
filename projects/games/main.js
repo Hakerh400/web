@@ -13,6 +13,9 @@ const MAX_DIM1 = MAX_DIM - 1;
 var w, h;
 var wh, hh;
 
+// O.enhanceRNG();
+// O.randSeed(0);
+
 window.setTimeout(main);
 
 function main(){
@@ -273,9 +276,11 @@ class Game{
   }
 
   updateMouseCoords(evt){
-    var {g} = this;
-    this.cx = Math.floor((evt.clientX - g.tx) / g.s);
-    this.cy = Math.floor((evt.clientY - g.ty) / g.s);
+    const {g} = this;
+    const {gs}  = g;
+
+    this.cx = Math.floor((evt.clientX - g.tx) * gs);
+    this.cy = Math.floor((evt.clientY - g.ty) * gs);
   }
 
   restartUpdates(){
