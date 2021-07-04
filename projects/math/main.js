@@ -3,11 +3,11 @@
 const assert = require('assert');
 const parser = require('./parser');
 const Expr = require('./expr');
+const Context = require('./context');
 const su = require('./str-util');
 
 const {min, max} = Math;
 const {project} = O;
-const {Context} = parser;
 const {Ident, Call, Lambda} = Expr;
 
 const {g} = O.ceCanvas(1);
@@ -64,7 +64,7 @@ const specialChars = [
   ['\\not', '¬'],
   ['\\neq', '≠'],
   ['\\eqv', '≡'],
-  ...O.ca(10, i => [`\\_${i}`, O.sfcc(0x2080 | i)]),
+  ...O.ca(10, i => [`\\${i}`, O.sfcc(0x2080 | i)]),
 ];
 
 for(const obj of [ops, binders]){
@@ -97,110 +97,12 @@ const main = () => {
   if(O.has(localStorage, project))
     load();
 
+  updateLine(0);
+
   initCanvas();
   aels();
 
   onResize();
-};
-
-const expr2str = function*(expr, prec=0){
-  const toStr = function*(expr){
-    if(expr.isIdent){
-      const {name} = expr;
-      const name1 = ctx.name2str(name);
-
-      if(ctx.hasOpOrBinder(name)) return [null, su.addParens(name1)];
-      return [null, name1];
-    }
-
-    if(expr.isLam){
-      const names = [];
-      let e = expr;
-
-      while(e.isLam){
-        names.push(e.name);
-        e = e.expr;
-      }
-
-      return [ctx.getPrec('λ'), `λ${names.join(' ')}. ${yield [expr2str, e]}`];
-    }
-
-    if(expr.isCall){
-      const {target, arg} = expr;
-
-      let op = null;
-      let args = [];
-      let e = expr;
-
-      while(e.isCall){
-        args.push(e.arg);
-        e = e.target;
-        if(e.isIdent) op = e.name;
-      }
-
-      if(op !== null){
-        checkOp: if(ctx.hasOp(op)){
-          const p = ctx.getPrec(op);
-          assert(p !== null);
-
-          const arity = ctx.getArity(op);
-          if(args.length !== arity) break checkOp;
-
-          const ps = ctx.getPrecs(op);
-          assert(ps.length === arity);
-
-          args.reverse();
-
-          if(arity === 1){
-            return [p, `${ctx.name2str(op)} ${yield [expr2str, args[0], ps[0]]}`];
-          }
-
-          if(arity === 2)
-            return [p, `${yield [expr2str, args[0], ps[0]]} ${ctx.name2str(op)} ${yield [expr2str, args[1], ps[1]]}`];
-
-          assert.fail();
-        }
-
-        checkBinder: if(ctx.hasBinder(op)){
-          const p = ctx.getPrec(op);
-          assert(p !== null);
-
-          const arity = ctx.getArity(op);
-          if(args.length !== arity) break checkBinder;
-
-          const ps = ctx.getPrecs(op);
-          assert(ps.length === arity);
-
-          args.reverse();
-
-          if(arity === 1){
-            const arg = args[0];
-            if(!arg.isLam) break checkBinder;
-
-            const {name} = arg;
-            const str = yield [expr2str, arg.expr];
-
-            if(str.startsWith(op))
-              return [p, str.replace(op, `${op}${name} `)];
-
-            return [p, `${op}${name}. ${str}`];
-          }
-
-          assert.fail();
-        }
-      }
-
-      const ps = ctx.getPrecs(' ');
-      return [ctx.getPrec(' '), `${yield [expr2str, target, ps[0]]} ${yield [expr2str, arg, ps[1]]}`];
-    }
-
-    assert.fail();
-  };
-
-  const [precNew, str] = yield [toStr, expr];
-
-  if(precNew !== null && precNew < prec) return su.addParens(str);
-  return str;
 };
 
 const initCanvas = () => {
@@ -221,7 +123,10 @@ const aels = () => {
 };
 
 const onUpdatedLine = lineIndex => {
-  return;
+  O.rec(onUpdatedLineR, lineIndex);
+}
+
+const onUpdatedLineR = function*(lineIndex){
   if(lineIndex !== 0) return;
 
   const str = getLine(0);
@@ -233,8 +138,11 @@ const onUpdatedLine = lineIndex => {
     return;
   }
 
-  const expr = result[1];
-  setLine(1, O.rec(expr2str, expr));
+  let expr = result[1];
+
+  expr = yield [[expr, 'beta'], ctx];
+
+  setLine(1, yield [[expr, 'toStr'], ctx]);
 };
 
 const updateDisplay = () => {
@@ -597,8 +505,6 @@ const load = () => {
     cxPrev,
     scrollY,
   } = JSON.parse(localStorage[project]));
-
-  updatedLine = 0;
 };
 
 const setCx = (cxNew=cx) => {
