@@ -14,7 +14,7 @@ const addParens = str => {
   return `(${str})`;
 };
 
-const isStrLiteralDelim = char => {
+const isStrDelim = char => {
   return strLiteralDelimChars.includes(char);
 };
 
@@ -64,7 +64,7 @@ module.exports = {
 
   addSpaces,
   addParens,
-  isStrLiteralDelim,
+  isStrDelim,
   getTabSize,
   getTabStr,
   tab,

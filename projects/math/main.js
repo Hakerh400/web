@@ -25,6 +25,8 @@ const idents = {};
 
 const ops = {
   '⟹': [25, [1, 0]],
+  '≡': [20, [0, 1]],
+
   '⟶': [25, [1, 0]],
   '⟷': [24, [0, 1]],
   '∧': [35, [0, 1]],
@@ -74,6 +76,7 @@ const specialChars = [
   ['\\/', '∨'],
   ['\\not', '¬'],
   ['\\neq', '≠'],
+  ['\\eqv', '≡'],
 ];
 
 const ctx = new Context(idents, ops, binders, longOpNames);
@@ -353,9 +356,14 @@ const processKey = key => {
       return;
     }
 
-    const pt = su.getOpenParenType(line[cx - 1]);
-    const p2New = pt  !== null && p2.startsWith(su.closedParenChars[pt]) ?
-      p2.slice(1) : p2;
+    const c1 = line[cx - 1];
+    const c2 = cx !== lineLen ? line[cx] : null;
+
+    const pt = su.getOpenParenType(c1);
+    const isOpenParen = pt !== null && p2.startsWith(su.closedParenChars[pt]);
+    const isStrDelim = su.isStrDelim(c1) && c1 === c2;
+
+    const p2New = isOpenParen || isStrDelim ? p2.slice(1) : p2;
 
     decCx();
     setLine(cy, p1.slice(0, -1) + p2New);
@@ -463,7 +471,7 @@ const processKey = key => {
   let str = char;
 
   setStr: {
-    if(su.isStrLiteralDelim(char)){
+    if(su.isStrDelim(char)){
       str = char + char;
       break setStr;
     }
