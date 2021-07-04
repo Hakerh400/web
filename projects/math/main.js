@@ -50,19 +50,6 @@ const longOpNames = {
   '⟷': 1,
 };
 
-for(const obj of [ops, binders]){
-  for(const key of O.keys(obj)){
-    const info = obj[key];
-    const [prec, precs] = info;
-
-    const sum = precs.reduce((a, b) => a + b, 0);
-    const div = sum * 2;
-
-    for(let i = 0; i !== precs.length; i++)
-      precs[i] = prec + precs[i] / div;
-  }
-}
-
 const specialChars = [
   ['\\lam', 'λ'],
   ['\\for', '∀'],
@@ -77,7 +64,21 @@ const specialChars = [
   ['\\not', '¬'],
   ['\\neq', '≠'],
   ['\\eqv', '≡'],
+  ...O.ca(10, i => [`\\_${i}`, O.sfcc(0x2080 | i)]),
 ];
+
+for(const obj of [ops, binders]){
+  for(const key of O.keys(obj)){
+    const info = obj[key];
+    const [prec, precs] = info;
+
+    const sum = precs.reduce((a, b) => a + b, 0);
+    const div = sum * 2;
+
+    for(let i = 0; i !== precs.length; i++)
+      precs[i] = prec + precs[i] / div;
+  }
+}
 
 const ctx = new Context(idents, ops, binders, longOpNames);
 

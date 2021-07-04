@@ -8,6 +8,15 @@ const su = require('./str-util');
 const {Term, Op, Binder, End} = cs;
 const {Ident, Call, Lambda} = Expr;
 
+const reservedChars = '().';
+
+const reservedCharsObj = O.arr2obj(reservedChars);
+
+const isReservedChar = tk => {
+  if(/\s/.test(tk)) return 1;
+  return O.has(reservedCharsObj, tk);
+};
+
 const parse = (ctx, str) => {
   const strLen = str.length;
   const parens = [];
@@ -32,7 +41,7 @@ const parse = (ctx, str) => {
     const c = str[i];
     if(c !== ')') inc();
 
-    if(/[\(\)\.]/.test(c)){
+    if(isReservedChar(c)){
       if(c === '(')
         parens.push(iPrev);
 
@@ -62,7 +71,7 @@ const parse = (ctx, str) => {
       if(i === strLen) break;
 
       const c = str[i];
-      if(/[\s\(\)\.]/.test(c)) break;
+      if(isReservedChar(c)) break;
 
       const nameNew = name + c;
 
@@ -260,8 +269,9 @@ const parse = (ctx, str) => {
           iPrev = parens[0];
           err(`Unmatched open parenthese`);
         }
-        
+
         assert(str[inc()] === ')');
+        parens.pop();
 
         push(new Term(expr));
         continue;
@@ -320,6 +330,9 @@ const parse = (ctx, str) => {
 
         assert.fail();
       }
+
+      if(isReservedChar(tk))
+        err(`Illegal token ${O.sf(tk)}`);
 
       if(!(ctx.hasIdent(tk) || O.has(idents, tk)))
         err(`Undefined identifier ${O.sf(tk)}`);
