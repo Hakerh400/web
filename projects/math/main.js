@@ -21,20 +21,22 @@ const cols = {
   text: 'black',
 };
 
-const idents = {};
+const idents = {
+  'bool': [0, []],
+};
 
 const ops = {
-  '⟹': [25, [1, 0]],
-  '≡': [20, [0, 1]],
+  '⟹': [2, [25, [1, 0]]],
+  // '≡': [[20, [0, 1], 2]],
 
-  '⟶': [25, [1, 0]],
-  '⟷': [24, [0, 1]],
-  '∧': [35, [0, 1]],
-  '∨': [30, [0, 1]],
-  '¬': [40, [0]],
-  '=': [50, [0, 1]],
-  '≠': [50, [0, 1]],
-  ' ': [1e3, [0, 1]],
+  '⟶': [`bool ⟹ bool ⟹ bool`, [25, [1, 0]]],
+  '⟷': [`bool ⟹ bool ⟹ bool`, [24, [0, 1]]],
+  '∧': [`bool ⟹ bool ⟹ bool`, [35, [0, 1]]],
+  '∨': [`bool ⟹ bool ⟹ bool`, [30, [0, 1]]],
+  '¬': [`bool ⟹ bool`, [40, [0]]],
+  '=': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
+  '≠': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
+  ' ': [`('a ⟹ 'b) ⟹ 'a ⟹ 'b`, [1e3, [0, 1]]],
 };
 
 const binders = {
@@ -67,10 +69,14 @@ const specialChars = [
   ...O.ca(10, i => [`\\${i}`, O.sfcc(0x2080 | i)]),
 ];
 
+for(const key of O.keys(binders))
+  binders[key] = [null, binders[key]];
+
 for(const obj of [ops, binders]){
   for(const key of O.keys(obj)){
     const info = obj[key];
-    const [prec, precs] = info;
+    const [typeInfo, precInfo] = info;
+    const [prec, precs] = precInfo;
 
     const sum = precs.reduce((a, b) => a + b, 0);
     const div = sum * 2;
@@ -130,7 +136,7 @@ const onUpdatedLineR = function*(lineIndex){
   if(lineIndex !== 0) return;
 
   const str = getLine(0);
-  const result = parser.parse(ctx, str);
+  const result = parser.parse(ctx, str, 1);
 
   if(result[0] === 0){
     const err = result[1];
@@ -217,7 +223,8 @@ const onKeyDown = evt => {
 };
 
 const onKeyPress = evt => {
-  const {key} = evt;
+  const {ctrlKey, altKey, key} = evt;
+  if(ctrlKey || altKey) return;
 
   processKey(key);
   updateDisplay();

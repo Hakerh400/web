@@ -18,7 +18,7 @@ const isReservedChar = tk => {
   return O.has(reservedCharsObj, tk);
 };
 
-const parse = (ctx, str) => {
+const parse = (ctx, str, isType=0) => {
   const strLen = str.length;
   const parens = [];
 
@@ -100,11 +100,14 @@ const parse = (ctx, str) => {
     return tk;
   };
 
-  const op2str = name => {
+  const ident2str = name => {
     return su.addParens(ctx.name2str(name));
   };
 
-  const parse = function*(idents=O.obj(), isGroup=0){
+  const parse = function*(isType=0, idents=null, isGroup=0){
+    if(!isType && idents === null)
+      idents = O.obj();
+
     const stack = [];
 
     const push = elem => {
@@ -183,7 +186,7 @@ const parse = (ctx, str) => {
             const name = prev.obtainedByUnaryOp;
 
             if(name !== null)
-              err(`Cannot mix unary operator ${op2str(name)} with function application`);
+              err(`Cannot mix unary operator ${ident2str(name)} with function application`);
 
             pop(2);
             push(new Term(new Call(prev.expr, top.expr)));
@@ -210,7 +213,7 @@ const parse = (ctx, str) => {
             const prev = stack[slen - 2];
 
             if(prev.isTerm)
-              err(`Unary operator ${op2str(top.name)} immediately after a term`);
+              err(`Unary operator ${ident2str(top.name)} immediately after a term`);
 
             break;
           }
@@ -220,7 +223,7 @@ const parse = (ctx, str) => {
               if(isOnlyInGroup())
                 return new Ident(top.name);
 
-              err(`Binary operator ${op2str(top.name)} at the beginning of a group`);
+              err(`Binary operator ${ident2str(top.name)} at the beginning of ${exprOrGroup(1)}`);
             }
 
             const prev = stack[slen - 2];
@@ -229,8 +232,8 @@ const parse = (ctx, str) => {
               const {isUnary, isBinary} = prev;
               assert(isUnary || isBinary);
 
-              err(`Binary operator ${op2str(top.name)} immediately after ${
-                isUnary ? 'unary' : 'binary'} operator ${op2str(prev.name)}`);
+              err(`Binary operator ${ident2str(top.name)} immediately after ${
+                isUnary ? 'unary' : 'binary'} operator ${ident2str(prev.name)}`);
             }
 
             assert(prev.isTerm);
@@ -255,6 +258,32 @@ const parse = (ctx, str) => {
       getToken();
       return 1;
     };
+
+    const checkIdent = tk => {
+      if(isReservedChar(tk))
+        err(`Illegal token ${O.sf(tk)}`);
+
+      const startsWithApostrophe = tk.startsWith('\'');
+
+      if(startsWithApostrophe && tk.length === 1)
+        err(`Illegal identifier ${ident2str(tk)}`);
+
+      if(isType){
+        if(!startsWithApostrophe)
+          err(`Type variable must start with (\') character`)
+
+        return;
+      }
+
+      if(startsWithApostrophe)
+        err(`Illegal use of type variable ${ident2str(tk)} in value context`);
+    };
+
+    const exprOrGroup = (article=0) => {
+      const str = isGroup ? 'group' : 'expression';
+      if(!article) return str;
+      return `${isGroup ? 'a' : 'an'} ${str}`;
+    };
     
     while(1){
       const ret = reduceStack();
@@ -264,7 +293,7 @@ const parse = (ctx, str) => {
       if(tk === ')') break;
 
       if(tk === '('){
-        const expr = yield [parse, idents, 1];
+        const expr = yield [parse, isType, idents, 1];
 
         if(i === strLen){
           iPrev = parens[0];
@@ -278,8 +307,17 @@ const parse = (ctx, str) => {
         continue;
       }
 
+      const has = ctx.has(tk);
+      const hasType = ctx.hasType(tk);
+
+      if(!isType && hasType)
+        err(`Type identifier ${ident2str(tk)} in value context`);
+
+      if(isType && has && !hasType)
+        err(`Value symbol ${ident2str(tk)} cannot be used in type context`);
+
       if(ctx.hasOpOrBinder(tk)){
-        const info = ctx.getInfo(tk);
+        const info = ctx.getPrecInfo(tk);
 
         if(ctx.hasOp(tk)){
           push(new Op(tk, info));
@@ -287,6 +325,9 @@ const parse = (ctx, str) => {
         }
 
         if(ctx.hasBinder(tk)){
+          if(isType)
+            err(`Binder ${ident2str(tk)} in type context`);
+
           const name = tk;
           const isLam = name === 'λ';
 
@@ -300,21 +341,26 @@ const parse = (ctx, str) => {
             if(tk === '.') break;
 
             if(/[\(\)]/.test(tk))
-              err(`Missing dot separator for ${op2str(name)}`);
+              err(`Missing dot separator for ${ident2str(name)}`);
+
+            if(!isType && ctx.hasType(tk))
+              err(`Type identifier ${ident2str(tk)} cannot be used as a bound variable`);
 
             if(ctx.hasOpOrBinder(tk))
               err(`Identifier ${
-                op2str(tk)} cannot be used as a bound variable, because it has already been declared as ${
+                ident2str(tk)} cannot be used as a bound variable, because it has already been declared as ${
                 ctx.hasOp(tk) ? 'an operator' : 'a binder'}`);
 
             identsArr.push(tk);
           }
 
           if(identsArr.length === 0)
-            err(`Binder ${op2str(name)} must have at least one bound variable`);
+            err(`Binder ${ident2str(name)} must have at least one bound variable`);
+
+          assert(!isType);
 
           const identsNew = Object.assign(O.arr2obj(identsArr), idents);
-          const expr = yield [parse, identsNew];
+          const expr = yield [parse, 0, identsNew];
 
           const expr1 = identsArr.reduceRight((expr, ident) => {
             const lam = new Lambda(ident, expr);
@@ -332,22 +378,21 @@ const parse = (ctx, str) => {
         assert.fail();
       }
 
-      if(isReservedChar(tk))
-        err(`Illegal token ${O.sf(tk)}`);
-
-      if(!(ctx.hasIdent(tk) || O.has(idents, tk)))
+      checkIdent(tk);
+      
+      if(!isType && !(ctx.hasIdent(tk) || O.has(idents, tk)))
         err(`Undefined identifier ${O.sf(tk)}`);
 
       push(new Term(new Ident(tk)));
     }
 
     if(stack.length === 0)
-      err(`Empty ${isGroup ? 'group' : 'expression'}`);
+      err(`Empty ${exprOrGroup()}`);
 
     const last = O.last(stack);
 
     if(last.isOp)
-      err(`Operator ${op2str(last.name)} at the end of a group`);
+      err(`Operator ${ident2str(last.name)} at the end of ${exprOrGroup(1)}`);
 
     assert(last.isTerm);
 
@@ -364,7 +409,7 @@ const parse = (ctx, str) => {
   };
 
   try{
-    const expr = O.rec(parse);
+    const expr = O.rec(parse, isType);
 
     if(i !== str.length){
       assert(str[i] === ')');

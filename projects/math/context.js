@@ -37,26 +37,50 @@ class Context{
     return name;
   }
 
-  getArity(name){
+  getInfo(name){
+    if(this.hasIdent(name)) return this.idents[name];
+    if(this.hasOp(name)) return this.ops[name];
+    if(this.hasBinder(name)) return this.binders[name];
+
+    return null;
+  }
+
+  has(name){
+    return this.getInfo(name) !== null;
+  }
+
+  hasType(name){
     const info = this.getInfo(name);
+
+    if(info === null) return 0;
+    if(typeof info[0] !== 'number') return 0;
+
+    return 1;
+  }
+
+  getTypeArity(name){
+    if(!this.hasType(name)) return null;
+    return this.getInfo(name)[0];
+  }
+
+  getPrecInfo(name){
+    return get(this.getInfo(name), 1);
+  }
+
+  getArity(name){
+    const info = this.getPrecInfo(name);
     if(info) return info[1].length;
     return null;
   }
 
-  getInfo(name){
-    if(this.hasOp(name)) return this.ops[name];
-    if(this.hasBinder(name)) return this.binders[name];
-    return null;
-  }
-
   getPrec(name){
-    const info = this.getInfo(name);
+    const info = this.getPrecInfo(name);
     if(info) return info[0];
     return null;
   }
 
   getPrecs(name){
-    const info = this.getInfo(name);
+    const info = this.getPrecInfo(name);
     if(info) return info[1];
     return null;
   }
@@ -73,5 +97,10 @@ class Context{
     return O.has(this.binders, name);
   }
 }
+
+const get = (obj, key) => {
+  if(obj === null) return null;
+  return obj[key];
+};
 
 module.exports = Context;
