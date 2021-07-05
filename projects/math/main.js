@@ -4,6 +4,7 @@ const assert = require('assert');
 const parser = require('./parser');
 const Expr = require('./expr');
 const Context = require('./context');
+const util = require('./util');
 const su = require('./str-util');
 
 const {min, max} = Math;
@@ -22,12 +23,14 @@ const cols = {
 };
 
 const idents = {
-  'bool': [0, []],
+  'bool': 0,
+  'True': 'bool',
+  'False': 'bool',
 };
 
 const ops = {
   '⟹': [2, [25, [1, 0]]],
-  // '≡': [[20, [0, 1], 2]],
+  '≡': [2, [70, [0, 1]]],
 
   '⟶': [`bool ⟹ bool ⟹ bool`, [25, [1, 0]]],
   '⟷': [`bool ⟹ bool ⟹ bool`, [24, [0, 1]]],
@@ -36,14 +39,14 @@ const ops = {
   '¬': [`bool ⟹ bool`, [40, [0]]],
   '=': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
   '≠': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
-  ' ': [`('a ⟹ 'b) ⟹ 'a ⟹ 'b`, [1e3, [0, 1]]],
+  ' ': [`('a ⟹ 'b) ⟹ 'a ⟹ 'b`, [80, [0, 1]]],
 };
 
 const binders = {
-  'λ': [0, [0]],
-  '∀': [0, [0]],
-  '∃': [0, [0]],
-  '∃!': [0, [0]],
+  'λ': null,
+  '∀': `('a ⟹ bool) ⟹ bool`,
+  '∃': `('a ⟹ bool) ⟹ bool`,
+  '∃!': `('a ⟹ bool) ⟹ bool`,
 };
 
 const longOpNames = {
@@ -69,14 +72,26 @@ const specialChars = [
   ...O.ca(10, i => [`\\${i}`, O.sfcc(0x2080 | i)]),
 ];
 
-for(const key of O.keys(binders))
-  binders[key] = [null, binders[key]];
+const ctx = new Context(idents, ops, binders, longOpNames);
 
-for(const obj of [ops, binders]){
+for(const key of O.keys(idents))
+  idents[key] = [idents[key], [0, []]];
+
+for(const key of O.keys(binders))
+  binders[key] = [binders[key], [0, [0]]];
+
+for(const obj of [idents, ops, binders]){
   for(const key of O.keys(obj)){
     const info = obj[key];
     const [typeInfo, precInfo] = info;
     const [prec, precs] = precInfo;
+
+    if(typeof typeInfo === 'string'){
+      const result = O.rec(parser.parse, ctx, typeInfo, 1);
+      assert(result[0] === 1);
+
+      info[0] = O.rec([result[1], 'alpha'], ctx);
+    }
 
     const sum = precs.reduce((a, b) => a + b, 0);
     const div = sum * 2;
@@ -85,8 +100,6 @@ for(const obj of [ops, binders]){
       precs[i] = prec + precs[i] / div;
   }
 }
-
-const ctx = new Context(idents, ops, binders, longOpNames);
 
 let lines = [];
 let cx = 0;
@@ -135,8 +148,11 @@ const onUpdatedLine = lineIndex => {
 const onUpdatedLineR = function*(lineIndex){
   if(lineIndex !== 0) return;
 
+  let result;
+  lines.splice(1);
+
   const str = getLine(0);
-  const result = parser.parse(ctx, str, 1);
+  result = O.rec(parser.parse, ctx, str, 0);
 
   if(result[0] === 0){
     const err = result[1];
@@ -146,9 +162,39 @@ const onUpdatedLineR = function*(lineIndex){
 
   let expr = result[1];
 
-  expr = yield [[expr, 'beta'], ctx];
+  expr = yield [[expr, 'alpha'], ctx];
+  result = yield [[expr, 'unifyTypes'], ctx];
 
-  setLine(1, yield [[expr, 'toStr'], ctx]);
+  if(result[0] === 0){
+    setLine(1, `Unification error: ${result[1]}`);
+    return;
+  }
+
+  expr = yield [[expr, 'beta'], ctx];
+  result = yield [[expr, 'unifyTypes'], ctx];
+  assert(result[0]);
+
+  const types = result[1];
+  const identsArr = O.keys(types);
+  const identsNum = identsArr.length;
+
+  const idents2 = util.obj2();
+  const symStrObj = idents2[0];
+  const strSymObj = idents2[1];
+
+  setLine(1, yield [[expr, 'toStr'], ctx, idents2]);
+
+  // const identNames = util.getAvailIdents(ctx, idents2[1], 0, identsNum);
+
+  for(let i = 0; i !== identsNum; i++){
+    const sym = identsArr[i];
+    assert(O.has(symStrObj, sym));
+
+    const name = symStrObj[sym];
+    const type = O.rec([types[sym], 'toStr'], ctx, idents2);
+
+    setLine(2 + i, `${name} :: ${type}`);
+  }
 };
 
 const updateDisplay = () => {

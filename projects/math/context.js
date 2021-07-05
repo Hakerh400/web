@@ -30,11 +30,16 @@ class Context{
     return this.hasOp(name) && this.getArity(name) === 2;
   }
 
-  name2str(name){
-    if(O.has(this.longOpNames, name))
-      return su.addSpaces(name);
+  name2str(name, addParens=0){
+    let str = name;
 
-    return name;
+    if(O.has(this.longOpNames, name))
+      str = su.addSpaces(name);
+
+    if(addParens && this.hasOpOrBinder(name))
+      str = su.addParens(name);
+
+    return str;
   }
 
   getInfo(name){
@@ -56,6 +61,14 @@ class Context{
     if(typeof info[0] !== 'number') return 0;
 
     return 1;
+  }
+
+  getType(name){
+    const info = this.getInfo(name);
+    if(info === null) return null;
+
+    assert(info[0] instanceof Expr);
+    return info[0];
   }
 
   getTypeArity(name){
@@ -104,3 +117,7 @@ const get = (obj, key) => {
 };
 
 module.exports = Context;
+
+const Expr = require('./expr');
+
+const {Ident, Call, Lambda} = Expr;

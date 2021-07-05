@@ -18,7 +18,7 @@ const isReservedChar = tk => {
   return O.has(reservedCharsObj, tk);
 };
 
-const parse = (ctx, str, isType=0) => {
+const parse = function*(ctx, str, isType=0){
   const strLen = str.length;
   const parens = [];
 
@@ -156,7 +156,7 @@ const parse = (ctx, str, isType=0) => {
         const expr2 = opnd2.expr;
 
         pop(3);
-        push(new Term(new Call(new Call(new Ident(op.name), expr1), expr2)));
+        push(new Term(newCall(newCall(newIdent(op.name), expr1), expr2)));
       }
 
       stack.push(top);
@@ -189,7 +189,7 @@ const parse = (ctx, str, isType=0) => {
               err(`Cannot mix unary operator ${ident2str(name)} with function application`);
 
             pop(2);
-            push(new Term(new Call(prev.expr, top.expr)));
+            push(new Term(newCall(prev.expr, top.expr)));
 
             continue;
           }
@@ -198,7 +198,7 @@ const parse = (ctx, str, isType=0) => {
             const {name} = prev;
 
             pop(2);
-            push(new Term(new Call(new Ident(name), top.expr), name));
+            push(new Term(newCall(newIdent(name), top.expr), name));
 
             continue;
           }
@@ -221,7 +221,7 @@ const parse = (ctx, str, isType=0) => {
           if(top.isBinary){
             if(slen === 1){
               if(isOnlyInGroup())
-                return new Ident(top.name);
+                return newIdent(top.name);
 
               err(`Binary operator ${ident2str(top.name)} at the beginning of ${exprOrGroup(1)}`);
             }
@@ -284,6 +284,24 @@ const parse = (ctx, str, isType=0) => {
       if(!article) return str;
       return `${isGroup ? 'a' : 'an'} ${str}`;
     };
+
+    const newIdent = name => {
+      return newExpr(Ident, name);
+    };
+
+    const newLambda = (name, expr) => {
+      return newExpr(Lambda, name, expr);
+    };
+
+    const newCall = (target, arg) => {
+      return newExpr(Call, target, arg);
+    };
+
+    const newExpr = (ctor, ...args) => {
+      const expr = new ctor(...args);
+      if(isType) expr.isType = 1;
+      return expr;
+    };
     
     while(1){
       const ret = reduceStack();
@@ -332,7 +350,7 @@ const parse = (ctx, str, isType=0) => {
           const isLam = name === 'λ';
 
           if(!isLam && isOnlyInGroup())
-            return new Ident(name);
+            return newIdent(name);
 
           const identsArr = [];
 
@@ -363,10 +381,10 @@ const parse = (ctx, str, isType=0) => {
           const expr = yield [parse, 0, identsNew];
 
           const expr1 = identsArr.reduceRight((expr, ident) => {
-            const lam = new Lambda(ident, expr);
+            const lam = newLambda(ident, expr);
 
             if(isLam) return lam;
-            return new Call(new Ident(name), lam);
+            return newCall(newIdent(name), lam);
           }, expr);
 
           push(new Term(expr1));
@@ -378,12 +396,13 @@ const parse = (ctx, str, isType=0) => {
         assert.fail();
       }
 
-      checkIdent(tk);
+      if(!ctx.has(tk))
+        checkIdent(tk);
       
       if(!isType && !(ctx.hasIdent(tk) || O.has(idents, tk)))
         err(`Undefined identifier ${O.sf(tk)}`);
 
-      push(new Term(new Ident(tk)));
+      push(new Term(newIdent(tk)));
     }
 
     if(stack.length === 0)
