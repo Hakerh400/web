@@ -48,7 +48,9 @@ class Expr{
 
   *beta(ctx){
     assert(!this.isType);
-    return O.tco([this, 'betaV'], ctx);
+
+    const expr = yield [[this, 'alpha'], ctx];
+    return O.tco([expr, 'betaV'], ctx);
   }
 
   *unifyTypes(ctx){
@@ -111,7 +113,7 @@ class Ident extends NamedExpr{
     return this.from(idents[name]);
   }
 
-  *betaV(ctx, idents=O.obj()){
+  *betaV(ctx){
     return this;
   }
 
@@ -186,13 +188,13 @@ class Lambda extends NamedExpr{
     return this.from(sym, yield [[expr, 'alphaV'], ctx, idents]);
   }
 
-  *betaV(ctx, idents=O.obj()){
-    const {name, expr} = yield [[this, 'alphaV'], ctx, idents];
+  *betaV(ctx){
+    // const {name, expr} = yield [[this, 'alphaV'], ctx];
 
     // ???????????????????????????????????????????????
     // idents[name] = name;
 
-    return this.from(name, yield [[expr, 'betaV'], ctx, idents]);
+    return this.from(this.name, yield [[this.expr, 'betaV'], ctx]);
   }
 
   *substIdent(ctx, nm, e){
@@ -263,15 +265,15 @@ class Call extends Expr{
     );
   }
 
-  *betaV(ctx, idents=O.obj()){
-    const target = yield [[this.target, 'betaV'], ctx, idents];
-    const arg = yield [[this.arg, 'betaV'], ctx, idents];
+  *betaV(ctx){
+    const target = yield [[this.target, 'betaV'], ctx];
+    const arg = yield [[this.arg, 'betaV'], ctx];
 
     if(!target.isLam)
       return this.from(target, arg);
 
-    const expr1 = yield [[target.expr, 'substIdent'], ctx, target.name, arg];
-    return O.tco([expr1, 'betaV'], ctx, idents);
+    const expr = yield [[target.expr, 'substIdent'], ctx, target.name, arg];
+    return O.tco([expr, 'beta'], ctx);
   }
 
   *substIdent(ctx, name, expr){

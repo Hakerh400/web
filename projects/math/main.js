@@ -24,6 +24,7 @@ const cols = {
 
 const idents = {
   'bool': 0,
+  
   'True': 'bool',
   'False': 'bool',
 };
