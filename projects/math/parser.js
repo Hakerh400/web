@@ -207,6 +207,9 @@ const parse = function*(ctx, str, isType=0){
         }
 
         if(top.isOp){
+          if(slen === 1 && isOnlyInGroup())
+            return newIdent(top.name);
+
           if(top.isUnary){
             if(slen === 1) break;
 
@@ -219,12 +222,8 @@ const parse = function*(ctx, str, isType=0){
           }
 
           if(top.isBinary){
-            if(slen === 1){
-              if(isOnlyInGroup())
-                return newIdent(top.name);
-
+            if(slen === 1)
               err(`Binary operator ${ident2str(top.name)} at the beginning of ${exprOrGroup(1)}`);
-            }
 
             const prev = stack[slen - 2];
 
@@ -253,7 +252,7 @@ const parse = function*(ctx, str, isType=0){
       if(!isGroup) return 0;
       const tkNext = queryToken();
 
-      if(tkNext !== ')') return; 0;
+      if(tkNext !== ')') return 0;
 
       getToken();
       return 1;
