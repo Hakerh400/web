@@ -185,8 +185,6 @@ const onUpdatedLineR = function*(lineIndex){
 
   setLine(1, yield [[expr, 'toStr'], ctx, idents2]);
 
-  // const identNames = util.getAvailIdents(ctx, idents2[1], 0, identsNum);
-
   for(let i = 0; i !== identsNum; i++){
     const sym = identsArr[i];
     assert(O.has(symStrObj, sym));
