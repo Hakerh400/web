@@ -131,6 +131,8 @@ const parse = function*(ctx, str, isType=0){
       assert(slen >= 2);
 
       const top = pop();
+      assert(top.isBinary);
+
       const {prec} = top;
 
       while(1){
@@ -139,12 +141,18 @@ const parse = function*(ctx, str, isType=0){
 
         const opnd2 = stack[slen - 1];
         assert(opnd2.isTerm);
-
         if(slen === 1) break;
-        assert(slen >= 3);
 
         const op = stack[slen - 2];
+
+        if(op.isUnary){
+          pop(2);
+          push(new Term(newCall(newIdent(op.name), opnd2.expr)));
+          continue;
+        }
+
         assert(op.isBinary);
+        assert(slen >= 3);
 
         const opPrec = op.precs[1];
         if(prec >= opPrec) break;
@@ -183,10 +191,7 @@ const parse = function*(ctx, str, isType=0){
           const prev = stack[slen - 2];
 
           if(prev.isTerm){
-            const name = prev.obtainedByUnaryOp;
-
-            if(name !== null)
-              err(`Cannot mix unary operator ${ident2str(name)} with function application`);
+            // err(`Cannot mix unary operator ${ident2str(name)} with function application`);
 
             pop(2);
             push(new Term(newCall(prev.expr, top.expr)));
@@ -195,10 +200,11 @@ const parse = function*(ctx, str, isType=0){
           }
 
           if(prev.isUnary){
+            break;
             const {name} = prev;
 
             pop(2);
-            push(new Term(newCall(newIdent(name), top.expr), name));
+            push(new Term(newCall(newIdent(name), top.expr)));
 
             continue;
           }
@@ -415,6 +421,7 @@ const parse = function*(ctx, str, isType=0){
     assert(last.isTerm);
 
     push(new End());
+    // if(stack[0].name==='¬')debugger;
     combineStackElems();
 
     assert(stack.length === 2);

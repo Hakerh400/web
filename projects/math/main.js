@@ -24,7 +24,7 @@ const cols = {
 
 const idents = {
   'bool': 0,
-  
+
   'True': 'bool',
   'False': 'bool',
 };
@@ -149,7 +149,7 @@ const onUpdatedLine = lineIndex => {
 const onUpdatedLineR = function*(lineIndex){
   if(lineIndex !== 0) return;
 
-  let result;
+  let result, expr;
   lines.splice(1);
 
   const str = getLine(0);
@@ -157,25 +157,26 @@ const onUpdatedLineR = function*(lineIndex){
 
   if(result[0] === 0){
     const err = result[1];
-    setLine(1, su.tab(err.pos, `^ ${err.msg}`));
-    return;
+    return setLine(1, su.tab(err.pos, `^ ${err.msg}`));
   }
 
-  let expr = result[1];
+  expr = result[1];
+  result = yield [[expr, 'simplify'], ctx];
 
-  expr = yield [[expr, 'alpha'], ctx];
-  result = yield [[expr, 'unifyTypes'], ctx];
+  if(result[0] === 0)
+    return setLine(1, result[1]);
 
-  if(result[0] === 0){
-    setLine(1, `Unification error: ${result[1]}`);
-    return;
-  }
+  expr = result[1];
+  setLine(1, yield [[expr, 'toStr'], ctx]);
+  return;
 
-  expr = yield [[expr, 'beta'], ctx];
-  result = yield [[expr, 'unifyTypes'], ctx];
-  assert(result[0]);
+  expr.log(ctx);
+  log();
+  const type = yield [[expr, 'getType'], ctx];
+  setLine(2, yield [[type, 'toStr'], ctx]);
+  return;
 
-  const types = result[1];
+  /*const types = result[1];
   const identsArr = O.keys(types);
   const identsNum = identsArr.length;
 
@@ -193,7 +194,7 @@ const onUpdatedLineR = function*(lineIndex){
     const type = O.rec([types[sym], 'toStr'], ctx, idents2);
 
     setLine(2 + i, `${name} :: ${type}`);
-  }
+  }*/
 };
 
 const updateDisplay = () => {
