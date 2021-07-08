@@ -147,7 +147,6 @@ const onUpdatedLine = lineIndex => {
 }
 
 const onUpdatedLineR = function*(lineIndex){
-  return;
   if(lineIndex !== 0) return;
 
   let result, expr;
@@ -169,12 +168,11 @@ const onUpdatedLineR = function*(lineIndex){
 
   expr = result[1];
   setLine(1, yield [[expr, 'toStr'], ctx]);
-  return;
 
-  expr.log(ctx);
-  log();
-  const type = yield [[expr, 'getType'], ctx];
-  setLine(2, yield [[type, 'toStr'], ctx]);
+  result = yield [[expr, 'unifyTypes'], ctx];
+  assert(result[0]);
+
+  setLine(2, yield [[expr.type, 'toStr'], ctx]);
   return;
 
   /*const types = result[1];

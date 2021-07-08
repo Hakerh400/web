@@ -9,6 +9,9 @@ class Expr{
     return new Call(new Call(new Ident(op, isType), e1, isType), e2, isType);
   }
 
+  #typeInfo = null;
+  #type = null;
+
   constructor(isType=0){
     this.isType = isType;
   }
@@ -19,6 +22,22 @@ class Expr{
   get isLam(){ return 0; }
   get isCall(){ return 0; }
 
+  get type(){
+    assert(!this.isType);
+
+    if(this.#type !== null)
+      return this.#type;
+
+    const typeInfo = this.#typeInfo;
+    assert(typeInfo !== null);
+
+    const [unifier, typeRaw] = typeInfo;
+    const type = O.rec([typeRaw, 'performAssignments'], unifier.assignments);
+
+    this.#type = type;
+    return type;
+  }
+
   *alphaV(){ O.virtual('alphaV'); }
   *betaV(){ O.virtual('betaV'); }
   *substIdent(){ O.virtual('substIdent'); }
@@ -26,7 +45,6 @@ class Expr{
   *getFreeIdents(){ O.virtual('getFreeIdents'); }
   *renameIdents(){ O.virtual('renameIdents'); }
   *getTypeU(){ O.virtual('getTypeU'); }
-  *getType1(){ O.virtual('getType1'); }
   *eq1(){ O.virtual('eq1'); }
   *toStr1(){ O.virtual('toStr1'); }
 
@@ -65,9 +83,19 @@ class Expr{
     const identsObj = yield [[this, 'getSymIdents']];
     const unifier = new TypeUnifier(ctx, identsObj);
 
-    yield [[this, 'getTypeU'], unifier];
+    yield [[this, 'getType'], unifier];
 
     return O.tco([unifier, 'solve']);
+  }
+
+  *getType(unifier){
+    assert(!this.isType);
+    assert(this.#typeInfo === null);
+
+    const type = yield [[this, 'getTypeU'], unifier];
+    this.#typeInfo = [unifier, type];
+
+    return type;
   }
 
   *simplify(ctx){
@@ -88,15 +116,6 @@ class Expr{
     return [1, expr];
   }
 
-  *getType(ctx){
-    assert(!this.isType);
-
-    const result = yield [[this, 'unifyTypes'], ctx];
-    assert(result[0]);
-
-    return O.tco([this, 'getType1'], ctx, result[1]);
-  }
-
   *eq(other){
     assert(this.isType === other.isType);
     return O.tco([this, 'eq1']);
@@ -107,6 +126,18 @@ class Expr{
 
     const idents = yield [[this, 'getSymIdents']];
     return O.has(idents, sym);
+  }
+
+  *performAssignments(assignments){
+    let e = this;
+
+    for(const [sym, expr] of assignments){
+      // O.z=1
+      // debugger;
+      e = yield [[e, 'substIdent'], sym, expr];
+    }
+
+    return e;
   }
 
   *toStr(ctx, idents=util.obj2(), prec=0){
@@ -132,7 +163,7 @@ class NamedExpr extends Expr{
 
     if(typeof sym === 'string')
       return sym;
-    // return String(this.name).match(/\d+/)[0]
+    // return String(this.name).match(/\d+/)[0];
 
     const symStrObj = idents[0];
     const strSymObj = idents[1];
@@ -153,17 +184,23 @@ class Ident extends NamedExpr{
   get isIdent(){ return 1; }
 
   *alphaV(ctx, idents=O.obj()){
+    // const {name} = this;
+    // if(!O.has(idents, name)) return this;
+    // return this.from(idents[name]);
+
     const {name} = this;
-    if(!O.has(idents, name)) return this;
-    return this.from(idents[name]);
+    const name1 = O.has(idents, name) ? idents[name] : name;
+    return this.from(name1);
   }
 
   *betaV(ctx){
     return this;
   }
 
-  *substIdent(ctx, name, expr){
-    // if(O.z)debugger;
+  *substIdent(name, expr){
+    // if(O.z)debugger; // Ident
+    // if(String(name).includes(9))debugger;
+    
     if(this.name === name) return expr;
     return this;
   }
@@ -206,22 +243,6 @@ class Ident extends NamedExpr{
     return unifier.getIdentType(name);
   }
 
-  *getType1(ctx, types){
-    const {name} = this;
-
-    if(typeof name === 'string'){
-      assert(ctx.has(name));
-      const type = ctx.getType(name);
-      return O.tco([type, 'alpha'], ctx);
-    }
-
-    assert(O.has(types, name));
-
-    log(`${yield [[this, 'toStr'], ctx]} :: ${yield [[types[name], 'toStr'], ctx]}`);
-
-    return types[name];
-  }
-
   *eq1(ctx, other){
     return this.name === other.name;
   }
@@ -257,7 +278,7 @@ class Lambda extends NamedExpr{
     const {name} = this;
     const expr = yield [[this.expr, 'betaV'], ctx];
 
-    eta: {
+    eta: if(0){
       if(!expr.isCall) break eta;
 
       const {target, arg} = expr;
@@ -272,9 +293,10 @@ class Lambda extends NamedExpr{
     return this.from(name, expr);
   }
 
-  *substIdent(ctx, nm, e){
+  *substIdent(nm, e){
+    // if(O.z)debugger; // Lambda
     const {name, expr} = this;
-    return this.from(name, yield [[expr, 'substIdent'], ctx, nm, e]);
+    return this.from(name, yield [[expr, 'substIdent'], nm, e]);
   }
 
   *getSymIdents(idents=O.obj()){
@@ -301,19 +323,7 @@ class Lambda extends NamedExpr{
     const {name, expr} = this;
 
     const argType = unifier.getIdentType(name);
-    const exprType = yield [[expr, 'getTypeU'], unifier];
-
-    return Expr.bin('⟹', argType, exprType, 1);
-  }
-
-  *getType1(ctx, types){
-    const {name, expr} = this;
-
-    assert(O.has(types, name));
-    const argType = types[name];
-    const exprType = yield [[expr, 'getType1'], ctx, types];
-
-    log(`${yield [[this, 'toStr'], ctx]} :: ${yield [[Expr.bin('⟹', argType, exprType, 1), 'toStr'], ctx]}`);
+    const exprType = yield [[expr, 'getType'], unifier];
 
     return Expr.bin('⟹', argType, exprType, 1);
   }
@@ -364,16 +374,17 @@ class Call extends Expr{
     if(!target.isLam)
       return this.from(target, arg);
 
-    const expr = yield [[target.expr, 'substIdent'], ctx, target.name, arg];
+    const expr = yield [[target.expr, 'substIdent'], target.name, arg];
     return O.tco([expr, 'beta'], ctx);
   }
 
-  *substIdent(ctx, name, expr){
-    const {target, arg} = yield [[this, 'alphaV'], ctx];
+  *substIdent(name, expr){
+    // if(O.z)debugger; // Call
+    const {target, arg} = this;//yield [[this, 'alphaV'], ctx];
 
     return this.from(
-      yield [[target, 'substIdent'], ctx, name, expr],
-      yield [[arg, 'substIdent'], ctx, name, expr],
+      yield [[target, 'substIdent'], name, expr],
+      yield [[arg, 'substIdent'], name, expr],
     );
   }
 
@@ -404,37 +415,11 @@ class Call extends Expr{
     const {ctx} = unifier;
     const {target, arg} = this;
 
-    const targetType = yield [[target, 'getTypeU'], unifier];
-    const argType = yield [[arg, 'getTypeU'], unifier];
+    const targetType = yield [[target, 'getType'], unifier];
+    const argType = yield [[arg, 'getType'], unifier];
     const resultType = new Ident(util.newSym(), 1);
 
     unifier.addEq(targetType, Expr.bin('⟹', argType, resultType, 1));
-
-    return resultType;
-  }
-
-  *getType1(ctx, types){
-    const {target, arg} = this;
-
-    const targetType = yield [[target, 'getType1'], ctx, types];
-    const argType = yield [[arg, 'getType1'], ctx, types];
-    assert(targetType.isCall);
-
-    const resultType = targetType.arg;
-    const targetTypeExpected = Expr.bin('⟹', argType, resultType, 1);
-
-    if(!(yield [[targetType, 'eq'], targetTypeExpected])){
-      log();
-      targetType.log(ctx);
-      targetTypeExpected.log(ctx);
-      log();
-      log(targetType.target.arg.target.arg.name);
-      log(targetTypeExpected.target.arg.target.arg.name);
-    }
-
-    assert(yield [[targetType, 'eq'], targetTypeExpected]);
-
-    log(`${yield [[this, 'toStr'], ctx]} :: ${yield [[resultType, 'toStr'], ctx]}`);
 
     return resultType;
   }

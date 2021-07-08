@@ -40,6 +40,8 @@ class Unifier{
 class TypeUnifier extends Unifier{
   static get eqCtor(){ return TypeEquation; }
 
+  assignments = [];
+
   constructor(ctx, identsObj){
     super(ctx);
 
@@ -88,7 +90,7 @@ class TypeUnifier extends Unifier{
     while(1){
       // O.logb();
       // log(yield [[this, 'toStr']]);
-      // alert();
+      // if(prompt())z;
       if(eqs.length === 0) break;
 
       const eq = eqs.shift();
@@ -108,18 +110,24 @@ class TypeUnifier extends Unifier{
           continue;
         }
 
+        // log(`\nASSIGN: ${yield [[new Ident(sym), 'toStr'], ctx]} ---> ${yield [[rhs, 'toStr'], ctx]}`);
+        assert(!this.assignments.some(([a]) => a === sym));
+        this.assignments.push([sym, rhs]);
+
+        // O.z=1
+
         for(let i = 0; i !== eqs.length; i++){
           const {lhs: lhs1, rhs: rhs1} = eqs[i];
           // if(i===4)O.z=1
 
           eqs[i] = new eqCtor(
-            yield [[lhs1, 'substIdent'], ctx, sym, rhs],
-            yield [[rhs1, 'substIdent'], ctx, sym, rhs],
+            yield [[lhs1, 'substIdent'], sym, rhs],
+            yield [[rhs1, 'substIdent'], sym, rhs],
           );
         }
 
         for(const ident of identsArr)
-          identsObj[ident] = yield [[identsObj[ident], 'substIdent'], ctx, sym, rhs];
+          identsObj[ident] = yield [[identsObj[ident], 'substIdent'], sym, rhs];
 
         continue;
       }
