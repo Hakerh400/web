@@ -147,6 +147,7 @@ const onUpdatedLine = lineIndex => {
 }
 
 const onUpdatedLineR = function*(lineIndex){
+  return;
   if(lineIndex !== 0) return;
 
   let result, expr;

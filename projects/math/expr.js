@@ -5,8 +5,12 @@ const util = require('./util');
 const su = require('./str-util');
 
 class Expr{
-  static bin(op, e1, e2, isType=0){
-    return new Call(new Call(new Ident(op, isType), e1, isType), e2, isType);
+  static mkUn(op, e1, isType){
+    return new Call(new Ident(op, isType), e1, isType);
+  }
+
+  static mkBin(op, e1, e2, isType){
+    return new Call(this.mkUn(op, e1, isType), e2, isType);
   }
 
   #typeInfo = null;
@@ -200,7 +204,7 @@ class Ident extends NamedExpr{
   *substIdent(name, expr){
     // if(O.z)debugger; // Ident
     // if(String(name).includes(9))debugger;
-    
+
     if(this.name === name) return expr;
     return this;
   }
@@ -325,7 +329,7 @@ class Lambda extends NamedExpr{
     const argType = unifier.getIdentType(name);
     const exprType = yield [[expr, 'getType'], unifier];
 
-    return Expr.bin('⟹', argType, exprType, 1);
+    return Expr.mkBin('⟹', argType, exprType, 1);
   }
 
   *eq1(ctx, other){
@@ -419,7 +423,7 @@ class Call extends Expr{
     const argType = yield [[arg, 'getType'], unifier];
     const resultType = new Ident(util.newSym(), 1);
 
-    unifier.addEq(targetType, Expr.bin('⟹', argType, resultType, 1));
+    unifier.addEq(targetType, Expr.mkBin('⟹', argType, resultType, 1));
 
     return resultType;
   }
