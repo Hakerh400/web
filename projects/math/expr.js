@@ -48,6 +48,11 @@ class Expr{
     return type;
   }
 
+  set type(type){
+    assert(!this.isType);
+    this.#type = type;
+  }
+
   *alphaV(){ O.virtual('alphaV'); }
   *betaV(){ O.virtual('betaV'); }
   *substIdent(){ O.virtual('substIdent'); }
@@ -155,8 +160,15 @@ class Expr{
   }
 
   *alpha(ctx, idents=O.obj()){
-    if(!this.isType)
-      return O.tco([this, 'alphaV'], ctx);
+    if(!this.isType){
+      const expr = yield [[this, 'alphaV'], ctx, idents];
+      const type = this.type !== null ?
+        yield [[this.type, 'alpha'], ctx, idents] : null;
+
+      expr.type = type;
+
+      return expr;
+    }
 
     const identsNew = yield [[this, 'getFreeIdents'], ctx];
 
