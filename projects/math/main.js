@@ -94,11 +94,15 @@ for(const obj of [idents, ops, binders]){
       info[0] = O.rec([result[1], 'alpha'], ctx);
     }
 
-    const sum = precs.reduce((a, b) => a + b, 0);
+    const sum = precs.reduce((a, b) => a + b, 1);
     const div = sum * 2;
 
-    for(let i = 0; i !== precs.length; i++)
-      precs[i] = prec + precs[i] / div;
+    for(let i = 0; i !== precs.length; i++){
+      const p = prec + precs[i] / div;
+      assert(!isNaN(p));
+
+      precs[i] = p;
+    }
   }
 }
 
@@ -147,7 +151,7 @@ const onUpdatedLine = lineIndex => {
 }
 
 const onUpdatedLineR = function*(lineIndex){
-  if(lineIndex !== 0) return;
+  if(lineIndex >= 2) return;
 
   const call = function*(fn, ...args){
     const result = yield [fn, ...args];
@@ -155,9 +159,9 @@ const onUpdatedLineR = function*(lineIndex){
     if(result[0] === 0){
       const err = result[1];
       const msg = typeof err === 'string' ?
-        err : su.tab(err.pos, `^ ${err.msg}`);
+        err : err.msg//su.tab(err.pos, `^ ${err.msg}`);
 
-      setLine(3, msg);
+      setLine(7, msg);
 
       return O.breakRec();
     }
@@ -168,7 +172,7 @@ const onUpdatedLineR = function*(lineIndex){
   lines.splice(2);
 
   const str = getLine(0);
-  const exprRaw = yield [call, parser.parse, ctx, str, 0];
+  const exprRaw = yield [call, parser.parse, ctx, str];
   const expr = yield [call, [exprRaw, 'simplify'], ctx];
 
   const toStrIdents = util.obj2();
@@ -198,6 +202,20 @@ const onUpdatedLineR = function*(lineIndex){
   };
 
   yield [set, 3, expr];
+
+  const specsLine = getLine(1).trim();
+
+  if(specsLine.length !== 0){
+    const specStrs = specsLine.split(',');
+    let exprNew = expr;
+
+    for(const str of specStrs){
+      const spec = yield [call, parser.parse, ctx, str];
+      exprNew = yield [call, [exprNew, 'spec'], ctx, spec];
+    }
+
+    yield [set, 4, exprNew];
+  }
 
   return;
 

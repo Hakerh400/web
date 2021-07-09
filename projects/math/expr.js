@@ -242,6 +242,15 @@ class Expr{
     return e;
   }
 
+  *spec(ctx, e){
+    if(this.getUni(ctx) === null)
+      return [0, `Expression is not universally quantified`];
+
+    const expr = new Call(this.arg, e);
+
+    return O.tco([expr, 'simplify'], ctx);
+  }
+
   *toStr(ctx, idents=util.obj2(), prec=0){
     const [precNew, str] = yield [[this, 'toStr1'], ctx, idents];
 
@@ -560,11 +569,10 @@ class Call extends Expr{
 
         args.reverse();
 
-        if(arity === 1){
+        if(arity === 1)
           return [p, `${
             ctx.name2str(op)} ${
             yield [[args[0], 'toStr'], ctx, idents, ps[0]]}`];
-        }
 
         if(arity === 2)
           return [p, `${

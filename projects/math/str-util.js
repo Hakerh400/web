@@ -74,6 +74,10 @@ module.exports = {
   tabSize,
   tabStr,
 
+  openParenChars,
+  closedParenChars,
+  strLiteralDelimChars,
+
   addSpaces,
   addParens,
   addBrackets,
