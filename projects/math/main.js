@@ -25,8 +25,10 @@ const cols = {
 const idents = {
   'bool': 0,
 
-  'True': 'bool',
-  'False': 'bool',
+  'True': `bool`,
+  'False': `bool`,
+  'undefined': `'a`,
+  'isFunc': `'a ⟹ bool`,
 };
 
 const ops = {
@@ -202,6 +204,7 @@ const onUpdatedLineR = function*(lineIndex){
   };
 
   yield [set, 3, expr];
+  yield [set, 4, expr.arg.type];
 
   const specsLine = getLine(1).trim();
 
@@ -214,7 +217,8 @@ const onUpdatedLineR = function*(lineIndex){
       exprNew = yield [call, [exprNew, 'spec'], ctx, spec];
     }
 
-    yield [set, 4, exprNew];
+    yield [set, 5, exprNew];
+    yield [set, 6, exprNew.arg.type];
   }
 
   return;

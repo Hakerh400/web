@@ -40,17 +40,26 @@ class Unifier{
 class TypeUnifier extends Unifier{
   static get eqCtor(){ return TypeEquation; }
 
-  assignments = [];
+  static *new(ctx, identsObj){
+    const unifier = new this(ctx);
 
-  constructor(ctx, identsObj){
-    super(ctx);
+    unifier.assignments = [];
 
     const objNew = O.obj();
+    const alphaIdents = O.obj();
 
-    for(const key of O.keys(identsObj))
-      objNew[key] = new Ident(util.newSym(), 1);
+    for(const sym of O.keys(identsObj)){
+      const type = identsObj[sym];
 
-    this.identsObj = objNew;
+      if(type === null){
+        objNew[sym] = new Ident(util.newSym(), 1);
+        continue;
+      }
+
+      objNew[sym] = yield [[type, 'alpha'], ctx, alphaIdents];
+    }
+
+    unifier.identsObj = objNew;
 
     const identsArr = O.keys(objNew);
     const identsNum = identsArr.length;
@@ -69,12 +78,14 @@ class TypeUnifier extends Unifier{
       strSymObj[name] = sym;
     }
 
-    this.identsArr = identsArr;
-    this.identNames = identNames;
+    unifier.identsArr = identsArr;
+    unifier.identNames = identNames;
 
-    this.symStrObj = symStrObj;
-    this.strSymObj = strSymObj;
-    this.identsBase = [symStrObj, strSymObj];
+    unifier.symStrObj = symStrObj;
+    unifier.strSymObj = strSymObj;
+    unifier.identsBase = [symStrObj, strSymObj];
+
+    return unifier;
   }
 
   getIdentType(name){
@@ -88,9 +99,12 @@ class TypeUnifier extends Unifier{
     const {eqCtor, ctx, eqs, identsObj, identsArr} = this;
 
     while(1){
-      // O.logb();
-      // log(yield [[this, 'toStr']]);
-      // if(prompt())z;
+      // if(O.z){
+      //   O.logb();
+      //   log(yield [[this, 'toStr']]);
+      //   if(prompt())z;
+      // }
+      
       if(eqs.length === 0) break;
 
       const eq = eqs.shift();

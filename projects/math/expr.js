@@ -39,7 +39,7 @@ class Expr{
       return this.#type;
 
     const typeInfo = this.#typeInfo;
-    assert(typeInfo !== null);
+    if(typeInfo === null) return null;
 
     const [unifier, typeRaw] = typeInfo;
     const type = O.rec([typeRaw, 'performAssignments'], unifier.assignments);
@@ -60,7 +60,10 @@ class Expr{
 
   from(...args){
     const expr = new this.ctor(...args);
+
     expr.isType = this.isType;
+    expr.#typeInfo = this.#typeInfo;
+
     return expr;
   }
 
@@ -80,14 +83,14 @@ class Expr{
     return [op, arg];
   }
 
-  getBinOp(ctx){
+  getBinOp(ctx, checkArity=1){
     if(!this.isCall) return null;
 
     const {target, arg} = this;
     const un = target.getUnOp(ctx, 0);
 
     if(un === null) return null;
-    if(!ctx.hasBinaryOp(un[0])) return null;
+    if(checkArity && !ctx.hasBinaryOp(un[0])) return null;
 
     return [...un, arg];
   }
@@ -151,14 +154,19 @@ class Expr{
     return [unis, imps];
   }
 
-  *alpha(ctx){
+  *alpha(ctx, idents=O.obj()){
     if(!this.isType)
       return O.tco([this, 'alphaV'], ctx);
 
-    const idents = yield [[this, 'getFreeIdents'], ctx];
+    const identsNew = yield [[this, 'getFreeIdents'], ctx];
 
-    for(const name of O.keys(idents))
+    for(const name of O.keys(identsNew)){
+      // assert(isStr(name));
+      // assert(name.startsWith('\''));
+
+      if(O.has(idents, name)) continue;
       idents[name] = util.newSym();
+    }
 
     return O.tco([this, 'renameIdents'], ctx, idents);
   }
@@ -174,7 +182,7 @@ class Expr{
     assert(!this.isType);
 
     const identsObj = yield [[this, 'getSymIdents']];
-    const unifier = new TypeUnifier(ctx, identsObj);
+    const unifier = yield [[TypeUnifier, 'new'], ctx, identsObj];
 
     yield [[this, 'getType'], unifier];
 
@@ -183,7 +191,7 @@ class Expr{
 
   *getType(unifier){
     assert(!this.isType);
-    assert(this.#typeInfo === null);
+    // assert(this.#typeInfo === null);
 
     const type = yield [[this, 'getTypeU'], unifier];
     this.#typeInfo = [unifier, type];
@@ -246,7 +254,8 @@ class Expr{
     if(this.getUni(ctx) === null)
       return [0, `Expression is not universally quantified`];
 
-    const expr = new Call(this.arg, e);
+    const e1 = yield [[e, 'alpha'], ctx];
+    const expr = new Call(this.arg, e1);
 
     return O.tco([expr, 'simplify'], ctx);
   }
@@ -323,7 +332,7 @@ class Ident extends NamedExpr{
     const {name} = this;
 
     if(isSym(name))
-      idents[name] = 1;
+      idents[name] = this.type;
 
     return idents;
   }
@@ -392,7 +401,7 @@ class Lambda extends NamedExpr{
     const {name} = this;
     const expr = yield [[this.expr, 'betaV'], ctx];
 
-    eta: if(0){
+    /*eta: if(0){
       if(!expr.isCall) break eta;
 
       const {target, arg} = expr;
@@ -402,7 +411,7 @@ class Lambda extends NamedExpr{
       if(yield [[target, 'hasIdent'], name]) break eta;
 
       return O.tco([target, 'betaV'], ctx);
-    }
+    }*/
 
     return this.from(name, expr);
   }
@@ -416,8 +425,18 @@ class Lambda extends NamedExpr{
   *getSymIdents(idents=O.obj()){
     const {name, expr} = this;
 
-    if(isSym(name))
-      idents[name] = 1;
+    if(isSym(name)){
+      const type = this.type;
+
+      if(type !== null){
+        const binOp = type.getBinOp(null, 0);
+        assert(binOp !== null);
+
+        idents[name] = binOp[1];
+      }else{
+        idents[name] = null;
+      }
+    }
 
     return O.tco([expr, 'getSymIdents'], idents);
   }

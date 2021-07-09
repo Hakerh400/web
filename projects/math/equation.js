@@ -20,7 +20,7 @@ class Equation{
 
   *toStr(ctx, idents=O.obj2()){
     const {lhs, rhs} = this;
-    const expr = Expr.bin('≡', lhs, rhs, 1);
+    const expr = Expr.mkBinOp('≡', lhs, rhs, 1);
 
     return O.tco([expr, 'toStr'], ctx, idents);
   }
