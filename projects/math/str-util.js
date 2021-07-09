@@ -11,7 +11,15 @@ const addSpaces = (str, before=1, after=1) => {
 };
 
 const addParens = str => {
-  return `(${str})`;
+  return encap(str, '()');
+};
+
+const addBrackets = str => {
+  return encap(str, '[]');
+};
+
+const addBraces = str => {
+  return encap(str, '{}');
 };
 
 const isStrDelim = char => {
@@ -52,18 +60,24 @@ const getClosedParenType = char => {
   return O.indexOf(closedParenChars, char);
 };
 
+const quote = (str, c='"') => {
+  return encap(str, c + c)
+};
+
+const encap = (str, chars) => {
+  return chars[0] + str + chars[1];
+};
+
 const tabStr = tab(tabSize);
 
 module.exports = {
   tabSize,
   tabStr,
 
-  openParenChars,
-  closedParenChars,
-  strLiteralDelimChars,
-
   addSpaces,
   addParens,
+  addBrackets,
+  addBraces,
   isStrDelim,
   getTabSize,
   getTabStr,
@@ -72,4 +86,6 @@ module.exports = {
   isClosedParen,
   getOpenParenType,
   getClosedParenType,
+  quote,
+  encap,
 };

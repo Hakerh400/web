@@ -4,13 +4,19 @@ const assert = require('assert');
 const util = require('./util');
 const su = require('./str-util');
 
+const {isStr, isSym, isStrOrSym} = util;
+
 class Expr{
-  static mkUn(op, e1, isType){
+  static mkUnOp(op, e1, isType){
     return new Call(new Ident(op, isType), e1, isType);
   }
 
-  static mkBin(op, e1, e2, isType){
-    return new Call(this.mkUn(op, e1, isType), e2, isType);
+  static mkBinOp(op, e1, e2, isType){
+    return new Call(this.mkUnOp(op, e1, isType), e2, isType);
+  }
+
+  static mkBinder(name, lam){
+    return this.mkUnOp(name, lam);
   }
 
   #typeInfo = null;
@@ -60,6 +66,89 @@ class Expr{
 
   log(ctx){
     log(O.rec([this, 'toStr'], ctx));
+  }
+
+  getUnOp(ctx, checkArity=1){
+    if(!this.isCall) return null;
+
+    const {target, arg} = this;
+    if(!target.isIdent) return null;
+
+    const op = target.name;
+    if(checkArity && !ctx.hasUnaryOp(op)) return null;
+
+    return [op, arg];
+  }
+
+  getBinOp(ctx){
+    if(!this.isCall) return null;
+
+    const {target, arg} = this;
+    const un = target.getUnOp(ctx, 0);
+
+    if(un === null) return null;
+    if(!ctx.hasBinaryOp(un[0])) return null;
+
+    return [...un, arg];
+  }
+
+  getBinder(ctx){
+    const un = this.getUnOp(ctx, 0);
+    if(un === null) return null;
+
+    const [binder, lam] = un;
+    if(!ctx.hasBinder(binder)) return null;
+    if(!lam.isLam) return null;
+
+    return [binder, lam.name, lam.expr];
+  }
+
+  getUni(ctx){
+    const binder = this.getBinder(ctx);
+
+    if(binder === null) return null;
+    if(binder[0] !== '∀') return null;
+
+    return binder.slice(1);
+  }
+
+  getImp(ctx){
+    const bin = this.getBinOp(ctx);
+    
+    if(bin === null) return null;
+    if(bin[0] !== '⟶') return null;
+
+    return bin.slice(1);
+  }
+
+  getPropInfo(ctx){
+    const unis = [];
+    const imps = [];
+
+    let e = this;
+
+    while(1){
+      const uni = e.getUni(ctx);
+
+      if(uni !== null){
+        unis.push(uni[0]);
+        e = uni[1];
+        continue;
+      }
+
+      const imp = e.getImp(ctx);
+
+      if(imp !== null){
+        imps.push(imp[0]);
+        e = imp[1];
+        continue;
+      }
+
+      imps.push(e);
+      break;
+    }
+
+    return [unis, imps];
   }
 
   *alpha(ctx){
@@ -113,9 +202,18 @@ class Expr{
 
     expr = yield [[expr, 'beta'], ctx];
 
-    // REMOVE THIS
-    // yield [[expr, 'unifyTypes'], ctx];
-    // assert(result[0]);
+    const [unis, imps] = expr.getPropInfo(ctx);
+
+    expr = imps.reduceRight((e1, e2) => {
+      return Expr.mkBinOp('⟶', e2, e1);
+    });
+
+    expr = unis.reduceRight((e, sym) => {
+      return Expr.mkBinder('∀', new Lambda(sym, e));
+    }, expr);
+
+    result = yield [[expr, 'unifyTypes'], ctx];
+    assert(result[0]);
 
     return [1, expr];
   }
@@ -126,7 +224,7 @@ class Expr{
   }
 
   *hasIdent(sym){
-    assert(typeof sym === 'symbol');
+    assert(isSym(sym));
 
     const idents = yield [[this, 'getSymIdents']];
     return O.has(idents, sym);
@@ -158,14 +256,17 @@ class NamedExpr extends Expr{
   constructor(name, isType){
     super(isType);
 
-    assert(typeof name === 'string' || typeof name === 'symbol');
+    assert(isStrOrSym(name));
     this.name = name;
   }
+
+  get isStr(){ return isStr(this.name); }
+  get isSym(){ return isSym(this.name); }
 
   getName(ctx, idents){
     const sym = this.name;
 
-    if(typeof sym === 'string')
+    if(isStr(sym))
       return sym;
     // return String(this.name).match(/\d+/)[0];
 
@@ -212,7 +313,7 @@ class Ident extends NamedExpr{
   *getSymIdents(idents=O.obj()){
     const {name} = this;
 
-    if(typeof name === 'symbol')
+    if(isSym(name))
       idents[name] = 1;
 
     return idents;
@@ -238,7 +339,7 @@ class Ident extends NamedExpr{
     const {ctx} = unifier;
     const {name} = this;
 
-    if(typeof name === 'string'){
+    if(isStr(name)){
       assert(ctx.has(name));
       const type = ctx.getType(name);
       return O.tco([type, 'alpha'], ctx);
@@ -306,7 +407,7 @@ class Lambda extends NamedExpr{
   *getSymIdents(idents=O.obj()){
     const {name, expr} = this;
 
-    if(typeof name === 'symbol')
+    if(isSym(name))
       idents[name] = 1;
 
     return O.tco([expr, 'getSymIdents'], idents);
@@ -329,7 +430,7 @@ class Lambda extends NamedExpr{
     const argType = unifier.getIdentType(name);
     const exprType = yield [[expr, 'getType'], unifier];
 
-    return Expr.mkBin('⟹', argType, exprType, 1);
+    return Expr.mkBinOp('⟹', argType, exprType, 1);
   }
 
   *eq1(ctx, other){
@@ -423,7 +524,7 @@ class Call extends Expr{
     const argType = yield [[arg, 'getType'], unifier];
     const resultType = new Ident(util.newSym(), 1);
 
-    unifier.addEq(targetType, Expr.mkBin('⟹', argType, resultType, 1));
+    unifier.addEq(targetType, Expr.mkBinOp('⟹', argType, resultType, 1));
 
     return resultType;
   }

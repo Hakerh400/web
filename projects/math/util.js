@@ -51,6 +51,18 @@ const genIdent = (i, isType=0) => {
   return `'τ${sub}`;
 };
 
+const isStrOrSym = a => {
+  return isStr(a) || isSym(a);
+};
+
+const isStr = a => {
+  return typeof a === 'string';
+};
+
+const isSym = a => {
+  return typeof a === 'symbol';
+};
+
 module.exports = {
   identChars,
 
@@ -60,4 +72,7 @@ module.exports = {
   getAvailIdents,
   getAvailIdent,
   genIdent,
+  isStrOrSym,
+  isStr,
+  isSym,
 };

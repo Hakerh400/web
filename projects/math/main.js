@@ -147,33 +147,58 @@ const onUpdatedLine = lineIndex => {
 }
 
 const onUpdatedLineR = function*(lineIndex){
-  return;
   if(lineIndex !== 0) return;
 
-  let result, expr;
-  lines.splice(1);
+  const call = function*(fn, ...args){
+    const result = yield [fn, ...args];
+
+    if(result[0] === 0){
+      const err = result[1];
+      const msg = typeof err === 'string' ?
+        err : su.tab(err.pos, `^ ${err.msg}`);
+
+      setLine(3, msg);
+
+      return O.breakRec();
+    }
+
+    return result[1];
+  };
+
+  lines.splice(2);
 
   const str = getLine(0);
-  result = O.rec(parser.parse, ctx, str, 0);
+  const exprRaw = yield [call, parser.parse, ctx, str, 0];
+  const expr = yield [call, [exprRaw, 'simplify'], ctx];
 
-  if(result[0] === 0){
-    const err = result[1];
-    return setLine(1, su.tab(err.pos, `^ ${err.msg}`));
-  }
+  const toStrIdents = util.obj2();
+  const [symStrObj, strSymObj] = toStrIdents;
 
-  expr = result[1];
-  result = yield [[expr, 'simplify'], ctx];
+  const toStr = function*(a){
+    if(util.isStr(a)) return a;
 
-  if(result[0] === 0)
-    return setLine(1, result[1]);
+    if(util.isSym(a)){
+      assert(O.has(symStrObj, a));
+      return symStrObj[a];
+    }
 
-  expr = result[1];
-  setLine(1, yield [[expr, 'toStr'], ctx]);
+    if(a === null) return 'null';
 
-  result = yield [[expr, 'unifyTypes'], ctx];
-  assert(result[0]);
+    if(O.isArr(a))
+      return su.addBrackets((yield [O.mapr, a, toStr]).join(', '));
 
-  setLine(2, yield [[expr.type, 'toStr'], ctx]);
+    if(a instanceof Expr)
+      return O.tco([a, 'toStr'], ctx, toStrIdents);
+
+    assert.fail();
+  };
+
+  const set = function*(n, a){
+    setLine(n, yield [toStr, a]);
+  };
+
+  yield [set, 3, expr];
+
   return;
 
   /*const types = result[1];
