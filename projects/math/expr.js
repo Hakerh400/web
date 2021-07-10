@@ -190,7 +190,7 @@ class Expr{
     return O.tco([expr, 'betaV'], ctx);
   }
 
-  *unifyTypes(ctx){
+  *mkTypeUnifier(ctx){
     assert(!this.isType);
 
     const identsObj = yield [[this, 'getSymIdents']];
@@ -198,9 +198,16 @@ class Expr{
 
     yield [[this, 'getType'], unifier];
 
+    return unifier;
+  }
+
+  *unifyTypes(ctx){
+    const unifier = yield [[this, 'mkTypeUnifier'], ctx];
     return O.tco([unifier, 'solve']);
   }
 
+  // Private function used by `unifyTypes` and `getTypeU`
+  // Do not call from external code!
   *getType(unifier){
     assert(!this.isType);
     // assert(this.#typeInfo === null);
