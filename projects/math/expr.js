@@ -19,6 +19,11 @@ class Expr{
     return this.mkUnOp(name, lam);
   }
 
+  static fromImps(imps){
+    assert(imps.length !== 0);
+    return O.last(imps).addImps(imps.slice(0, -1));
+  }
+
   #typeInfo = null;
   #type = null;
 
@@ -76,36 +81,36 @@ class Expr{
     log(O.rec([this, 'toStr'], ctx));
   }
 
-  getUnOp(ctx, checkArity=1){
+  getUnOp(ctx=null){
     if(!this.isCall) return null;
 
     const {target, arg} = this;
     if(!target.isIdent) return null;
 
     const op = target.name;
-    if(checkArity && !ctx.hasUnaryOp(op)) return null;
+    if(ctx !== null && !ctx.hasUnaryOp(op)) return null;
 
     return [op, arg];
   }
 
-  getBinOp(ctx, checkArity=1){
+  getBinOp(ctx=null){
     if(!this.isCall) return null;
 
     const {target, arg} = this;
-    const un = target.getUnOp(ctx, 0);
+    const un = target.getUnOp();
 
     if(un === null) return null;
-    if(checkArity && !ctx.hasBinaryOp(un[0])) return null;
+    if(ctx !== null && !ctx.hasBinaryOp(un[0])) return null;
 
     return [...un, arg];
   }
 
-  getBinder(ctx){
-    const un = this.getUnOp(ctx, 0);
+  getBinder(ctx=null){
+    const un = this.getUnOp();
     if(un === null) return null;
 
     const [binder, lam] = un;
-    if(!ctx.hasBinder(binder)) return null;
+    if(ctx !== null && !ctx.hasBinder(binder)) return null;
     if(!lam.isLam) return null;
 
     return [binder, lam.name, lam.expr];
@@ -194,7 +199,7 @@ class Expr{
     assert(!this.isType);
 
     const identsObj = yield [[this, 'getSymIdents']];
-    const unifier = yield [[TypeUnifier, 'new'], ctx, identsObj];
+    const unifier = yield [[Unifier.TypeUnifier, 'new'], ctx, identsObj];
 
     yield [[this, 'getType'], unifier];
 
@@ -206,7 +211,7 @@ class Expr{
     return O.tco([unifier, 'solve']);
   }
 
-  // Private function used by `unifyTypes` and `getTypeU`
+  // Private method used by `unifyTypes` and `getTypeU`
   // Do not call from external code!
   *getType(unifier){
     assert(!this.isType);
@@ -218,8 +223,26 @@ class Expr{
     return type;
   }
 
+  addImps(imps){
+    return imps.reduceRight((e1, e2) => {
+      return Expr.mkBinOp('⟶', e2, e1);
+    }, this);
+  }
+
+  addUnis(unis, idents=null){
+    return unis.reduceRight((e, sym) => {
+      if(idents !== null && !O.has(idents, sym))
+        return e;
+
+      return Expr.mkBinder('∀', new Lambda(sym, e));
+    }, this);
+  }
+
   *simplify(ctx){
     assert(!this.isType);
+
+    const freeIdents = yield [[this, 'getFreeIdents'], ctx];
+    assert(util.empty(freeIdents));
 
     let expr = yield [[this, 'alpha'], ctx];
     let result = yield [[expr, 'unifyTypes'], ctx];
@@ -231,13 +254,8 @@ class Expr{
 
     const [unis, imps] = expr.getPropInfo(ctx);
 
-    expr = imps.reduceRight((e1, e2) => {
-      return Expr.mkBinOp('⟶', e2, e1);
-    });
-
-    expr = unis.reduceRight((e, sym) => {
-      return Expr.mkBinder('∀', new Lambda(sym, e));
-    }, expr);
+    expr = Expr.fromImps(imps);
+    expr = expr.addUnis(unis, yield [[expr, 'getFreeIdents'], ctx]);
 
     result = yield [[expr, 'unifyTypes'], ctx];
     assert(result[0]);
@@ -277,6 +295,89 @@ class Expr{
     const expr = new Call(this.arg, e1);
 
     return O.tco([expr, 'simplify'], ctx);
+  }
+
+  // Modus Ponens
+  *mp(ctx, e){
+    let result;
+
+    result = yield [[this, 'simplify'], ctx];
+    if(result[0] === 0) return result;
+    const expr = result[1];
+
+    result = yield [[e, 'simplify'], ctx];
+    if(result[0] === 0) return result;
+    const ant = result[1];
+
+    const [unis1, imps1] = expr.getPropInfo(ctx);
+    const [unis2, imps2] = ant.getPropInfo(ctx)//[[ant.arg.name], [ant.arg.expr]]
+
+    if(imps1.length === 1)
+      return [0, `No premises found`];
+
+    const vars1 = O.arr2obj(unis1, null);
+    const vars2 = O.arr2obj(unis2, null);
+    const vars = util.mergeUniq(vars1, vars2);
+
+    const unifier = yield [[Unifier.ValueUnifier, 'new'], ctx, vars];
+
+    const lhs = imps1.shift();
+    const rhs = Expr.fromImps(imps2);
+
+    unifier.addEq(lhs, rhs);
+    result = yield [[unifier, 'solve']];
+    if(result[0] === 0) return result;
+
+    const exprNew = Expr.fromImps(imps1);
+    const freeVars = [];
+
+    let exprFinal = exprNew;
+
+    for(const sym of O.keys(vars)){
+      const val = vars[sym];
+
+      if(val === null){
+        freeVars.push(sym);
+        continue;
+      }
+
+      exprFinal = yield [[exprFinal, 'substIdent'], sym, val];
+    }
+
+    /*const freeIdents = yield [[exprFinal, 'getFreeIdents'], ctx];
+
+    for(const sym of freeVars){
+      if(!O.has(vars2, sym)) continue;
+      if(!O.has(freeIdents, sym)) continue;
+
+      return [0, `Universally quantified variable escaped antecedent`];
+    }*/
+
+    return [1, [freeVars, exprFinal]];
+  }
+
+  // Direct application of Modus Ponens
+  *apply(ctx, e){
+    const result = yield [[this, 'mp'], ctx, e];
+    if(result[0] === 0) return result;
+
+    const [freeVars, expr] = result[1];
+    const exprNew = expr.addUnis(freeVars);
+
+    return O.tco([exprNew, 'simplify'], ctx);
+  }
+
+  getLamArgType(){
+    assert(this.isLam);
+
+    const {type} = this;
+    assert(type !== null);
+
+    const binOp = type.getBinOp();
+    assert(binOp !== null);
+    assert(binOp[0] === '⟹');
+
+    return binOp[1];
   }
 
   *toStr(ctx, idents=util.obj2(), prec=0){
@@ -448,7 +549,7 @@ class Lambda extends NamedExpr{
       const type = this.type;
 
       if(type !== null){
-        const binOp = type.getBinOp(null, 0);
+        const binOp = type.getBinOp();
         assert(binOp !== null);
 
         idents[name] = binOp[1];

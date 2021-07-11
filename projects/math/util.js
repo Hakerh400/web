@@ -51,6 +51,24 @@ const genIdent = (i, isType=0) => {
   return `'τ${sub}`;
 };
 
+const mergeUniq = (obj1, obj2) => {
+  const obj = O.obj();
+
+  for(const key of O.keys(obj1))
+    obj[key] = obj1[key];
+
+  for(const key of O.keys(obj2)){
+    assert(!O.has(obj, key));
+    obj[key] = obj2[key];
+  }
+
+  return obj;
+};
+
+const empty = obj => {
+  return O.keys(obj).length === 0;
+};
+
 const isStrOrSym = a => {
   return isStr(a) || isSym(a);
 };
@@ -72,6 +90,8 @@ module.exports = {
   getAvailIdents,
   getAvailIdent,
   genIdent,
+  mergeUniq,
+  empty,
   isStrOrSym,
   isStr,
   isSym,

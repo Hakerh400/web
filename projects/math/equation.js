@@ -3,10 +3,19 @@
 const assert = require('assert');
 const util = require('./util');
 
+const {isStr, isSym, isStrOrSym} = util;
+
 class Equation{
-  constructor(lhs, rhs){
+  constructor(unifier, lhs, rhs){
+    this.unifier = unifier;
+
     if(this.cmp(lhs, rhs) > 0)
       [lhs, rhs] = [rhs, lhs];
+
+    this.pri1 = this.pri(lhs);
+    this.pri2 = this.pri(rhs);
+
+    assert(this.pri1 <= this.pri2);
 
     this.lhs = lhs;
     this.rhs = rhs;
@@ -18,11 +27,11 @@ class Equation{
     return this.pri(lhs) - this.pri(rhs);
   }
 
-  *toStr(ctx, idents=O.obj2()){
+  *toStr(unifier, idents=O.obj2()){
     const {lhs, rhs} = this;
-    const expr = Expr.mkBinOp('≡', lhs, rhs, 1);
+    const expr = Expr.mkBinOp('≡', lhs, rhs);
 
-    return O.tco([expr, 'toStr'], ctx, idents);
+    return O.tco([expr, 'toStr'], unifier, idents);
   }
 }
 
@@ -32,12 +41,35 @@ class TypeEquation extends Equation{
 
     if(expr.isIdent){
       const {name} = expr;
-      if(typeof name === 'symbol') return 0;
+
+      if(isSym(name)) return 0;
       return 1;
     }
 
-    if(expr.isCall);
+    if(expr.isCall)
       return 2;
+
+    assert.fail();
+  }
+}
+
+class ValueEquation extends Equation{
+  pri(expr){
+    const {unifier} = this;
+    assert(!expr.isType);
+
+    if(expr.isIdent){
+      const {name} = expr;
+
+      if(unifier.hasVar(name)) return 0;
+      return 1;
+    }
+
+    if(expr.isLam)
+      return 2;
+
+    if(expr.isCall)
+      return 3;
 
     assert.fail();
   }
@@ -45,6 +77,7 @@ class TypeEquation extends Equation{
 
 module.exports = Object.assign(Equation, {
   TypeEquation,
+  ValueEquation,
 });
 
 const Expr = require('./expr');

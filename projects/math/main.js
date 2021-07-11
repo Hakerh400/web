@@ -173,8 +173,7 @@ const onUpdatedLineR = function*(lineIndex){
 
   lines.splice(2);
 
-  const str = getLine(0);
-  const exprRaw = yield [call, parser.parse, ctx, str];
+  const exprRaw = yield [call, parser.parse, ctx, getLine(0)];
   const expr = yield [call, [exprRaw, 'simplify'], ctx];
 
   const toStrIdents = util.obj2();
@@ -203,10 +202,14 @@ const onUpdatedLineR = function*(lineIndex){
     setLine(n, yield [toStr, a]);
   };
 
-  yield [set, 3, expr];
-  yield [set, 4, expr.arg.type];
+  const ant = yield [call, parser.parse, ctx, getLine(1)];
+  const expr1 = yield [call, [expr, 'apply'], ctx, ant];
 
-  const specsLine = getLine(1).trim();
+  yield [set, 3, expr1];
+
+  return;
+
+  /*const specsLine = getLine(1).trim();
 
   if(specsLine.length !== 0){
     const specStrs = specsLine.split(',');
@@ -219,9 +222,7 @@ const onUpdatedLineR = function*(lineIndex){
 
     yield [set, 5, exprNew];
     yield [set, 6, exprNew.arg.type];
-  }
-
-  return;
+  }*/
 
   /*const types = result[1];
   const identsArr = O.keys(types);
