@@ -9,22 +9,36 @@ class Equation{
   constructor(unifier, lhs, rhs){
     this.unifier = unifier;
 
-    if(this.cmp(lhs, rhs) > 0)
-      [lhs, rhs] = [rhs, lhs];
-
+    this.lhs = lhs;
+    this.rhs = rhs;
     this.pri1 = this.pri(lhs);
     this.pri2 = this.pri(rhs);
 
-    assert(this.pri1 <= this.pri2);
-
-    this.lhs = lhs;
-    this.rhs = rhs;
+    this.sort();
+    
+    // assert(this.pri(this.lhs) === this.pri1);
+    // assert(this.pri(this.rhs) === this.pri2);
+    // assert(this.pri1 <= this.pri2);
   }
 
   pri(expr){ O.virtual('pri'); }
 
-  cmp(lhs, rhs){
-    return this.pri(lhs) - this.pri(rhs);
+  flip(){
+    const {lhs, rhs, pri1, pri2} = this;
+
+    this.lhs = rhs;
+    this.rhs = lhs;
+    this.pri1 = pri2;
+    this.pri2 = pri1;
+
+    return this;
+  }
+
+  sort(){
+    if(this.pri1 > this.pri2)
+      this.flip();
+
+    return this;
   }
 
   *toStr(unifier, idents=O.obj2()){
@@ -68,8 +82,17 @@ class ValueEquation extends Equation{
     if(expr.isLam)
       return 2;
 
-    if(expr.isCall)
+    if(expr.isCall){
       return 3;
+
+      /*const [target, args] = expr.getCall();
+      if(!target.isIdent) return 3;
+
+      const {name} = target;
+      if(unifier.hasVar(name)) return 0;
+
+      return 3;*/
+    }
 
     assert.fail();
   }

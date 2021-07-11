@@ -105,15 +105,15 @@ class TypeUnifier extends Unifier{
     const {ctx, eqs, identsObj, identsArr} = this;
 
     while(1){
-      // if(O.z){
-      //   O.logb();
-      //   log(yield [[this, 'toStr']]);
-      //   if(prompt())z;
-      // }
+      if(0){
+        O.logb();
+        log(yield [[this, 'toStr']]);
+        if(prompt())z;
+      }
       
       if(eqs.length === 0) break;
 
-      const eq = eqs.shift();
+      const eq = eqs.pop();
       const {pri1, pri2, lhs, rhs} = eq;
 
       if(pri1 === 0){
@@ -122,7 +122,7 @@ class TypeUnifier extends Unifier{
 
         if(O.has(idents, sym)){
           if(pri2 !== 0)
-            return this.err(`Occurs check [type]`);
+            return this.err(`Occurs check (type)`);
 
           continue;
         }
@@ -278,18 +278,16 @@ class ValueUnifier extends Unifier{
 
       if(eqs.length === 0) break;
 
-      const eq = eqs.shift();
+      const eq = eqs.pop();
       const {pri1, pri2, lhs, rhs} = eq;
 
       const mismatch = () => {
-        const exprTypes = ['const', 'lambda', 'call'];
-
         const getExprType = pri => {
-          assert(pri === (pri | 0));
-          assert(pri >= 1);
-          assert(pri <= 3);
+          if(pri === 1) return 'const';
+          if(pri === 2) return 'lambda';
+          if(pri === 3) return 'call';
 
-          return exprTypes[pri - 1];
+          assert.fail();
         };
 
         const exprType1 = getExprType(pri1);
@@ -308,11 +306,29 @@ class ValueUnifier extends Unifier{
 
       if(pri1 === 0){
         const idents = yield [[rhs, 'getFreeIdents'], ctx];
+
+        if(lhs.isCall){
+          assert.fail();
+
+          /*const [target, args] = lhs.getCall();
+          const sym = target.name;
+
+          if(1|O.has(idents, sym)){
+            eq.pri1 = 3;
+            eq.sort();
+            eqs.push(eq);
+            continue;
+          }
+
+          const lam = yield [[rhs, 'mkLam'], args];
+          continue;*/
+        }
+
         const sym = lhs.name;
 
         if(O.has(idents, sym)){
           if(pri2 !== 0)
-            return this.err(`Occurs check [value]`);
+            return this.err(`Occurs check (value)`);
 
           continue;
         }

@@ -116,6 +116,18 @@ class Expr{
     return [binder, lam.name, lam.expr];
   }
 
+  getCall(){
+    const args = [];
+    let expr = this;
+
+    while(expr.isCall){
+      args.push(expr.arg);
+      expr = expr.target;
+    }
+
+    return [expr, args.reverse()];
+  }
+
   getUni(ctx){
     const binder = this.getBinder(ctx);
 
@@ -310,7 +322,7 @@ class Expr{
     const ant = result[1];
 
     const [unis1, imps1] = expr.getPropInfo(ctx);
-    const [unis2, imps2] = ant.getPropInfo(ctx)//[[ant.arg.name], [ant.arg.expr]]
+    const [unis2, imps2] = /*ant.getPropInfo(ctx)*/[[], [ant]]
 
     if(imps1.length === 1)
       return [0, `No premises found`];
@@ -357,7 +369,7 @@ class Expr{
   }
 
   // Direct application of Modus Ponens
-  *apply(ctx, e){
+  *mpDir(ctx, e){
     const result = yield [[this, 'mp'], ctx, e];
     if(result[0] === 0) return result;
 
