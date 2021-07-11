@@ -17,7 +17,7 @@ const {g} = O.ceCanvas(1);
 
 const ws = 12;
 const hs = 25;
-const editorOffset = 15;
+const ofs = 15;
 
 const idents = {
   'bool': 0,
@@ -359,19 +359,23 @@ const render = () => {
   const wh = w >> 1;
   const hh = h >> 1;
 
+  const ofs2 = ofs * 2;
+  const width = (iw - ofs2) / ws >> 1;
+  const height = hh;
+
   g.beginPath();
   g.moveTo(iwh, 0);
   g.lineTo(iwh, ih);
   g.stroke();
 
-  g.translate(editorOffset, editorOffset);
+  g.translate(ofs, ofs);
   g.scale(ws, hs);
-  mainEditor.render(g, wh, hh);
+  mainEditor.render(g, width, height);
   g.resetTransform();
 
-  g.translate(iwh + editorOffset, editorOffset);
+  g.translate(iwh + ofs, ofs);
   g.scale(ws, hs);
-  outputEditor.render(g, wh, hh);
+  outputEditor.render(g, width, height);
   g.resetTransform();
 };
 
