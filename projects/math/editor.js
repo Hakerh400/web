@@ -8,20 +8,21 @@ const su = require('./str-util');
 const {min, max} = Math;
 
 class Editor{
+  selected = 0;
+  editable = 1;
+
   lines = [];
   cx = 0;
   cy = 0;
   cxPrev = 0;
   updatedLine = null;
   scrollY = 0;
-  selected = 0;
-  editable = 1;
+
+  markedLine = null;
 
   render(g, w, h){
-    const {lines, scrollY} = this;
+    const {lines, scrollY, markedLine} = this;
     const linesNum = lines.length;
-
-    g.fillStyle = 'black';
 
     for(let y = 0; y !== h; y++){
       const lineIndex = scrollY + y;
@@ -30,9 +31,19 @@ class Editor{
       const line = lines[lineIndex];
       const lineLen = line.length;
 
+      if(markedLine !== null){
+        const [my, mCol] = markedLine;
+
+        if(y === my){
+          g.fillStyle = mCol;
+          g.fillRect(0, y, w, 1);
+        }
+      }
+
       for(let x = 0; x !== w; x++){
         if(x >= lineLen) break;
 
+        g.fillStyle = 'black';
         g.fillText(line[x], x + .5, y + .5);
       }
     }
@@ -276,6 +287,11 @@ class Editor{
 
   decCx(){
     this.setCx(this.cx - 1);
+  }
+
+  setText(str){
+    if(this.locked) return;
+    this.lines = O.sanl(str);
   }
 
   appendLine(index, str){

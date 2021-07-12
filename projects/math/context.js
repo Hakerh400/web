@@ -3,19 +3,60 @@
 const assert = require('assert');
 const su = require('./str-util');
 
+const newObj = () => O.obj();
+
+const template = {
+  idents:  newObj,
+  ops:     newObj,
+  binders: newObj,
+  spacing: newObj,
+  meta:    newObj,
+};
+
+const templateKeys = O.keys(template);
+
 class Context{
-  constructor(idents, ops, binders, spaces){
-    this.idents = idents;
-    this.ops = ops;
-    this.binders = binders;
-    this.spaces = spaces;
+  static from(ctx){
+    return new Context(ctx);
+  }
+
+  constructor(ctx=null){
+    if(ctx === null){
+      for(const key of templateKeys)
+        this[key] = template[key](this);
+    }else{
+      for(const key of templateKeys)
+        this[key] = ctx[key];
+    }
+  }
+
+  copy(){
+    return new Context(this);
   }
 
   hasDef(name){
     if(O.has(this.idents, name)) return 1;
     if(O.has(this.ops, name)) return 1;
     if(O.has(this.binders, name)) return 1;
+
     return 0;
+  }
+
+  hasMeta(name){
+    return O.has(this.meta, name);
+  }
+
+  getMeta(name){
+    if(!this.hasMeta(name)) return null;
+    return this.meta[name];
+  }
+
+  hasSpacingInfo(name){
+    return O.has(this.spacing, name);
+  }
+
+  setSpacingInfo(name, info){
+    this.spacing[name] = info;
   }
 
   hasIdent(name){
@@ -31,17 +72,17 @@ class Context{
   }
 
   name2str(name, addParens=0){
-    const {spaces} = this;
+    const {spacing} = this;
 
     let str = name;
 
-    addSpaces: if(O.has(spaces, name)){
-      const [before, after, inParens] = spaces[name];
+    addSpacing: if(O.has(spacing, name)){
+      const [before, after, inParens] = spacing[name];
 
       if(!addParens && !inParens)
-        break addSpaces;
+        break addSpacing;
 
-      str = su.addSpaces(name, before, after);;
+      str = su.addSpacing(name, before, after);;
     }
 
     if(addParens && this.hasOpOrBinder(name))

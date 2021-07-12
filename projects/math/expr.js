@@ -130,18 +130,24 @@ class Expr{
 
   getUni(ctx){
     const binder = this.getBinder(ctx);
-
     if(binder === null) return null;
-    if(binder[0] !== '∀') return null;
+
+    const uniSym = ctx.getMeta('uni');
+    assert(uniSym !== null);
+
+    if(binder[0] !== uniSym) return null;
 
     return binder.slice(1);
   }
 
   getImp(ctx){
     const bin = this.getBinOp(ctx);
-    
     if(bin === null) return null;
-    if(bin[0] !== '⟶') return null;
+
+    const impSym = ctx.getMeta('imp');
+    assert(impSym !== null);
+
+    if(bin[0] !== impSym) return null;
 
     return bin.slice(1);
   }
@@ -236,17 +242,23 @@ class Expr{
   }
 
   addImps(imps){
+    const impSym = ctx.getMeta('imp');
+    assert(impSym !== null);
+
     return imps.reduceRight((e1, e2) => {
-      return Expr.mkBinOp('⟶', e2, e1);
+      return Expr.mkBinOp(impSym, e2, e1);
     }, this);
   }
 
   addUnis(unis, idents=null){
+    const uniSym = ctx.getMeta('uni');
+    assert(uniSym !== null);
+
     return unis.reduceRight((e, sym) => {
       if(idents !== null && !O.has(idents, sym))
         return e;
 
-      return Expr.mkBinder('∀', new Lambda(sym, e));
+      return Expr.mkBinder(uniSym, new Lambda(sym, e));
     }, this);
   }
 
@@ -379,7 +391,7 @@ class Expr{
     return O.tco([exprNew, 'simplify'], ctx);
   }
 
-  getLamArgType(){
+  getLamArgType(ctx){
     assert(this.isLam);
 
     const {type} = this;
@@ -387,7 +399,10 @@ class Expr{
 
     const binOp = type.getBinOp();
     assert(binOp !== null);
-    assert(binOp[0] === '⟹');
+
+    const arrowSym = ctx.getMeta('arrow');
+    assert(arrowSym !== null);
+    assert(binOp[0] === arrowSym);
 
     return binOp[1];
   }
@@ -590,7 +605,10 @@ class Lambda extends NamedExpr{
     const argType = unifier.getIdentType(name);
     const exprType = yield [[expr, 'getType'], unifier];
 
-    return Expr.mkBinOp('⟹', argType, exprType, 1);
+    const arrowSym = ctx.getMeta('arrow');
+    assert(arrowSym !== null);
+
+    return Expr.mkBinOp(arrowSym, argType, exprType, 1);
   }
 
   *eq1(ctx, other){
@@ -607,7 +625,10 @@ class Lambda extends NamedExpr{
       e = e.expr;
     }
 
-    return [ctx.getPrec('λ'), `λ${
+    const lamSym = ctx.getMeta('lambda');
+    assert(lamSym !== null);
+
+    return [ctx.getPrec(lamSym), `${lamSym}${
       names.join(' ')}. ${
       yield [[e, 'toStr'], ctx, idents]}`];
   }
@@ -684,7 +705,10 @@ class Call extends Expr{
     const argType = yield [[arg, 'getType'], unifier];
     const resultType = new Ident(util.newSym(), 1);
 
-    unifier.addEq(targetType, Expr.mkBinOp('⟹', argType, resultType, 1));
+    const arrowSym = ctx.getMeta('arrow');
+    assert(arrowSym !== null);
+
+    unifier.addEq(targetType, Expr.mkBinOp(arrowSym, argType, resultType, 1));
 
     return resultType;
   }

@@ -6,16 +6,16 @@ const {abs, min, max, sin, cos, atan2} = Math;
 
 const {g} = O.ceCanvas();
 
-const fullIters = 1
+const fullIters = 1;
 
 const pat = [
   0, -.5,
   .5, -.5,
   .5, 0,
-]
+];
 
-const offset = 100
-const offset2 = offset * 2
+const offset = 100;
+const offset2 = offset * 2;
 
 let w, h;
 

@@ -6,7 +6,7 @@ const openParenChars = '([{';
 const closedParenChars = ')]}';
 const strLiteralDelimChars = '"`';
 
-const addSpaces = (str, before=1, after=1) => {
+const addSpacing = (str, before=1, after=1) => {
   return tab(before) + str + tab(after);
 };
 
@@ -78,7 +78,7 @@ module.exports = {
   closedParenChars,
   strLiteralDelimChars,
 
-  addSpaces,
+  addSpacing,
   addParens,
   addBrackets,
   addBraces,

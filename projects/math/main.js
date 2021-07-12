@@ -5,6 +5,7 @@ const parser = require('./parser');
 const Expr = require('./expr');
 const Context = require('./context');
 const Editor = require('./editor');
+const LineData = require('./line-data');
 const specialChars = require('./special-chars');
 const util = require('./util');
 const su = require('./str-util');
@@ -18,6 +19,8 @@ const {g} = O.ceCanvas(1);
 const ws = 12;
 const hs = 25;
 const ofs = 15;
+
+const maxSmallNat = 1e3;
 
 const idents = {
   // 'bool': 0,
@@ -49,11 +52,9 @@ const binders = {
   // '∃!': `('a ⟹ bool) ⟹ bool`,
 };
 
-const spaces = {};
+const spacing = {};
 
-const ctx = new Context(idents, ops, binders, spaces);
-
-for(const key of O.keys(idents))
+/*for(const key of O.keys(idents))
   idents[key] = [idents[key], [0, []]];
 
 for(const key of O.keys(binders))
@@ -82,10 +83,12 @@ for(const obj of [idents, ops, binders]){
       precs[i] = p;
     }
   }
-}
+}*/
 
 const mainEditor = new Editor();
 const outputEditor = new Editor();
+
+const linesData = [];
 
 let iw, ih;
 let w, h;
@@ -119,12 +122,170 @@ const aels = () => {
   O.ael('resize', onResize);
 };
 
-const onUpdatedLine = function*(lineIndex){
-  if(lineIndex >= 3) return;
+const onNav = () => {
+  const lineIndex = mainEditor.cy;
+  const linesDataNum = linesData.length;
 
-  // mainEditor.removeLines(3);
-  return;
-  outputEditor.removeLines();
+  // assert(linesDataNum !== 0);
+  if(linesDataNum === 0) return;
+
+  const data = linesData[min(lineIndex, linesDataNum - 1)];
+  outputEditor.setText(data.str);
+};
+
+const onUpdatedLine = lineIndex => {
+  const {lines} = mainEditor;
+
+  linesData.length = lineIndex;
+  mainEditor.markedLine = null;
+
+  for(let i = lineIndex; i !== lines.length; i++){
+    const ctx = i === 0 ? new Context() : linesData[i - 1].ctx;
+    const data = O.rec(processLine, i, ctx);
+
+    linesData[i] = data;
+
+    if(data.err){
+      mainEditor.markedLine = [i, '#faa'];
+      break;
+    }
+  }
+}
+
+const processLine = function*(lineIndex, ctx){
+  const processResult = function*(result){
+    if(result[0] === 0){
+      const err = result[1];
+      const msg = typeof err === 'string' ?
+        err : err.msg//su.tab(err.pos, `^ ${err.msg}`);
+
+      return O.breakRec(new LineData(lineIndex, ctx, msg, 1));
+    }
+
+    return result[1];
+  };
+
+  const call = function*(fn, ...args){
+    const result = yield [fn, ...args];
+    return O.tco(processResult, result);
+  };
+
+  const err = function*(msg){
+    return O.tco(processResult, [0, msg]);
+  };
+
+  const {lines} = mainEditor;
+  let line = lines[lineIndex];
+
+  line = line.trimLeft();
+
+  if(line.length === 0)
+    return new LineData(lineIndex, ctx);
+
+  const checkEol = function*(){
+    if(line.length !== 0)
+      return [0, `Extra tokens found at the end of the line: ${O.sf(line)}`];
+
+    return [1];
+  };
+
+  const advance = function*(str){
+    line = line.slice(str.length);
+    line = line.trimLeft();
+
+    return [1, str];
+  };
+
+  const nextToken = function*(parens=0){
+    let match = line.match(/^[^\s\(\)\[\]\.]+/);
+
+    if(match !== null)
+      return O.tco(advance, match[0]);
+
+    if(!parens) return [1, null];
+
+    match = line.match(/^\(\s*([^\s\(\)\[\]\.]+)\s*\)/);
+    if(match === null) return [1, null];
+
+    yield [call, advance, match[0]];
+
+    return [1, match[1]];
+  };
+
+  const getInt = function*(min=null, max=null){
+    if(min !== null) min = BigInt(min);
+    if(max !== null) max = BigInt(max);
+
+    if(min !== null && max !== null)
+      assert(min <= max);
+
+    const tk = yield [call, nextToken];
+
+    if(tk === null)
+      return [0, `Missing number`];
+
+    if(!/^(?:0|\-?[1-9][0-9]*)$/.test(tk))
+      return [0, `Invalid number ${O.sf(tk)}`];
+
+    const n = BigInt(tk);
+
+    if(min !== null && n < min)
+      return [0, `Number ${n} is too small (must be at least ${min})`];
+
+    if(max !== null && n > max)
+      return [0, `Number ${n} is too big (must be at most ${max})`];
+
+    return [1, n];
+  };
+
+  const getNat = function*(max){
+    return O.tco(getInt, 0, max);
+  };
+
+  const getSmallNat = function*(){
+    const n = yield [call, getNat, maxSmallNat];
+    return [1, Number(n)];
+  };
+
+  const processLine = function*(){
+    const keyword = yield [call, nextToken];
+
+    if(keyword === null)
+      return [0, `Missing keyword`];
+
+    if(keyword === 'spacing'){
+      const name = yield [call, nextToken, 1];
+
+      if(name === null)
+        return [0, `Missing identifier`];
+
+      const before = yield [call, getSmallNat];
+      const after = yield [call, getSmallNat];
+      const inParens = yield [call, getInt, 0, 1];
+
+      yield [call, checkEol];
+
+      if(ctx.hasSpacingInfo(name))
+        return [0, `Spacing has already been defined for (${ctx.name2str(name)})`];
+
+      ctx = ctx.copy();
+      ctx.spacing = util.copyObj(ctx.spacing);
+
+      ctx.setSpacingInfo(name, [before, after, inParens]);
+
+      const str = `spacing (${ctx.name2str(name)}) ${before} ${after} ${inParens}`;
+
+      return [1, new LineData(lineIndex, ctx, str)]
+    }
+
+    return [0, `Unknown keyword ${O.sf(keyword)}`];
+  };
+
+  yield O.tco(call, processLine);
+
+  // return new LineData(lineIndex, ctx, `Line ${lineIndex + 1}`);
+
+  /*outputEditor.removeLines();
 
   const getLine = index => {
     return mainEditor.getLine(index);
@@ -132,22 +293,6 @@ const onUpdatedLine = function*(lineIndex){
 
   const setLine = (index, str) => {
     outputEditor.setLine(index, str);
-  };
-
-  const call = function*(fn, ...args){
-    const result = yield [fn, ...args];
-
-    if(result[0] === 0){
-      const err = result[1];
-      const msg = typeof err === 'string' ?
-        err : err.msg//su.tab(err.pos, `^ ${err.msg}`);
-
-      setLine(6, msg);
-
-      return O.breakRec();
-    }
-
-    return result[1];
   };
 
   const exprRaw = yield [call, parser.parse, ctx, getLine(0)];
@@ -191,7 +336,7 @@ const onUpdatedLine = function*(lineIndex){
 
   yield [set, 2, expr];
 
-  return;
+  return;*/
 
   /*const specsLine = getLine(1).trim();
 
@@ -234,9 +379,10 @@ const updateDisplay = () => {
 
   try{
     if(updatedLine !== null)
-      O.rec(onUpdatedLine, updatedLine);
+      onUpdatedLine(updatedLine);
   }finally{
     mainEditor.updatedLine = null;
+    onNav();
     render();
   }
 };
@@ -312,7 +458,7 @@ const onKeyPress = evt => {
 
 const save = () => {
   localStorage[project] = JSON.stringify({
-    lines: mainEditor.lines,
+    str: mainEditor.lines.join('\n'),
     cx: mainEditor.cx,
     cy: mainEditor.cy,
     cxPrev: mainEditor.cxPrev,
@@ -322,18 +468,18 @@ const save = () => {
 
 const load = () => {
   const {
-    lines,
+    str,
     cx,
     cy,
     cxPrev,
     scrollY,
   } = JSON.parse(localStorage[project]);
 
-  mainEditor.lines = lines;
   mainEditor.cx = cx;
   mainEditor.cy = cy;
   mainEditor.cxPrev = cxPrev;
   mainEditor.scrollY = scrollY;
+  mainEditor.setText(str);
 };
 
 const onResize = evt => {

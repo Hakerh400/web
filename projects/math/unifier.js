@@ -379,7 +379,7 @@ class ValueUnifier extends Unifier{
 
         eq.pri(lhs);
 
-        ident.type = lhs.getLamArgType();
+        ident.type = lhs.getLamArgType(ctx);
 
         const lhs1 = yield [[lhs.expr, 'substIdent'], lhs.name, ident];
         const rhs1 = yield [[rhs.expr, 'substIdent'], rhs.name, ident];
