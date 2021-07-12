@@ -4,11 +4,11 @@ const assert = require('assert');
 const su = require('./str-util');
 
 class Context{
-  constructor(idents, ops, binders, longOpNames){
+  constructor(idents, ops, binders, spaces){
     this.idents = idents;
     this.ops = ops;
     this.binders = binders;
-    this.longOpNames = longOpNames;
+    this.spaces = spaces;
   }
 
   hasDef(name){
@@ -31,10 +31,18 @@ class Context{
   }
 
   name2str(name, addParens=0){
+    const {spaces} = this;
+
     let str = name;
 
-    if(O.has(this.longOpNames, name))
-      str = su.addSpaces(name);
+    addSpaces: if(O.has(spaces, name)){
+      const [before, after, inParens] = spaces[name];
+
+      if(!addParens && !inParens)
+        break addSpaces;
+
+      str = su.addSpaces(name, before, after);;
+    }
 
     if(addParens && this.hasOpOrBinder(name))
       str = su.addParens(name);

@@ -51,6 +51,15 @@ class Editor{
     g.stroke();
   }
 
+  scrollUp(){
+    if(this.scrollY === 0) return;
+    this.scrollY--;
+  }
+
+  scrollDown(){
+    this.scrollY++;
+  }
+
   processKey(key){
     if(!this.selected) return;
     if(!this.editable) return;
@@ -327,13 +336,21 @@ class Editor{
     this.lines.splice(index, 0, ...xs);
   }
 
-  removeLines(index=0, num=this.lines.length){
+  removeLines(index=0, num=1){
     if(this.locked) return;
+
+    const {lines} = this;
 
     this.expandLines(index);
     this.updateLine(index);
 
-    return this.lines.splice(index, num);
+    assert(index + num <= lines.length);
+
+    return lines.splice(index, num);
+  }
+
+  spliceLines(index=0, num=this.lines.length - num){
+    return this.removeLines(index, num);
   }
 
   expandLines(index){

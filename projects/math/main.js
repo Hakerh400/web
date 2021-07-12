@@ -20,42 +20,38 @@ const hs = 25;
 const ofs = 15;
 
 const idents = {
-  'bool': 0,
+  // 'bool': 0,
 
-  'True': `bool`,
-  'False': `bool`,
-  'undefined': `'a`,
-  'isFunc': `'a ⟹ bool`,
+  // 'True': `bool`,
+  // 'False': `bool`,
+  // 'undefined': `'a`,
+  // 'isFunc': `'a ⟹ bool`,
 };
 
 const ops = {
-  '⟹': [2, [25, [1, 0]]],
-  '≡': [2, [70, [0, 1]]],
+  // '⟹': [2, [25, [1, 0]]],
+  // '≡': [2, [70, [0, 1]]],
 
-  '⟶': [`bool ⟹ bool ⟹ bool`, [25, [1, 0]]],
-  '⟷': [`bool ⟹ bool ⟹ bool`, [24, [0, 1]]],
-  '∧': [`bool ⟹ bool ⟹ bool`, [35, [0, 1]]],
-  '∨': [`bool ⟹ bool ⟹ bool`, [30, [0, 1]]],
-  '¬': [`bool ⟹ bool`, [40, [0]]],
-  '=': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
-  '≠': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
-  ' ': [`('a ⟹ 'b) ⟹ 'a ⟹ 'b`, [80, [0, 1]]],
+  // '⟶': [`bool ⟹ bool ⟹ bool`, [25, [1, 0]]],
+  // '⟷': [`bool ⟹ bool ⟹ bool`, [24, [0, 1]]],
+  // '∧': [`bool ⟹ bool ⟹ bool`, [35, [0, 1]]],
+  // '∨': [`bool ⟹ bool ⟹ bool`, [30, [0, 1]]],
+  // '¬': [`bool ⟹ bool`, [40, [0]]],
+  // '=': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
+  // '≠': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
+  // ' ': [`('a ⟹ 'b) ⟹ 'a ⟹ 'b`, [80, [0, 1]]],
 };
 
 const binders = {
-  'λ': null,
-  '∀': `('a ⟹ bool) ⟹ bool`,
-  '∃': `('a ⟹ bool) ⟹ bool`,
-  '∃!': `('a ⟹ bool) ⟹ bool`,
+  // 'λ': null,
+  // '∀': `('a ⟹ bool) ⟹ bool`,
+  // '∃': `('a ⟹ bool) ⟹ bool`,
+  // '∃!': `('a ⟹ bool) ⟹ bool`,
 };
 
-const longOpNames = {
-  '⟹': 1,
-  '⟶': 1,
-  '⟷': 1,
-};
+const spaces = {};
 
-const ctx = new Context(idents, ops, binders, longOpNames);
+const ctx = new Context(idents, ops, binders, spaces);
 
 for(const key of O.keys(idents))
   idents[key] = [idents[key], [0, []]];
@@ -126,7 +122,8 @@ const aels = () => {
 const onUpdatedLine = function*(lineIndex){
   if(lineIndex >= 3) return;
 
-  mainEditor.removeLines(3);
+  // mainEditor.removeLines(3);
+  return;
   outputEditor.removeLines();
 
   const getLine = index => {
@@ -267,12 +264,12 @@ const onKeyDown = evt => {
       }
 
       if(code === 'ArrowUp'){
-        if(scrollY !== 0) scrollY--;
+        mainEditor.scrollUp();
         break flagCases;
       }
 
       if(code === 'ArrowDown'){
-        scrollY++;
+        mainEditor.scrollDown();
         break flagCases;
       }
 
@@ -361,7 +358,7 @@ const render = () => {
 
   const ofs2 = ofs * 2;
   const width = (iw - ofs2) / ws >> 1;
-  const height = hh;
+  const height = (ih - ofs2) / hs | 0;
 
   g.beginPath();
   g.moveTo(iwh, 0);
