@@ -296,7 +296,9 @@ class Editor{
 
   setText(str){
     if(this.locked) return;
+
     this.lines = O.sanl(str);
+    this.updateLine(0);
   }
 
   clear(){

@@ -229,6 +229,13 @@ const processLine = function*(lineIndex, ctx){
     return [1];
   };
 
+  const assertFreeRule = function*(name){
+    if(ctx.hasRule(name))
+      return [0, `Rule ${O.sf(name)} already exists`];
+
+    return [1];
+  };
+
   const assertFree = function*(name){
     if(ctx.hasName(name))
       return [0, `Identifier ${name2str(name)} has already been defined`];
@@ -249,6 +256,9 @@ const processLine = function*(lineIndex, ctx){
     const expr = yield [call, parser.parse, ctx, str, isType];
     const expected = yield [call, [expr, 'simplify'], ctx];
 
+    if(yield [[actual, 'eqAlpha'], expected])
+      return [1];
+
     const str1 = yield [[expected, 'toStr'], ctx];
     const str2 = yield [[actual, 'toStr'], ctx];
 
@@ -266,14 +276,14 @@ const processLine = function*(lineIndex, ctx){
   };
 
   const getToken = function*(parens=0){
-    let match = line.match(/^[^\s\(\)\[\]\,\.]+/);
+    let match = line.match(/^[^\s\(\)\[\]\,\.\:]+/);
 
     if(match !== null)
       return O.tco(advance, match[0]);
 
     if(!parens) return [1, null];
 
-    match = line.match(/^\(\s*([^\s\(\)\[\]\,\.]+)\s*\)/);
+    match = line.match(/^\(\s*([^\s\(\)\[\]\,\.\:]+)\s*\)/);
     if(match === null) return [1, null];
 
     yield [call, advance, match[0]];
@@ -401,6 +411,24 @@ const processLine = function*(lineIndex, ctx){
     return [1, sym];
   };
 
+  const getExpr = function*(isType){
+    const exprRaw = yield [call, parser.parse, ctx, line, isType];
+    const expr = yield [call, [exprRaw, 'simplify'], ctx];
+
+    line = '';
+
+    return [1, expr];
+  };
+
+  const getProp = function*(){
+    const prop = yield [call, getExpr];
+    const boolSym = yield [call, getMeta, 'bool'];
+
+    yield [call, assertEq, prop.type, boolSym];
+
+    return [1, prop];
+  };
+
   const parseIdentSortFuncs = {
     *prefix(){
       const arity = yield [call, getArity];
@@ -447,8 +475,6 @@ const processLine = function*(lineIndex, ctx){
 
       if(arity !== 0)
         return [0, `Bool type cannot have arguments`];
-
-      ctx.meta.bool = name;
     },
 
     *arrow(name){
@@ -464,8 +490,6 @@ const processLine = function*(lineIndex, ctx){
 
     *lambda(name){
       yield [call, assertFree, name];
-
-      ctx.meta.lambda = name;
     },
 
     *uni(name){
@@ -481,8 +505,6 @@ const processLine = function*(lineIndex, ctx){
       const arrowSym = yield [call, getMeta, 'arrow'];
 
       yield [call, assertEq, type, `${arrowSym} (${arrowSym} 'a ${boolSym}) ${boolSym}`];
-
-      ctx.meta.uni = name;
     },
 
     *imp(name){
@@ -498,8 +520,6 @@ const processLine = function*(lineIndex, ctx){
       const arrowSym = yield [call, getMeta, 'arrow'];
 
       yield [call, assertEq, type, `${arrowSym} ${boolSym} (${arrowSym} ${boolSym} ${boolSym})`];
-
-      ctx.meta.uni = name;
     },
   };
 
@@ -558,10 +578,8 @@ const processLine = function*(lineIndex, ctx){
         [sort, info] = yield [call, getIdentInfo];
 
       yield [call, getExact, '::'];
-      let type = yield [call, parser.parse, ctx, line, 1];
-      type = yield [call, [type, 'simplify'], ctx];
+      const type = yield [call, getExpr, 1];
 
-      line = '';
       ctx = ctx.copy();
 
       assert(O.has(insertIdentSortFuncs, sort));
@@ -588,8 +606,27 @@ const processLine = function*(lineIndex, ctx){
       ctx.meta = util.copyObj(ctx.meta);
 
       yield [call, metaSymbolFuncs[name], ident];
+      ctx.meta[name] = ident;
 
       return ret(`meta ${name} ${name2str(ident)}`);
+    },
+
+    *axiom(){
+      const name = yield [call, getToken];
+
+      if(name === null)
+        return [0, `Missing axiom name`];
+
+      yield [call, assertFreeRule, name];
+      yield [call, getExact, ':'];
+
+      const prop = yield [call, getProp];
+
+      ctx = ctx.copy();
+      ctx.rules = util.copyObj(ctx.rules);
+      ctx.rules[name] = prop;
+
+      return ret(`axiom ${name}: ${yield [[prop, 'toStr'], ctx]}`);
     },
   };
 
@@ -703,11 +740,15 @@ const processLine = function*(lineIndex, ctx){
 
 const updateDisplay = () => {
   const {updatedLine} = mainEditor;
+  const linesDataNum = linesData.length;
+
+  const hasErr = linesDataNum !== 0 ?
+    O.last(linesData).err : 0;
 
   try{
     update: {
       if(updatedLine === null) break update;
-      if(updatedLine !== 0 && updatedLine >= linesData.length) break update;
+      if(hasErr && updatedLine >= linesDataNum) break update;
 
       onUpdatedLine(updatedLine);
     }

@@ -1,24 +1,29 @@
-lambda λ
-func_type ( ⟹ ) [infixr 25]
+spacing ( ⟹ ) 1 1 1
+spacing ( ⟶ ) 1 1 1
+spacing (THE) 0 1 0
 
-type bool
+type ( ⟹ ) 2 [infixr 25]
+type bool  0
 
 const True  :: bool
 const False :: bool
 
-const (∀)    [binder]    :: ('a ⟹ bool) ⟹ bool
-const (THE)   [binder]    :: ('a ⟹ bool) ⟹ 'a
+const (∀)   [binder]    :: ('a  ⟹  bool)  ⟹  bool
+const (THE) [binder]    :: ('a  ⟹  bool)  ⟹  'a
+const ( ⟶ ) [infixr 25] :: bool  ⟹  bool  ⟹  bool
+const (=)   [infixl 50] :: 'a  ⟹  'a  ⟹  bool
 
-const ( ⟶ ) [infixr 25] :: bool ⟹ bool ⟹ bool
-const (=)     [infixl 50] :: 'a ⟹ 'a ⟹ bool
-
-const undefined           :: 'a
+meta bool   bool
+meta arrow  ( ⟹ )
+meta lambda (λ)
+meta uni    (∀)
+meta imp    ( ⟶ )
 
 axiom true:        True
-axiom bool_induct: ∀P a. P True  ⟶  P False  ⟶  P a
 axiom bool_dif:    ∀P. True = False  ⟶  P
+axiom bool_induct: ∀P a. P True  ⟶  P False  ⟶  P a
 
-axiom refl:        ∀a. a = a
-axiom subst:       ∀P a b. a = b  ⟶  P a  ⟶  P b
-axiom ext:         ∀f g. (∀a. f a = g a)  ⟶  f = g
-axiom the:         ∀x. (THE y. y = x) = x
+axiom refl: ∀a. a = a
+axiom sub:  ∀P a b. a = b  ⟶  P a  ⟶  P b
+axiom ext:  ∀f g. (∀a. f a = g a)  ⟶  f = g
+axiom the:  ∀a. (THE b. b = a) = a

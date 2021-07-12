@@ -9,7 +9,7 @@ const su = require('./str-util');
 const {Term, Op, Binder, End} = cs;
 const {Ident, Call, Lambda} = Expr;
 
-const reservedChars = '(),.';
+const reservedChars = '(),.:';
 
 const reservedCharsObj = O.arr2obj(reservedChars);
 

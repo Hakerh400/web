@@ -7,7 +7,7 @@ const closedParenChars = ')]}';
 const strLiteralDelimChars = '"`';
 
 const addSpacing = (str, before=1, after=1) => {
-  return tab(before) + str + tab(after);
+  return sp(before) + str + sp(after);
 };
 
 const addParens = str => {
@@ -41,7 +41,11 @@ const getTabStr = line => {
 };
 
 const tab = (size, str='') => {
-  return ' '.repeat(size * tabSize) + str;
+  return sp(size * tabSize) + str;
+};
+
+const sp = size => {
+  return ' '.repeat(size);
 };
 
 const isOpenParen = char => {
@@ -86,6 +90,7 @@ module.exports = {
   getTabSize,
   getTabStr,
   tab,
+  sp,
   isOpenParen,
   isClosedParen,
   getOpenParenType,

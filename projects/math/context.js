@@ -38,6 +38,10 @@ class Context{
     return new Context(this);
   }
 
+  hasRule(name){
+    return O.has(this.rules, name);
+  }
+
   hasName(name){
     if(O.has(this.idents, name)) return 1;
     if(O.has(this.ops, name)) return 1;
@@ -105,7 +109,10 @@ class Context{
     addSpacing: if(O.has(spacing, name)){
       const [before, after, inParens] = spacing[name];
 
-      if(!inParens && (addParens === 2 || !addParens))
+      if(addParens === 2)
+        break addSpacing;
+
+      if(addParens && !inParens)
         break addSpacing;
 
       str = su.addSpacing(name, before, after);
@@ -120,7 +127,13 @@ class Context{
   getInfo(name){
     if(this.hasIdent(name)) return this.idents[name];
     if(this.hasOp(name)) return this.ops[name];
-    if(this.hasBinder(name)) return this.binders[name];
+
+    if(this.hasBinder(name)){
+      if(name === this.meta.lambda)
+        return null;
+
+      return this.binders[name];
+    }
 
     return null;
   }
@@ -182,6 +195,9 @@ class Context{
   }
 
   hasBinder(name){
+    if(name === this.meta.lambda)
+      return 1;
+
     return O.has(this.binders, name);
   }
 }

@@ -19,9 +19,9 @@ class Expr{
     return this.mkUnOp(name, lam);
   }
 
-  static fromImps(imps){
+  static fromImps(ctx, imps){
     assert(imps.length !== 0);
-    return O.last(imps).addImps(imps.slice(0, -1));
+    return O.last(imps).addImps(ctx, imps.slice(0, -1));
   }
 
   #typeInfo = null;
@@ -67,6 +67,7 @@ class Expr{
   *renameIdents(){ O.virtual('renameIdents'); }
   *getTypeU(){ O.virtual('getTypeU'); }
   *eq1(){ O.virtual('eq1'); }
+  *eqAlpha1(){ O.virtual('eqAlpha1'); }
   *toStr1(){ O.virtual('toStr1'); }
 
   from(...args){
@@ -242,7 +243,7 @@ class Expr{
     return type;
   }
 
-  addImps(imps){
+  addImps(ctx, imps){
     const impSym = ctx.getMeta('imp');
     assert(impSym !== null);
 
@@ -251,7 +252,7 @@ class Expr{
     }, this);
   }
 
-  addUnis(unis, idents=null){
+  addUnis(ctx, unis, idents=null){
     const uniSym = ctx.getMeta('uni');
     assert(uniSym !== null);
 
@@ -280,8 +281,8 @@ class Expr{
 
     const [unis, imps] = expr.getPropInfo(ctx);
 
-    expr = Expr.fromImps(imps);
-    expr = expr.addUnis(unis, yield [[expr, 'getFreeIdents'], ctx]);
+    expr = Expr.fromImps(ctx, imps);
+    expr = expr.addUnis(ctx, unis, yield [[expr, 'getFreeIdents'], ctx]);
 
     result = yield [[expr, 'unifyTypes'], ctx];
     assert(result[0]);
@@ -292,6 +293,13 @@ class Expr{
   *eq(other){
     assert(this.isType === other.isType);
     return O.tco([this, 'eq1']);
+  }
+
+  *eqAlpha(other, idents=O.obj()){
+    assert(this.isType);
+    assert(other.isType);
+
+    return O.tco([this, 'eqAlpha1'], other, idents);
   }
 
   *hasIdent(sym){
@@ -348,13 +356,13 @@ class Expr{
     const unifier = yield [[Unifier.ValueUnifier, 'new'], ctx, vars];
 
     const lhs = imps1.shift();
-    const rhs = Expr.fromImps(imps2);
+    const rhs = Expr.fromImps(ctx, imps2);
 
     unifier.addEq(lhs, rhs);
     result = yield [[unifier, 'solve']];
     if(result[0] === 0) return result;
 
-    const exprNew = Expr.fromImps(imps1);
+    const exprNew = Expr.fromImps(ctx, imps1);
     const freeVars = [];
 
     let exprFinal = exprNew;
@@ -388,7 +396,7 @@ class Expr{
     if(result[0] === 0) return result;
 
     const [freeVars, expr] = result[1];
-    const exprNew = expr.addUnis(freeVars);
+    const exprNew = expr.addUnis(ctx, freeVars);
 
     return O.tco([exprNew, 'simplify'], ctx);
   }
@@ -519,12 +527,29 @@ class Ident extends NamedExpr{
     return this.name === other.name;
   }
 
+  *eqAlpha1(other, idents){
+    if(!other.isIdent) return 0;
+
+    const name1 = this.name;
+    const name2 = other.name;
+    const s = isSym(name1);
+
+    if(isSym(name2) !== s) return 0;
+    if(!s) return name1 === name2;
+
+    if(O.has(idents, name1))
+      return name2 === idents[name1];
+
+    if(O.has(idents, name2))
+      return name1 === idents[name2];
+
+    idents[name1] = name2;
+    idents[name2] = name1;
+  }
+
   *toStr1(ctx, idents){
     const name = this.getName(ctx, idents);
-    const name1 = ctx.name2str(name);
-
-    if(ctx.hasOpOrBinder(name))
-      return [null, su.addParens(name1)];
+    const name1 = ctx.name2str(name, 1);
 
     return [null, name1];
   }
@@ -616,6 +641,10 @@ class Lambda extends NamedExpr{
   *eq1(ctx, other){
     if(this.name !== other.name) return 0;
     return O.tco(yield [[this.expr, 'eq1'], other.expr]);
+  }
+
+  *eqAlpha1(other, idents){
+    assert.fail();
   }
 
   *toStr1(ctx, idents){
@@ -720,6 +749,15 @@ class Call extends Expr{
     return O.tco([this.arg, 'eq1'], other.arg);
   }
 
+  *eqAlpha1(other, idents){
+    if(!other.isCall) return 0;
+
+    if(!(yield [[this.target, 'eqAlpha1'], other.target, idents]))
+      return 0;
+
+    return O.tco([this.arg, 'eqAlpha1'], other.arg, idents);
+  }
+
   *toStr1(ctx, idents){
     const {target, arg} = this;
 
@@ -779,10 +817,12 @@ class Call extends Expr{
           const name = arg.getName(ctx, idents);
           const str = yield [[arg.expr, 'toStr'], ctx, idents];
 
-          if(str.startsWith(op))
-            return [p, str.replace(op, `${op}${name} `)];
+          const opStr = ctx.name2str(op);
 
-          return [p, `${op}${name}. ${str}`];
+          if(str.startsWith(op))
+            return [p, str.replace(op, `${opStr}${name} `)];
+
+          return [p, `${opStr}${name}. ${str}`];
         }
 
         assert.fail();
@@ -790,6 +830,7 @@ class Call extends Expr{
     }
 
     const ps = ctx.getPrecs(' ');
+
     return [ctx.getPrec(' '), `${
       yield [[target, 'toStr'], ctx, idents, ps[0]]} ${
       yield [[arg, 'toStr'], ctx, idents, ps[1]]}`];
