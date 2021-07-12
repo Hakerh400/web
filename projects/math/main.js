@@ -238,7 +238,7 @@ const processLine = function*(lineIndex, ctx){
 
   const assertFree = function*(name){
     if(ctx.hasName(name))
-      return [0, `Identifier ${name2str(name)} has already been defined`];
+      return [0, `Identifier ${name2str(name)} already exists`];
 
     return [1];
   };
