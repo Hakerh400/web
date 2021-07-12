@@ -264,33 +264,33 @@ const processLine = function*(lineIndex, ctx){
     return [1, name];
   };
 
-  ////////////////////////////////////////////////
+  //////////////////////////////////////////////////
 
-  // DEDUPLICATE
+  const getSomeParens = function*(c1, c2){
+    const end = line.indexOf(c2);
+
+    if(!line.startsWith(c1) || end === -1)
+      return [0, `Invalid parenthesis near ${O.sf(line)}`];
+    
+    const str = line.slice(1, end);
+    line = line.slice(end + 1).trimLeft();
+
+    return [1, str.split(',').map(a => a.trim())];
+  };
 
   const getParens = function*(){
-    const match = line.match(/^\(([^\(\)\[\]\,\.]+(?:,[^\(\)\[\]\,\.]+)*)\)/);
-
-    if(match === null)
-      return [0, `Invalid parenthesis near ${O.sf(line)}`];
-
-    yield [call, advance, match[0]];
-
-    return [1, match[1].split(',').map(a => a.trim())];
+    return O.tco(getSomeParens, '(', ')');
   };
 
   const getBrackets = function*(){
-    const match = line.match(/^\[([^\(\)\[\]\,\.]+(?:,[^\(\)\[\]\,\.]+)*)\]/);
-
-    if(match === null)
-      return [0, `Invalid parenthesis near ${O.sf(line)}`];
-
-    yield [call, advance, match[0]];
-
-    return [1, match[1].split(',').map(a => a.trim())];
+    return O.tco(getSomeParens, '[', ']');
   };
 
-  ////////////////////////////////////////////////
+  const getBraces = function*(){
+    return O.tco(getSomeParens, '{', '}');
+  };
+
+  //////////////////////////////////////////////////
 
   const getInt = function*(min=null, max=null){
     if(min !== null) min = BigInt(min);
