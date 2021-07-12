@@ -43,7 +43,7 @@ const ops = {
   // '¬': [`bool ⟹ bool`, [40, [0]]],
   // '=': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
   // '≠': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
-  // ' ': [`('a ⟹ 'b) ⟹ 'a ⟹ 'b`, [80, [0, 1]]],
+  // ' ': [null, [80, [0, 1]]],
 };
 
 const binders = {
@@ -175,6 +175,10 @@ const processLine = function*(lineIndex, ctx){
     return O.tco(processResult, result);
   };
 
+  const ret = str => {
+    return [1, new LineData(lineIndex, ctx, str)];
+  };
+
   const err = function*(msg){
     return O.tco(processResult, [0, msg]);
   };
@@ -232,6 +236,28 @@ const processLine = function*(lineIndex, ctx){
     return [1];
   };
 
+  const assertDefined = function*(name){
+    if(!ctx.hasName(name))
+      return [0, `Undefined identifier ${name2str(name)}`];
+
+    return [1];
+  };
+
+  const assertEq = function*(actual, str){
+    const {isType} = actual;
+
+    const expr = yield [call, parser.parse, ctx, str, isType];
+    const expected = yield [call, [expr, 'simplify'], ctx];
+
+    const str1 = yield [[expected, 'toStr'], ctx];
+    const str2 = yield [[actual, 'toStr'], ctx];
+
+    if(str2 !== str1)
+      return [0, `${isType ? 'Types' : 'Values'} do not match\n${
+        su.tab(1, `Expected: ${str1}`)}\n${
+        su.tab(1, `Actual:${' '.repeat(2)} ${str2}`)}`];
+  };
+
   const advance = function*(str){
     line = line.slice(str.length);
     line = line.trimLeft();
@@ -255,8 +281,8 @@ const processLine = function*(lineIndex, ctx){
     return [1, match[1]];
   };
 
-  const getIdent = function*(parens){
-    const name = yield [call, getToken, parens];
+  const getIdent = function*(){
+    const name = yield [call, getToken, 1];
 
     if(name === null)
       return [0, `Missing identifier`];
@@ -264,7 +290,12 @@ const processLine = function*(lineIndex, ctx){
     return [1, name];
   };
 
-  //////////////////////////////////////////////////
+  const getExact = function*(str){
+    if(!line.startsWith(str))
+      return [0, `Expected ${O.sf(str)} near ${O.sf(line)}`];
+
+    return O.tco(advance, str);
+  };
 
   const getSomeParens = function*(c1, c2){
     const end = line.indexOf(c2);
@@ -289,8 +320,6 @@ const processLine = function*(lineIndex, ctx){
   const getBraces = function*(){
     return O.tco(getSomeParens, '{', '}');
   };
-
-  //////////////////////////////////////////////////
 
   const getInt = function*(min=null, max=null){
     if(min !== null) min = BigInt(min);
@@ -360,6 +389,18 @@ const processLine = function*(lineIndex, ctx){
     return [1, info];
   };
 
+  const getMeta = function*(name, addParens=1){
+    let sym = ctx.getMeta(name);
+
+    if(sym === null)
+      return [0, `Meta symbol ${O.sf(name)} must already be defined`];
+
+    if(addParens)
+      sym = su.addParens(sym);
+
+    return [1, sym];
+  };
+
   const parseIdentSortFuncs = {
     *prefix(){
       const arity = yield [call, getArity];
@@ -368,12 +409,12 @@ const processLine = function*(lineIndex, ctx){
 
     *infixl(){
       const arity = yield [call, getArity];
-      return [1, ['operator', [arity, [0, .5]]]];
+      return [1, ['operator', [arity, [arity, arity + .5]]]];
     },
 
     *infixr(){
       const arity = yield [call, getArity];
-      return [1, ['operator', [arity, [.5, 0]]]];
+      return [1, ['operator', [arity, [arity + .5, arity]]]];
     },
 
     *binder(){
@@ -398,14 +439,76 @@ const processLine = function*(lineIndex, ctx){
     },
   };
 
+  const metaSymbolFuncs = {
+    *bool(name){
+      yield [call, assertDefined, name];
+
+      const arity = ctx.getTypeArity(name);
+
+      if(arity !== 0)
+        return [0, `Bool type cannot have arguments`];
+
+      ctx.meta.bool = name;
+    },
+
+    *arrow(name){
+      yield [call, assertDefined, name];
+
+      const arity = ctx.getTypeArity(name);
+
+      if(arity !== 2)
+        return [0, `Arrow must be a binary type`];
+
+      ctx.meta.arrow = name;
+    },
+
+    *lambda(name){
+      yield [call, assertFree, name];
+
+      ctx.meta.lambda = name;
+    },
+
+    *uni(name){
+      yield [call, assertDefined, name];
+
+      if(ctx.hasType(name))
+        return [0, `Universal quantifier cannot be a type`];
+
+      const type = ctx.getType(name);
+      assert(type !== null);
+
+      const boolSym = yield [call, getMeta, 'bool'];
+      const arrowSym = yield [call, getMeta, 'arrow'];
+
+      yield [call, assertEq, type, `${arrowSym} (${arrowSym} 'a ${boolSym}) ${boolSym}`];
+
+      ctx.meta.uni = name;
+    },
+
+    *imp(name){
+      yield [call, assertDefined, name];
+
+      if(ctx.hasType(name))
+        return [0, `Implication cannot be a type`];
+
+      const type = ctx.getType(name);
+      assert(type !== null);
+
+      const boolSym = yield [call, getMeta, 'bool'];
+      const arrowSym = yield [call, getMeta, 'arrow'];
+
+      yield [call, assertEq, type, `${arrowSym} ${boolSym} (${arrowSym} ${boolSym} ${boolSym})`];
+
+      ctx.meta.uni = name;
+    },
+  };
+
   const keywordFuncs = {
     *spacing(){
-      const name = yield [call, getIdent, 1];
+      const name = yield [call, getIdent];
       const before = yield [call, getSmallNat];
       const after = yield [call, getSmallNat];
       const inParens = yield [call, getSmallNat, 1];
-
-      yield [call, assertEol];
 
       if(ctx.hasSpacingInfo(name))
         return [0, `Spacing has already been defined for ${name2str(name)}`];
@@ -415,44 +518,78 @@ const processLine = function*(lineIndex, ctx){
 
       ctx.setSpacingInfo(name, [before, after, inParens]);
 
-      const str = `spacing ${name2str(name)} ${before} ${after} ${inParens}`;
-
-      return [1, new LineData(lineIndex, ctx, str)]
+      return ret(`spacing ${name2str(name)} ${before} ${after} ${inParens}`);
     },
 
     *type(){
-      const name = yield [call, getIdent, 1];
+      const name = yield [call, getIdent];
+      yield [call, assertFree, name];
+
       const arity = yield [call, getArity];
 
-      let identInfo = ['identifier', [arity, [0, []]]];
+      let sort = 'identifier'
+      let info = [0, []];
 
-      if(neol()){
-        const info = yield [call, getIdentInfo];
-        const [identSort, details] = info;
+      if(line.startsWith('[')){
+        [sort, info] = yield [call, getIdentInfo];
 
-        if(identSort !== 'operator')
+        if(sort !== 'operator')
           return [0, `Type identifier ${
             name2str(name)} cannot be defined as \`${
-            identSort}\``];
-
-        identInfo = [identSort, [arity, details]];
-        yield [call, assertEol];
+            sort}\``];
       }
-
-      const [identSort, details] = identInfo;
-      yield [call, assertFree, name];
 
       ctx = ctx.copy();
 
-      assert(O.has(insertIdentSortFuncs, identSort));
-      yield [call, insertIdentSortFuncs[identSort], name, details]
+      assert(O.has(insertIdentSortFuncs, sort));
+      yield [call, insertIdentSortFuncs[sort], name, [arity, info]];
 
-      return [1, new LineData(lineIndex, ctx), `type ${name2str(name)} ${arity}`];
+      return ret(`type ${name2str(name)} ${arity}`);
+    },
 
-      // ctx = ctx.copy();
-      // ctx.spacing = util.copyObj(ctx.spacing);
+    *const(){
+      const name = yield [call, getIdent];
+      yield [call, assertFree, name];
 
-      // ctx.setSpacingInfo(name, [before, after, inParens]);
+      let sort = 'identifier'
+      let info = [0, []];
+
+      if(line.startsWith('['))
+        [sort, info] = yield [call, getIdentInfo];
+
+      yield [call, getExact, '::'];
+      let type = yield [call, parser.parse, ctx, line, 1];
+      type = yield [call, [type, 'simplify'], ctx];
+
+      line = '';
+      ctx = ctx.copy();
+
+      assert(O.has(insertIdentSortFuncs, sort));
+      yield [call, insertIdentSortFuncs[sort], name, [type, info]];
+
+      return ret(`const ${name2str(name)} :: ${yield [[type, 'toStr'], ctx]}`);
+    },
+
+    *meta(){
+      const name = yield [call, getToken];
+
+      if(name === null)
+        return [0, `Missing meta symbol name`];
+
+      if(!O.has(metaSymbolFuncs, name))
+        return [0, `Unknown meta symbol ${O.sf(name)}`];
+
+      if(ctx.hasMeta(name))
+        return [0, `Meta symbol ${O.sf(name)} has already been defined`];
+
+      const ident = yield [call, getIdent, 0];
+
+      ctx = ctx.copy();
+      ctx.meta = util.copyObj(ctx.meta);
+
+      yield [call, metaSymbolFuncs[name], ident];
+
+      return ret(`meta ${name} ${name2str(ident)}`);
     },
   };
 
@@ -465,7 +602,10 @@ const processLine = function*(lineIndex, ctx){
     if(!O.has(keywordFuncs, keyword))
       return [0, `Unknown keyword ${O.sf(keyword)}`];
 
-    return O.tco(keywordFuncs[keyword]);
+    const data = yield [call, keywordFuncs[keyword]];
+    yield [call, assertEol];
+
+    return [1, data];
   };
 
   yield O.tco(call, processLine);

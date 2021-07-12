@@ -9,7 +9,7 @@ const su = require('./str-util');
 const {Term, Op, Binder, End} = cs;
 const {Ident, Call, Lambda} = Expr;
 
-const reservedChars = '().';
+const reservedChars = '(),.';
 
 const reservedCharsObj = O.arr2obj(reservedChars);
 
@@ -21,6 +21,8 @@ const isReservedChar = tk => {
 const parse = function*(ctx, str, isType=0){
   const strLen = str.length;
   const parens = [];
+
+  const lamSym = ctx.getMeta('lambda');
 
   let iPrev = 0;
   let i = 0;
@@ -291,15 +293,47 @@ const parse = function*(ctx, str, isType=0){
     };
 
     const newIdent = name => {
-      return newExpr(Ident, name);
+      const expr = newExpr(Ident, name);
+      if(!isType) return expr;
+
+      if(name.startsWith('\'')){
+        expr.typeArity = 0;
+        return expr;
+      }
+
+      const info = ctx.getInfo(name);
+      assert(info !== null);
+
+      const arity = info[0];
+      assert(typeof arity === 'number');
+
+      expr.typeArity = arity;
+      return expr;
     };
 
     const newLambda = (name, expr) => {
+      assert(!isType);
       return newExpr(Lambda, name, expr);
     };
 
     const newCall = (target, arg) => {
-      return newExpr(Call, target, arg);
+      const expr = newExpr(Call, target, arg);
+      if(!isType) return expr;
+
+      const arity = target.typeArity;
+      assert(arity !== null);
+
+      checkFinished(arg);
+
+      if(arity === 0){
+        const ident = target.getCall()[0];
+        assert(ident.isIdent);
+
+        err(`Too many arguments for type ${O.rec([ident, 'toStr'], ctx)}`);
+      }
+
+      expr.typeArity = arity - 1;
+      return expr;
     };
 
     const newExpr = (ctor, ...args) => {
@@ -352,7 +386,7 @@ const parse = function*(ctx, str, isType=0){
             err(`Binder ${ident2str(tk)} in type context`);
 
           const name = tk;
-          const isLam = name === 'λ';
+          const isLam = lamSym !== null && name === lamSym;
 
           if(!isLam && isOnlyInGroup())
             return newIdent(name);
@@ -421,7 +455,6 @@ const parse = function*(ctx, str, isType=0){
     assert(last.isTerm);
 
     push(new End());
-    // if(stack[0].name==='¬')debugger;
     combineStackElems();
 
     assert(stack.length === 2);
@@ -433,6 +466,20 @@ const parse = function*(ctx, str, isType=0){
     return result.expr;
   };
 
+  const checkFinished = expr => {
+    assert(isType);
+
+    const arity = expr.typeArity;
+    assert(arity !== null);
+
+    if(arity === 0) return;
+
+    const ident = expr.getCall()[0];
+    assert(ident.isIdent);
+
+    err(`Not enough arguments for type ${O.rec([ident, 'toStr'], ctx)}`);
+  };
+
   try{
     const expr = O.rec(parse, isType);
 
@@ -441,6 +488,9 @@ const parse = function*(ctx, str, isType=0){
       iPrev = i;
       err(`Unmatched closed parenthese`);
     }
+
+    if(isType)
+      checkFinished(expr);
 
     return [1, expr];
   }catch(e){

@@ -27,8 +27,9 @@ class Expr{
   #typeInfo = null;
   #type = null;
 
-  constructor(isType=0){
+  constructor(isType=0, typeArity=null){
     this.isType = isType;
+    this.typeArity = typeArity;
   }
 
   get ctor(){ return this.constructor; }
@@ -263,7 +264,8 @@ class Expr{
   }
 
   *simplify(ctx){
-    assert(!this.isType);
+    if(this.isType)
+      return [1, yield [[this, 'alpha'], ctx]];
 
     const freeIdents = yield [[this, 'getFreeIdents'], ctx];
     assert(util.empty(freeIdents));

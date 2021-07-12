@@ -81,6 +81,10 @@ const isSym = a => {
   return typeof a === 'symbol';
 };
 
+const isNum = a => {
+  return typeof a === 'symbol';
+};
+
 module.exports = {
   identChars,
 
@@ -95,4 +99,5 @@ module.exports = {
   isStrOrSym,
   isStr,
   isSym,
+  isNum,
 };

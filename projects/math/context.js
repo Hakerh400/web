@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const util = require('./util');
 const su = require('./str-util');
 
 const newObj = () => O.obj();
@@ -11,6 +12,7 @@ const template = {
   binders: newObj,
   spacing: newObj,
   meta:    newObj,
+  rules:   newObj,
 };
 
 const templateKeys = O.keys(template);
@@ -24,6 +26,8 @@ class Context{
     if(ctx === null){
       for(const key of templateKeys)
         this[key] = template[key](this);
+
+      this.ops[' '] = [null, [80, [0, 1]]];
     }else{
       for(const key of templateKeys)
         this[key] = ctx[key];
@@ -71,6 +75,28 @@ class Context{
     return this.hasOp(name) && this.getArity(name) === 2;
   }
 
+  hasType(name){
+    const info = this.getInfo(name);
+    if(info === null) return null;
+
+    return util.isNum(info[0]);
+  }
+
+  getTypeArity(name){
+    if(!this.hasType(name)) return null;
+    return this.getInfo(name)[0];
+  }
+
+  getType(name){
+    const info = this.getInfo(name);
+    if(info === null) return null;
+
+    const type = info[0];
+    if(util.isNum(type)) return null;
+
+    return type;
+  }
+
   name2str(name, addParens=0){
     const {spacing} = this;
 
@@ -79,7 +105,7 @@ class Context{
     addSpacing: if(O.has(spacing, name)){
       const [before, after, inParens] = spacing[name];
 
-      if(!addParens && !inParens)
+      if(!inParens && (addParens === 2 || !addParens))
         break addSpacing;
 
       str = su.addSpacing(name, before, after);
@@ -131,14 +157,14 @@ class Context{
 
   getArity(name){
     const info = this.getPrecInfo(name);
-    if(info) return info[1].length;
-    return null;
+    if(!info) return null;
+    return info[1].length;
   }
 
   getPrec(name){
     const info = this.getPrecInfo(name);
-    if(info) return info[0];
-    return null;
+    if(!info) return null;
+    return info[0];
   }
 
   getPrecs(name){

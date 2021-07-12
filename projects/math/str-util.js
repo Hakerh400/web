@@ -41,7 +41,7 @@ const getTabStr = line => {
 };
 
 const tab = (size, str='') => {
-  return ' '.repeat(size) + str;
+  return ' '.repeat(size * tabSize) + str;
 };
 
 const isOpenParen = char => {

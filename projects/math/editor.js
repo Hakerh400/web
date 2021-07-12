@@ -16,6 +16,7 @@ class Editor{
   cy = 0;
   cxPrev = 0;
   updatedLine = null;
+  scrollX = 0;
   scrollY = 0;
 
   markedLine = null;
@@ -34,7 +35,7 @@ class Editor{
       if(markedLine !== null){
         const [my, mCol] = markedLine;
 
-        if(y === my){
+        if(y === my - scrollY){
           g.fillStyle = mCol;
           g.fillRect(0, y, w, 1);
         }
@@ -49,12 +50,16 @@ class Editor{
     }
 
     if(this.selected)
-      this.drawCursor(g);
+      this.drawCursor(g, w, h);
   }
 
-  drawCursor(g){
+  drawCursor(g, w, h){
     const {cx, cy, scrollY} = this;
+    const x = cx - scrollX;
     const y = cy - scrollY;
+
+    if(x < 0 || x >= w) return;
+    if(y < 0 || y >= h) return;
 
     g.beginPath();
     g.moveTo(cx, y);
