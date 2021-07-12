@@ -82,7 +82,7 @@ const isSym = a => {
 };
 
 const isNum = a => {
-  return typeof a === 'symbol';
+  return typeof a === 'number';
 };
 
 module.exports = {
