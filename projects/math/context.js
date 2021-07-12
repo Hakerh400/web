@@ -109,11 +109,13 @@ class Context{
     addSpacing: if(O.has(spacing, name)){
       const [before, after, inParens] = spacing[name];
 
-      if(addParens === 2)
-        break addSpacing;
-
-      if(addParens && !inParens)
-        break addSpacing;
+      if(addParens !== 2){
+        if(addParens && !inParens)
+          break addSpacing;
+      }else{
+        if(!inParens)
+          break addSpacing;
+      }
 
       str = su.addSpacing(name, before, after);
     }

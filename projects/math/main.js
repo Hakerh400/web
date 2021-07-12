@@ -391,7 +391,7 @@ const processLine = function*(lineIndex, ctx){
       return [0, `Missing identifier sort`];
 
     if(!O.has(parseIdentSortFuncs, sort))
-      return [0, `Unknown ident sort ${O.sf(sort)}`];
+      return [0, `Unknown identifier sort ${O.sf(sort)}`];
 
     const info = yield [call, parseIdentSortFuncs[sort]];
     yield [call, pop];
