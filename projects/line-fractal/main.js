@@ -6,17 +6,22 @@ const {abs, min, max, sin, cos, atan2} = Math;
 
 const {g} = O.ceCanvas();
 
-const iterations = 10;
-const offset = 100;
+const fullIters = 1
 
-const offset2 = offset * 2;
+const pat = [
+  0, -.5,
+  .5, -.5,
+  .5, 0,
+]
 
-let w = O.iw;
-let h = O.ih;
+const offset = 100
+const offset2 = offset * 2
+
+let w, h;
 
 const main = () => {
   aels();
-  O.raf(render);
+  onResize();
 };
 
 const aels = () => {
@@ -31,22 +36,23 @@ const onResize = evt => {
 
   canvas.width = w;
   canvas.height = h;
+
+  render();
 };
 
 const render = () => {
   const t = O.now / 10e3;
   const k = abs(t % 2 - 1);
-  const pat = [.5, -k];
 
   drawFractal(pat);
 
-  O.raf(render);
+  // O.raf(render);
 };
 
 const drawFractal = pat => {
   const wh = w / 2;
   const hh = h / 2;
-  
+
   const w1 = w - offset2;
   const h1 = h - offset2;
 
@@ -112,7 +118,7 @@ const iterate = pat => {
   const patSize = pat.length;
   let ps = [0, 0, 1, 0];
 
-  for(let iter = 0; iter !== iterations; iter++){
+  while(ps.length < 1e6){
     const psNum = ps.length;
     const psNum2 = ps.length - 2;
 
@@ -145,6 +151,8 @@ const iterate = pat => {
     psNew.push(ps[psNum - 2], ps[psNum - 1]);
 
     ps = psNew;
+
+    if(!fullIters) break;
   }
 
   return ps;
