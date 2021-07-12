@@ -34,7 +34,7 @@ class Context{
     return new Context(this);
   }
 
-  hasDef(name){
+  hasName(name){
     if(O.has(this.idents, name)) return 1;
     if(O.has(this.ops, name)) return 1;
     if(O.has(this.binders, name)) return 1;
@@ -82,11 +82,11 @@ class Context{
       if(!addParens && !inParens)
         break addSpacing;
 
-      str = su.addSpacing(name, before, after);;
+      str = su.addSpacing(name, before, after);
     }
 
-    if(addParens && this.hasOpOrBinder(name))
-      str = su.addParens(name);
+    if(addParens === 2 || (addParens && this.hasOpOrBinder(name)))
+      str = su.addParens(str);
 
     return str;
   }

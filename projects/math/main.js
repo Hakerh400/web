@@ -20,7 +20,8 @@ const ws = 12;
 const hs = 25;
 const ofs = 15;
 
-const maxSmallNat = 1e3;
+const smallNatMax = 1e3;
+const mediumNatMax = 2 ** 30 - 1;
 
 const idents = {
   // 'bool': 0,
@@ -126,8 +127,10 @@ const onNav = () => {
   const lineIndex = mainEditor.cy;
   const linesDataNum = linesData.length;
 
-  // assert(linesDataNum !== 0);
-  if(linesDataNum === 0) return;
+  if(lineIndex >= linesDataNum){
+    outputEditor.clear();
+    return;
+  }
 
   const data = linesData[min(lineIndex, linesDataNum - 1)];
   outputEditor.setText(data.str);
@@ -154,6 +157,8 @@ const onUpdatedLine = lineIndex => {
 
 const processLine = function*(lineIndex, ctx){
   const processResult = function*(result){
+    if(!result) return result;
+
     if(result[0] === 0){
       const err = result[1];
       const msg = typeof err === 'string' ?
@@ -179,12 +184,50 @@ const processLine = function*(lineIndex, ctx){
 
   line = line.trimLeft();
 
-  if(line.length === 0)
+  const eol = () => {
+    return line.length === 0;
+  };
+
+  const neol = () => {
+    return line.length !== 0;
+  };
+
+  const name2str = name => {
+    return ctx.name2str(name, 2);
+  };
+
+  if(eol())
     return new LineData(lineIndex, ctx);
 
-  const checkEol = function*(){
-    if(line.length !== 0)
-      return [0, `Extra tokens found at the end of the line: ${O.sf(line)}`];
+  const stack = [];
+
+  const push = function*(str){
+    stack.push(line);
+    line = str;
+  };
+
+  const pop = function*(assertEmpty=1){
+    assert(stack.length !== 0);
+
+    if(assertEmpty)
+      yield [call, assertEol];
+
+    const str = line;
+    line = stack.pop();
+
+    return str;
+  };
+
+  const assertEol = function*(){
+    if(neol())
+      return [0, `Extra tokens found at the end: ${O.sf(line)}`];
+
+    return [1];
+  };
+
+  const assertFree = function*(name){
+    if(ctx.hasName(name))
+      return [0, `Identifier ${name2str(name)} has already been defined`];
 
     return [1];
   };
@@ -196,21 +239,58 @@ const processLine = function*(lineIndex, ctx){
     return [1, str];
   };
 
-  const nextToken = function*(parens=0){
-    let match = line.match(/^[^\s\(\)\[\]\.]+/);
+  const getToken = function*(parens=0){
+    let match = line.match(/^[^\s\(\)\[\]\,\.]+/);
 
     if(match !== null)
       return O.tco(advance, match[0]);
 
     if(!parens) return [1, null];
 
-    match = line.match(/^\(\s*([^\s\(\)\[\]\.]+)\s*\)/);
+    match = line.match(/^\(\s*([^\s\(\)\[\]\,\.]+)\s*\)/);
     if(match === null) return [1, null];
 
     yield [call, advance, match[0]];
 
     return [1, match[1]];
   };
+
+  const getIdent = function*(parens){
+    const name = yield [call, getToken, parens];
+
+    if(name === null)
+      return [0, `Missing identifier`];
+
+    return [1, name];
+  };
+
+  ////////////////////////////////////////////////
+
+  // DEDUPLICATE
+
+  const getParens = function*(){
+    const match = line.match(/^\(([^\(\)\[\]\,\.]+(?:,[^\(\)\[\]\,\.]+)*)\)/);
+
+    if(match === null)
+      return [0, `Invalid parenthesis near ${O.sf(line)}`];
+
+    yield [call, advance, match[0]];
+
+    return [1, match[1].split(',').map(a => a.trim())];
+  };
+
+  const getBrackets = function*(){
+    const match = line.match(/^\[([^\(\)\[\]\,\.]+(?:,[^\(\)\[\]\,\.]+)*)\]/);
+
+    if(match === null)
+      return [0, `Invalid parenthesis near ${O.sf(line)}`];
+
+    yield [call, advance, match[0]];
+
+    return [1, match[1].split(',').map(a => a.trim())];
+  };
+
+  ////////////////////////////////////////////////
 
   const getInt = function*(min=null, max=null){
     if(min !== null) min = BigInt(min);
@@ -219,7 +299,7 @@ const processLine = function*(lineIndex, ctx){
     if(min !== null && max !== null)
       assert(min <= max);
 
-    const tk = yield [call, nextToken];
+    const tk = yield [call, getToken];
 
     if(tk === null)
       return [0, `Missing number`];
@@ -242,43 +322,150 @@ const processLine = function*(lineIndex, ctx){
     return O.tco(getInt, 0, max);
   };
 
-  const getSmallNat = function*(){
-    const n = yield [call, getNat, maxSmallNat];
+  const getSmallNat = function*(max=smallNatMax){
+    assert(max <= smallNatMax);
+
+    const n = yield [call, getNat, max];
     return [1, Number(n)];
   };
 
-  const processLine = function*(){
-    const keyword = yield [call, nextToken];
+  const getMediumNat = function*(){
+    const n = yield [call, getNat, mediumNatMax];
+    return [1, Number(n)];
+  };
 
-    if(keyword === null)
-      return [0, `Missing keyword`];
+  const getArity = function*(){
+    return O.tco(getMediumNat);
+  };
 
-    if(keyword === 'spacing'){
-      const name = yield [call, nextToken, 1];
+  const getIdentInfo = function*(){
+    const elems = yield [call, getBrackets];
 
-      if(name === null)
-        return [0, `Missing identifier`];
+    if(elems.length !== 1)
+      return [0, `Expected exactly one element in [${elems.join(', ')}]`];
 
+    yield [call, push, elems[0]];
+
+    const sort = yield [call, getToken];
+
+    if(sort === null)
+      return [0, `Missing identifier sort`];
+
+    if(!O.has(parseIdentSortFuncs, sort))
+      return [0, `Unknown ident sort ${O.sf(sort)}`];
+
+    const info = yield [call, parseIdentSortFuncs[sort]];
+    yield [call, pop];
+
+    return [1, info];
+  };
+
+  const parseIdentSortFuncs = {
+    *prefix(){
+      const arity = yield [call, getArity];
+      return [1, ['operator', [arity, [0]]]];
+    },
+
+    *infixl(){
+      const arity = yield [call, getArity];
+      return [1, ['operator', [arity, [0, .5]]]];
+    },
+
+    *infixr(){
+      const arity = yield [call, getArity];
+      return [1, ['operator', [arity, [.5, 0]]]];
+    },
+
+    *binder(){
+      return [1, ['binder', [0, [0]]]];
+    },
+  };
+
+  const insertIdentSortFuncs = {
+    *identifier(name, info){
+      ctx.idents = util.copyObj(ctx.idents)
+      ctx.idents[name] = info;
+    },
+
+    *operator(name, info){
+      ctx.ops = util.copyObj(ctx.ops)
+      ctx.ops[name] = info;
+    },
+
+    *binder(name, info){
+      ctx.binders = util.copyObj(ctx.binders)
+      ctx.binders[name] = info;
+    },
+  };
+
+  const keywordFuncs = {
+    *spacing(){
+      const name = yield [call, getIdent, 1];
       const before = yield [call, getSmallNat];
       const after = yield [call, getSmallNat];
-      const inParens = yield [call, getInt, 0, 1];
+      const inParens = yield [call, getSmallNat, 1];
 
-      yield [call, checkEol];
+      yield [call, assertEol];
 
       if(ctx.hasSpacingInfo(name))
-        return [0, `Spacing has already been defined for (${ctx.name2str(name)})`];
+        return [0, `Spacing has already been defined for ${name2str(name)}`];
 
       ctx = ctx.copy();
       ctx.spacing = util.copyObj(ctx.spacing);
 
       ctx.setSpacingInfo(name, [before, after, inParens]);
 
-      const str = `spacing (${ctx.name2str(name)}) ${before} ${after} ${inParens}`;
+      const str = `spacing ${name2str(name)} ${before} ${after} ${inParens}`;
 
       return [1, new LineData(lineIndex, ctx, str)]
-    }
+    },
 
-    return [0, `Unknown keyword ${O.sf(keyword)}`];
+    *type(){
+      const name = yield [call, getIdent, 1];
+      const arity = yield [call, getArity];
+
+      let identInfo = ['identifier', [arity, [0, []]]];
+
+      if(neol()){
+        const info = yield [call, getIdentInfo];
+        const [identSort, details] = info;
+
+        if(identSort !== 'operator')
+          return [0, `Type identifier ${
+            name2str(name)} cannot be defined as \`${
+            identSort}\``];
+
+        identInfo = [identSort, [arity, details]];
+        yield [call, assertEol];
+      }
+
+      const [identSort, details] = identInfo;
+      yield [call, assertFree, name];
+
+      ctx = ctx.copy();
+
+      assert(O.has(insertIdentSortFuncs, identSort));
+      yield [call, insertIdentSortFuncs[identSort], name, details]
+
+      return [1, new LineData(lineIndex, ctx), `type ${name2str(name)} ${arity}`];
+
+      // ctx = ctx.copy();
+      // ctx.spacing = util.copyObj(ctx.spacing);
+
+      // ctx.setSpacingInfo(name, [before, after, inParens]);
+    },
+  };
+
+  const processLine = function*(){
+    const keyword = yield [call, getToken];
+
+    if(keyword === null)
+      return [0, `Missing keyword`];
+
+    if(!O.has(keywordFuncs, keyword))
+      return [0, `Unknown keyword ${O.sf(keyword)}`];
+
+    return O.tco(keywordFuncs[keyword]);
   };
 
   yield O.tco(call, processLine);
@@ -378,8 +565,12 @@ const updateDisplay = () => {
   const {updatedLine} = mainEditor;
 
   try{
-    if(updatedLine !== null)
+    update: {
+      if(updatedLine === null) break update;
+      if(updatedLine !== 0 && updatedLine >= linesData.length) break update;
+
       onUpdatedLine(updatedLine);
+    }
   }finally{
     mainEditor.updatedLine = null;
     onNav();

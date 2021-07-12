@@ -276,7 +276,7 @@ class Editor{
     this.cy = cy;
   }
 
-  setCx(cxNew=cx){
+  setCx(cxNew=this.cx){
     this.cx = cxNew;
     this.cxPrev = cxNew;
   }
@@ -292,6 +292,10 @@ class Editor{
   setText(str){
     if(this.locked) return;
     this.lines = O.sanl(str);
+  }
+
+  clear(){
+    this.setText('');
   }
 
   appendLine(index, str){
