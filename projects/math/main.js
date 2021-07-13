@@ -143,8 +143,14 @@ const onUpdatedLine = lineIndex => {
   mainEditor.markedLine = null;
 
   for(let i = lineIndex; i !== lines.length; i++){
-    const ctx = i === 0 ? new Context() : linesData[i - 1].ctx;
+    const dataPrev = linesData[i - 1];
+    const ctx = i === 0 ? new Context() : dataPrev.ctx;
     const data = O.rec(processLine, i, ctx);
+
+    if(data === null){
+      linesData[i] = dataPrev;
+      continue;
+    }
 
     linesData[i] = data;
 
@@ -200,8 +206,7 @@ const processLine = function*(lineIndex, ctx){
     return ctx.name2str(name, 2);
   };
 
-  if(eol())
-    return new LineData(lineIndex, ctx);
+  if(eol()) return null;
 
   const stack = [];
 
