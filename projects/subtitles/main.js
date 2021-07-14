@@ -194,11 +194,10 @@ const render = () => {
   if(subIndexNew !== subIndex){
     subIndex = subIndexNew;
 
-    if(subIndex !== null){
+    g.clearRect(0, 0, w, h);
+
+    if(subIndex !== null)
       drawSubs(subs[subIndex][2]);
-    }else{
-      g.clearRect(0, 0, w, h);
-    }
   }
 
   O.raf(render);
