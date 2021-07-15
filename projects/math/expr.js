@@ -338,6 +338,19 @@ class Expr{
     return e;
   }
 
+  *specArr(ctx, arr){
+    let expr = this;
+
+    for(const e of arr){
+      const result = yield [[expr, 'spec'], ctx, e];
+      if(!result[0]) return result;
+
+      expr = result[1];
+    }
+
+    return [1, expr];
+  }
+
   *spec(ctx, e){
     if(this.getUni(ctx) === null)
       return [0, `Expression is not universally quantified`];
@@ -361,7 +374,7 @@ class Expr{
     const ant = result[1];
 
     const [unis1, imps1] = expr.getPropInfo(ctx);
-    const [unis2, imps2] = /*ant.getPropInfo(ctx)*/[[], [ant]]
+    const [unis2, imps2] = ant.getPropInfo(ctx)//[[], [ant]]
 
     if(imps1.length === 1)
       return [0, `No premises found`];

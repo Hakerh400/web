@@ -190,6 +190,10 @@ const processLine = function*(lineIndex, ctx){
     return O.tco(processResult, [0, msg]);
   };
 
+  const syntErr = () => {
+    return [0, `Syntax error near ${O.sf(line.trim())}`];
+  };
+
   const {lines} = mainEditor;
   let line = lines[lineIndex];
 
@@ -230,7 +234,7 @@ const processLine = function*(lineIndex, ctx){
 
   const assertEol = function*(){
     if(neol())
-      return [0, `Extra tokens found at the end: ${O.sf(line)}`];
+      return [0, `Extra tokens found at the end: ${O.sf(line.trim())}`];
 
     return [1];
   };
@@ -274,25 +278,30 @@ const processLine = function*(lineIndex, ctx){
         su.tab(1, `Actual:${' '.repeat(2)} ${str2}`)}`];
   };
 
-  const advance = function*(str){
-    line = line.slice(str.length);
+  const trimLine = (trim=1) => {
+    if(!trim) return;
     line = line.trimLeft();
+  };
+
+  const advance = function*(str, trim){
+    line = line.slice(str.length);
+    trimLine(trim);
 
     return [1, str];
   };
 
-  const getToken = function*(parens=0){
+  const getToken = function*(parens=0, trim){
     let match = line.match(/^[^\s\(\)\[\]\,\.\:]+/);
 
     if(match !== null)
-      return O.tco(advance, match[0]);
+      return O.tco(advance, match[0], trim);
 
     if(!parens) return [1, null];
 
     match = line.match(/^\(\s*([^\s\(\)\[\]\,\.\:]+)\s*\)/);
     if(match === null) return [1, null];
 
-    yield [call, advance, match[0]];
+    yield [call, advance, match[0], trim];
 
     return [1, match[1]];
   };
@@ -308,33 +317,39 @@ const processLine = function*(lineIndex, ctx){
 
   const getExact = function*(str){
     if(!line.startsWith(str))
-      return [0, `Expected ${O.sf(str)} near ${O.sf(line)}`];
+      return [0, `Expected ${O.sf(str)} near ${O.sf(line.trim())}`];
 
     return O.tco(advance, str);
   };
 
-  const getSomeParens = function*(c1, c2){
+  const getSomeParens = function*(c1, c2, trim){
     const end = line.indexOf(c2);
 
     if(!line.startsWith(c1) || end === -1)
-      return [0, `Invalid parenthesis near ${O.sf(line)}`];
+      return [0, `Invalid parenthesis near ${O.sf(line.trim())}`];
     
-    const str = line.slice(1, end);
-    line = line.slice(end + 1).trimLeft();
+    let str = line.slice(1, end);
+    line = line.slice(end + 1);
+    trimLine(trim);
+
+    str = str.trim();
+
+    if(str.length === 0)
+      return [1, []];
 
     return [1, str.split(',').map(a => a.trim())];
   };
 
-  const getParens = function*(){
-    return O.tco(getSomeParens, '(', ')');
+  const getParens = function*(trim){
+    return O.tco(getSomeParens, '(', ')', trim);
   };
 
-  const getBrackets = function*(){
-    return O.tco(getSomeParens, '[', ']');
+  const getBrackets = function*(trim){
+    return O.tco(getSomeParens, '[', ']', trim);
   };
 
-  const getBraces = function*(){
-    return O.tco(getSomeParens, '{', '}');
+  const getBraces = function*(trim){
+    return O.tco(getSomeParens, '{', '}', trim);
   };
 
   const getInt = function*(min=null, max=null){
@@ -349,7 +364,7 @@ const processLine = function*(lineIndex, ctx){
     if(tk === null)
       return [0, `Missing number`];
 
-    if(!/^(?:0|\-?[1-9][0-9]*)$/.test(tk))
+    if(!su.isInt(tk))
       return [0, `Invalid number ${O.sf(tk)}`];
 
     const n = BigInt(tk);
@@ -539,9 +554,24 @@ const processLine = function*(lineIndex, ctx){
 
       yield [call, assertEq, type, `${arrowSym} ${boolSym} (${arrowSym} ${boolSym} ${boolSym})`];
     },
+
+    *eq(name){
+      yield [call, assertDefined, name];
+
+      if(ctx.hasType(name))
+        return [0, `Equality cannot be a type`];
+
+      const type = ctx.getType(name);
+      assert(type !== null);
+
+      const boolSym = yield [call, getMeta, 'bool'];
+      const arrowSym = yield [call, getMeta, 'arrow'];
+
+      yield [call, assertEq, type, `${arrowSym} 'a (${arrowSym} 'a ${boolSym})`];
+    },
   };
 
-  const keywordFuncs = {
+  const directiveFuncs = {
     *spacing(){
       const name = yield [call, getIdent];
       const before = yield [call, getSmallNat];
@@ -645,26 +675,137 @@ const processLine = function*(lineIndex, ctx){
       const prop = yield [call, getProp];
 
       ctx = ctx.copy();
-      const subgoal = yield [call, [Subgoal, 'new'], call, ctx, prop];
 
-      ctx.proof = [subgoal];
+      const subgoal = new Subgoal();
+      yield [call, [subgoal, 'addProp'], call, ctx, prop];
 
-      return ret(yield [[subgoal, 'toStr']]);
+      ctx.createProof(name, prop);
+      ctx.proof.addSubgoal(subgoal);
+
+      return ret(yield [[ctx.proof, 'toStr'], ctx]);
+    },
+  };
+
+  const proofDirectiveFuncs = {
+    *'*'(proof){
+      const {subgoal} = proof;
+      const {premises, goal} = subgoal;
+      const premisesNum = premises.length;
+
+      let prop = null;
+      let index = null;
+
+      while(!eol()){
+        let propNew = null;
+        let specs = null;
+
+        if(!line.startsWith('[')){
+          const tk = yield [call, getToken, 0, 0];
+
+          if(tk === null)
+            return syntErr();
+
+          if(su.isInt(tk)){
+            // Premise
+
+            const i = Number(tk);
+
+            if(!(i >= 1 && i <= premisesNum))
+              return [0, `There is no premise with index ${tk}`];
+
+            propNew = premises[i - 1];
+          }else{
+            // Other rule
+
+            const rule = ctx.getRule(tk);
+
+            if(rule === null)
+              return [0, `Undefined rule ${O.sf(tk)}`];
+
+            propNew = rule;
+          }
+        }
+
+        if(line.startsWith('[')){
+          const exprStrs = yield [call, getBrackets, 0];
+
+          if(exprStrs.length === 0)
+            return [0, `Empty specification parameters`];
+
+          specs = [];
+
+          for(const str of exprStrs)
+            specs.push(yield [call, parser.parse, ctx, str]);
+        }
+
+        if(neol() && !line.startsWith(' '))
+          return syntErr();
+
+        trimLine();
+
+        if(propNew === null){
+          assert(specs !== null);
+          assert(specs.length !== 0);
+
+          if(prop === null)
+            return [0, `Specification cannot be the first transformation`];
+
+          prop = yield [call, [prop, 'specArr'], ctx, specs];
+          continue;
+        }
+
+        if(specs !== null)
+          propNew = yield [call, [propNew, 'specArr'], ctx, specs];
+
+        if(prop === null){
+          prop = propNew;
+          continue;
+        }
+
+        prop = yield [call, [prop, 'mpDir'], ctx, propNew];
+      }
+
+      if(prop === null)
+        return [0, `This proof directive requires at least one proposition`];
+
+      prop = yield [call, [prop, 'simplify'], ctx];
+
+      const proofNew = proof.copy();
+      const subgoalNew = subgoal.copy();
+
+      subgoalNew.addPremise(prop, index, 1);
+      proofNew.setSubgoal(subgoalNew, 1);
+
+      ctx = ctx.copy();
+      ctx.proof = proofNew;
+
+      return ret(yield [[ctx.proof, 'toStr'], ctx]);
     },
   };
 
   const processLine = function*(){
-    const keyword = yield [call, getToken];
+    const directive = yield [call, getToken];
+    let data;
 
-    if(keyword === null)
-      return [0, `Missing keyword`];
+    if(directive === null)
+      return [0, `Missing directive`];
 
-    if(!O.has(keywordFuncs, keyword))
-      return [0, `Unknown keyword ${O.sf(keyword)}`];
+    if(!ctx.hasProof){
+      if(!O.has(directiveFuncs, directive))
+        return [0, `Unknown directive ${O.sf(directive)}`];
 
-    const data = yield [call, keywordFuncs[keyword]];
+      data = yield [call, directiveFuncs[directive]];
+    }else{
+      if(!O.has(proofDirectiveFuncs, directive))
+        return [0, `Unknown proof directive ${O.sf(directive)}`];
+
+      const {proof} = ctx;
+      assert(proof.hasSubgoal);
+
+      data = yield [call, proofDirectiveFuncs[directive], proof];
+    }
+
     yield [call, assertEol];
-
     return [1, data];
   };
 

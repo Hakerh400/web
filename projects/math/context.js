@@ -46,6 +46,11 @@ class Context{
     return O.has(this.rules, name);
   }
 
+  getRule(name){
+    if(!this.hasRule(name)) return null;
+    return this.rules[name];
+  }
+
   hasName(name){
     if(O.has(this.idents, name)) return 1;
     if(O.has(this.ops, name)) return 1;
@@ -77,12 +82,11 @@ class Context{
       return 1;
     }
 
-    const {proof} = this;
-
-    if(proof === null || proof.length === 0)
+    if(!this.hasSubgoal)
       return 0;
 
-    const subgoal = proof[0];
+    const {proof} = this;
+    const {subgoal} = proof;
 
     this.identsCache = subgoal.identsObj;
     return O.has(subgoal.identsObj, name);
@@ -219,6 +223,30 @@ class Context{
 
     return O.has(this.binders, name);
   }
+
+  get hasProof(){
+    return this.proof !== null;
+  }
+
+  get isProofFinished(){
+    assert(this.hasProof);
+    return !this.proof.hasSubgoal;
+  }
+
+  get hasSubgoal(){
+    if(!this.hasProof) return 0;
+    return this.proof.hasSubgoal;
+  }
+
+  createProof(name, prop){
+    assert(!this.hasProof);
+    this.proof = new Proof(name, prop);
+  }
+
+  removeProof(){
+    assert(this.isProofFinished);
+    this.proof = null;
+  }
 }
 
 const get = (obj, key) => {
@@ -229,6 +257,7 @@ const get = (obj, key) => {
 module.exports = Context;
 
 const Expr = require('./expr');
+const Proof = require('./proof');
 const Subgoal = require('./subgoal');
 
 const {Ident, Call, Lambda} = Expr;

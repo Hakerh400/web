@@ -5,36 +5,41 @@ const util = require('./util');
 const su = require('./str-util');
 
 class Subgoal{
-  identsObj = O.obj();
-  identsArr = [];
-  premises = [];
-  goal = null;
-
-  static *new(call, ctx, prop=null, identsObj=null, identsArr=null, premises=null){
-    const subgoal = new this();
-
-    subgoal.call = call;
-    subgoal.ctx = ctx;
-
-    if(identsObj !== null)
-      subgoal.identsObj = util.copyObj(identsObj);
-
-    if(identsArr !== null)
-      subgoal.identsArr = identsArr.slice();
-
-    if(premises !== null)
-      subgoal.premises = premises.slice();
-
-    if(prop !== null)
-      yield [call, [subgoal, 'addProp'], prop];
-
-    return [1, subgoal];
+  constructor(identsObj=O.obj(), identsArr=[], premises=[], goal=null){
+    this.identsObj = identsObj;
+    this.identsArr = identsArr;
+    this.premises = premises;
+    this.goal = goal;
   }
 
-  *addProp(prop){
+  copy(){
+    return new Subgoal(
+      this.identsObj,
+      this.identsArr,
+      this.premises,
+      this.goal,
+    );
+  }
+
+  copyPremises(){
+    this.premises = this.premises.slice();
+  }
+
+  addPremise(prop, index=null, copy=0){
+    if(copy) this.copyPremises();
+
+    const {premises} = this;
+
+    if(index === null)
+      index = premises.length;
+
+    premises.splice(index, 0, prop);
+  }
+
+  *addProp(call, ctx, prop){
     assert(this.goal === null);
 
-    const {call, ctx, identsObj, identsArr, premises} = this;
+    const {identsObj, identsArr, premises} = this;
 
     prop = yield [call, [prop, 'simplify'], ctx];
 
@@ -96,14 +101,14 @@ class Subgoal{
 
     const goal = imps.pop();
 
-    for(let i = imps.length - 1; i !== -1; i--)
-      premises.push(imps[i]);
+    for(const imp of imps)
+      premises.push(imp);
 
     this.goal = goal;
   }
 
-  *toStr(){
-    const {ctx, identsArr, premises, goal} = this;
+  *toStr(ctx){
+    const {identsArr, premises, goal} = this;
     const premisesNum = premises.length;
     const toStrIdents = util.obj2();
 
@@ -140,7 +145,7 @@ class Subgoal{
     }
     ppush();
 
-    push(`${String('%.').padEnd(padSize)} ${yield [[goal, 'toStr'], ctx, toStrIdents]}`);
+    push(yield [[goal, 'toStr'], ctx, toStrIdents]);
     ppush();
 
     return sections.join('\n\n');

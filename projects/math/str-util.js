@@ -72,6 +72,10 @@ const encap = (str, chars) => {
   return chars[0] + str + chars[1];
 };
 
+const isInt = str => {
+  return /^(?:0|\-?[1-9][0-9]*)$/.test(str);
+};
+
 const tabStr = tab(1);
 
 module.exports = {
@@ -97,4 +101,5 @@ module.exports = {
   getClosedParenType,
   quote,
   encap,
+  isInt,
 };
