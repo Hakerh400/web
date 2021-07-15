@@ -62,6 +62,7 @@ class Expr{
   *alphaV(){ O.virtual('alphaV'); }
   *betaV(){ O.virtual('betaV'); }
   *substIdent(){ O.virtual('substIdent'); }
+  *substIdents1(){ O.virtual('substIdents1'); }
   *getSymIdents(){ O.virtual('getSymIdents'); }
   *getFreeIdents(){ O.virtual('getFreeIdents'); }
   *renameIdents(){ O.virtual('renameIdents'); }
@@ -115,7 +116,10 @@ class Expr{
     if(ctx !== null && !ctx.hasBinder(binder)) return null;
     if(!lam.isLam) return null;
 
-    return [binder, lam.name, lam.expr];
+    assert(!lam.isType);
+    const type = lam.type.target.arg;
+
+    return [binder, lam.name, lam.expr, type];
   }
 
   getCall(){
@@ -262,6 +266,19 @@ class Expr{
 
       return Expr.mkBinder(uniSym, new Lambda(sym, e));
     }, this);
+  }
+
+  *substIdents(idents=O.obj(), rec=0){
+    const expr = yield [[this, 'substIdents1'], idents, rec];
+
+    if(!expr.isType){
+      const {type} = expr;
+
+      if(type !== null)
+        expr.type = yield [[type, 'substIdents1'], idents, rec];
+    }
+
+    return expr;
   }
 
   *simplify(ctx){
@@ -478,11 +495,27 @@ class Ident extends NamedExpr{
   }
 
   *substIdent(name, expr){
-    // if(O.z)debugger; // Ident
-    // if(String(name).includes(9))debugger;
+    if(this.name !== name) return this;
 
-    if(this.name === name) return expr;
-    return this;
+    assert(!expr.isType === !this.isType);
+    return expr;
+  }
+
+  *substIdents1(idents, rec){
+    const {name} = this;
+
+    if(!O.has(idents, name))
+      return this;
+
+    assert(isSym(name));
+
+    const expr = idents[name];
+    assert(!expr.isType === !this.isType);
+
+    if(!rec)
+      return expr;
+
+    return O.tco([expr, 'substIdents'], idents, rec);
   }
 
   *getSymIdents(idents=O.obj()){
@@ -591,9 +624,15 @@ class Lambda extends NamedExpr{
   }
 
   *substIdent(nm, e){
-    // if(O.z)debugger; // Lambda
     const {name, expr} = this;
     return this.from(name, yield [[expr, 'substIdent'], nm, e]);
+  }
+
+  *substIdents1(idents, rec){
+    const {name, expr} = this;
+    assert(!O.has(idents, name));
+
+    return this.from(name, yield [[expr, 'substIdents'], idents, rec]);
   }
 
   *getSymIdents(idents=O.obj()){
@@ -696,12 +735,20 @@ class Call extends Expr{
   }
 
   *substIdent(name, expr){
-    // if(O.z)debugger; // Call
-    const {target, arg} = this;//yield [[this, 'alphaV'], ctx];
+    const {target, arg} = this;
 
     return this.from(
       yield [[target, 'substIdent'], name, expr],
       yield [[arg, 'substIdent'], name, expr],
+    );
+  }
+
+  *substIdents1(idents, rec){
+    const {target, arg} = this;
+
+    return this.from(
+      yield [[target, 'substIdents'], idents, rec],
+      yield [[arg, 'substIdents'], idents, rec],
     );
   }
 

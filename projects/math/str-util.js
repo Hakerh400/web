@@ -72,7 +72,7 @@ const encap = (str, chars) => {
   return chars[0] + str + chars[1];
 };
 
-const tabStr = tab(tabSize);
+const tabStr = tab(1);
 
 module.exports = {
   tabSize,

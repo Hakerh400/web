@@ -645,9 +645,11 @@ const processLine = function*(lineIndex, ctx){
       const prop = yield [call, getProp];
 
       ctx = ctx.copy();
-      ctx.proof = [new Subgoal(ctx, null, null, prop)];
+      const subgoal = yield [call, [Subgoal, 'new'], call, ctx, prop];
 
-      ret('ok');
+      ctx.proof = [subgoal];
+
+      return ret(yield [[subgoal, 'toStr']]);
     },
   };
 

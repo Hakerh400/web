@@ -24,6 +24,8 @@ class Context{
     return new Context(ctx);
   }
 
+  identsCache = null;
+
   constructor(ctx=null){
     if(ctx === null){
       for(const key of templateKeys)
@@ -70,7 +72,20 @@ class Context{
   }
 
   hasIdent(name){
-    return O.has(this.idents, name);
+    if(O.has(this.idents, name)){
+      this.identsCache = this.idents;
+      return 1;
+    }
+
+    const {proof} = this;
+
+    if(proof === null || proof.length === 0)
+      return 0;
+
+    const subgoal = proof[0];
+
+    this.identsCache = subgoal.identsObj;
+    return O.has(subgoal.identsObj, name);
   }
 
   hasUnaryOp(name){
@@ -129,7 +144,7 @@ class Context{
   }
 
   getInfo(name){
-    if(this.hasIdent(name)) return this.idents[name];
+    if(this.hasIdent(name)) return this.identsCache[name];
     if(this.hasOp(name)) return this.ops[name];
 
     if(this.hasBinder(name)){

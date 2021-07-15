@@ -19,19 +19,19 @@ const obj2 = () => {
   return [O.obj(), O.obj()];
 };
 
-const getAvailIdents = (ctx, strSymObj, isType, num) => {
+const getAvailIdents = (ctx, strSymObj, mode, num) => {
   const obj = copyObj(strSymObj);
 
   return O.ca(num, () => {
-    const ident = getAvailIdent(ctx, obj, isType);
+    const ident = getAvailIdent(ctx, obj, mode);
     obj[ident] = 1;
     return ident;
   });
 };
 
-const getAvailIdent = (ctx, strSymObj, isType=0) => {
+const getAvailIdent = (ctx, strSymObj, mode) => {
   for(let i = 0;; i++){
-    const name = genIdent(i, isType);
+    const name = genIdent(i, mode);
 
     if(ctx.hasIdent(name)) continue;
     if(O.has(strSymObj, name)) continue;
@@ -40,15 +40,26 @@ const getAvailIdent = (ctx, strSymObj, isType=0) => {
   }
 };
 
-const genIdent = (i, isType=0) => {
+const genIdent = (i, mode=0) => {
   i++;
 
-  if(!isType)
+  // Value
+  if(mode === 0)
     return O.arrOrder.str(identChars, i);
 
-  const sub = Array.from(String(i), n => O.sfcc(0x2080/*0x30*/ | n))
+  // Type variable
+  if(mode === 1)
+    return `'τ${getSub(i)}`;
 
-  return `'τ${sub}`;
+  // Fixed type
+  if(mode === 2)
+    return `ψ${getSub(i)}`;
+
+  assert.fail();
+};
+
+const getSub = i => {
+  return Array.from(String(i), n => O.sfcc(0x2080/*0x30*/ | n));
 };
 
 const mergeUniq = (obj1, obj2) => {
@@ -94,6 +105,7 @@ module.exports = {
   getAvailIdents,
   getAvailIdent,
   genIdent,
+  getSub,
   mergeUniq,
   empty,
   isStrOrSym,
