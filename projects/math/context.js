@@ -5,6 +5,7 @@ const util = require('./util');
 const su = require('./str-util');
 
 const newObj = () => O.obj();
+const nullf = () => null;
 
 const template = {
   idents:  newObj,
@@ -13,6 +14,7 @@ const template = {
   spacing: newObj,
   meta:    newObj,
   rules:   newObj,
+  proof:   nullf,
 };
 
 const templateKeys = O.keys(template);
@@ -212,5 +214,6 @@ const get = (obj, key) => {
 module.exports = Context;
 
 const Expr = require('./expr');
+const Subgoal = require('./subgoal');
 
 const {Ident, Call, Lambda} = Expr;

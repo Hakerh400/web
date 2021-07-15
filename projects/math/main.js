@@ -4,6 +4,7 @@ const assert = require('assert');
 const parser = require('./parser');
 const Expr = require('./expr');
 const Context = require('./context');
+const Subgoal = require('./subgoal');
 const Editor = require('./editor');
 const LineData = require('./line-data');
 const specialChars = require('./special-chars');
@@ -434,6 +435,18 @@ const processLine = function*(lineIndex, ctx){
     return [1, prop];
   };
 
+  const getRuleName = function*(ruleType){
+    const name = yield [call, getToken];
+
+    if(name === null)
+      return [0, `Missing ${ruleType} name`];
+
+    yield [call, assertFreeRule, name];
+    yield [call, getExact, ':'];
+
+    return [1, name];
+  };
+
   const parseIdentSortFuncs = {
     *prefix(){
       const arity = yield [call, getArity];
@@ -617,14 +630,7 @@ const processLine = function*(lineIndex, ctx){
     },
 
     *axiom(){
-      const name = yield [call, getToken];
-
-      if(name === null)
-        return [0, `Missing axiom name`];
-
-      yield [call, assertFreeRule, name];
-      yield [call, getExact, ':'];
-
+      const name = yield [call, getRuleName, 'axiom'];
       const prop = yield [call, getProp];
 
       ctx = ctx.copy();
@@ -632,6 +638,16 @@ const processLine = function*(lineIndex, ctx){
       ctx.rules[name] = prop;
 
       return ret(`axiom ${name}: ${yield [[prop, 'toStr'], ctx]}`);
+    },
+
+    *lemma(){
+      const name = yield [call, getRuleName, 'lemma'];
+      const prop = yield [call, getProp];
+
+      ctx = ctx.copy();
+      ctx.proof = [new Subgoal(ctx, null, null, prop)];
+
+      ret('ok');
     },
   };
 
