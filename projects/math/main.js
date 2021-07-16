@@ -96,7 +96,6 @@ let iw, ih;
 let w, h;
 
 const main = () => {
-  O.dbgAssert = 1;
   mainEditor.selected = 1;
 
   if(O.has(localStorage, project))
