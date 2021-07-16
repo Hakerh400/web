@@ -17,7 +17,7 @@ const dpos = 5;
 
 const cwd = __dirname;
 const dir = path.join(cwd, '../../../torrents');
-const subInfoFile = path.join(dir, 'subtitles-info.txt');
+const subInfoFile = path.join(dir, 'cinema-info.txt');
 
 const subs = [];
 let subsNum = 0;
