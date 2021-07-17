@@ -291,7 +291,7 @@ class Expr{
     let expr = yield [[this, 'alpha'], ctx];
     let result = yield [[expr, 'unifyTypes'], ctx];
 
-    if(result[0] === 0)
+    if(!result[0])
       return [0, `Unification error: ${result[1]}`];
 
     expr = yield [[expr, 'beta'], ctx];
@@ -366,11 +366,11 @@ class Expr{
     let result;
 
     result = yield [[this, 'simplify'], ctx];
-    if(result[0] === 0) return result;
+    if(!result[0]) return result;
     const expr = result[1];
 
     result = yield [[e, 'simplify'], ctx];
-    if(result[0] === 0) return result;
+    if(!result[0]) return result;
     const ant = result[1];
 
     const [unis1, imps1] = expr.getPropInfo(ctx);
@@ -390,7 +390,7 @@ class Expr{
 
     unifier.addEq(lhs, rhs);
     result = yield [[unifier, 'solve']];
-    if(result[0] === 0) return result;
+    if(!result[0]) return result;
 
     const exprNew = Expr.fromImps(ctx, imps1);
     const freeVars = [];
@@ -423,7 +423,7 @@ class Expr{
   // Direct application of Modus Ponens
   *mpDir(ctx, e){
     const result = yield [[this, 'mp'], ctx, e];
-    if(result[0] === 0) return result;
+    if(!result[0]) return result;
 
     const [freeVars, expr] = result[1];
     const exprNew = expr.addUnis(ctx, freeVars);

@@ -30,6 +30,7 @@ let w, h;
 let wh, hh;
 let overlay, g;
 
+let subsEnabled = 1;
 let subIndex = null;
 
 const main = async () => {
@@ -64,7 +65,7 @@ const loadSubs = async subFile => {
     str = str.trimLeft();
     if(str.length === 0) break;
 
-    const match = str.match(/^(\d+)\n([^\n]+)\n(.*?)(?:(?<=\n)\n|$)/s);
+    const match = str.match(/^(\d+)\n([^\n]+)(?:\n|$)(.*?)(?:(?<=\n)\n|$)/s);
     assert(match !== null);
 
     str = str.slice(match[0].length);
@@ -188,6 +189,12 @@ const onKeyDown = async evt => {
       return;
     }
 
+    if(code === 'KeyS'){
+      O.pd(evt);
+      subsEnabled ^= 1;
+      return;
+    }
+
     return;
   }
 };
@@ -224,6 +231,9 @@ const drawSubs = str => {
 };
 
 const calcSubIndex = t => {
+  if(!subsEnabled)
+    return null;
+
   t -= subTimeOffset;
 
   const index = Number(O.bisect(i => {
