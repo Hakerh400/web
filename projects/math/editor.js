@@ -76,7 +76,7 @@ class Editor{
     this.scrollY++;
   }
 
-  processKey(key){
+  processKey(key, addTab=1){
     if(!this.selected) return;
     if(!this.editable) return;
 
@@ -86,8 +86,8 @@ class Editor{
     const line = this.getLine(cy);
     const lineLen = line.length;
 
-    const tSize = su.getSpSize(line);
-    const tStr = su.getSpStr(line);
+    const tSize = addTab ? su.tabSize + 2/*su.getSpSize(line)*/ : 0;
+    const tStr = addTab ? `${su.sp(su.tabSize)}- ` : '';
 
     const p1 = line.slice(0, cx);
     const p2 = line.slice(cx);

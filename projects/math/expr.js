@@ -158,19 +158,21 @@ class Expr{
     return bin.slice(1);
   }
 
-  getPropInfo(ctx){
+  getPropInfo(ctx, maxUnisNum=null){
     const unis = [];
     const imps = [];
 
     let e = this;
 
     while(1){
-      const uni = e.getUni(ctx);
+      if(maxUnisNum === null || unis.length < maxUnisNum){
+        const uni = e.getUni(ctx);
 
-      if(uni !== null){
-        unis.push(uni[0]);
-        e = uni[1];
-        continue;
+        if(uni !== null){
+          unis.push(uni[0]);
+          e = uni[1];
+          continue;
+        }
       }
 
       const imp = e.getImp(ctx);
@@ -362,7 +364,7 @@ class Expr{
   }
 
   // Modus ponens
-  *mp(ctx, e, offset=0){
+  *mp(ctx, e, antUnisNum=null, offset=0){
     let result;
 
     result = yield [[this, 'simplify'], ctx];
@@ -374,7 +376,16 @@ class Expr{
     const ant = result[1];
 
     const [unis1, imps1] = expr.getPropInfo(ctx);
-    const [unis2, imps2] = ant.getPropInfo(ctx)//[[], [ant]]
+
+    const antUnisTotal = ant.getPropInfo(ctx)[0].length;
+    const antUnisNum1 = antUnisNum !== null ?
+      antUnisTotal - antUnisNum : null;
+
+    const [unis2, imps2] = ant.getPropInfo(ctx, antUnisNum1);
+
+    if(antUnisNum1 !== null && unis2.length !== antUnisNum1)
+      return [0, `Not enough universal quantifiers in the antecedent (expected ${
+        antUnisNum}, but got ${antUnisTotal - unis2.length})`];
 
     if(offset !== null && imps1.length <= offset + 1)
       return [0, `Not enough premises to apply modus ponens`];
@@ -440,8 +451,8 @@ class Expr{
   }
 
   // Direct application of modus ponens
-  *mpDir(ctx, e, offset){
-    const result = yield [[this, 'mp'], ctx, e, offset];
+  *mpDir(ctx, e, antUnisNum, offset){
+    const result = yield [[this, 'mp'], ctx, e, antUnisNum, offset];
     if(!result[0]) return result;
 
     const [freeVars, imps] = result[1];
@@ -453,7 +464,7 @@ class Expr{
 
   // Reverse application of modus ponens
   *mpRev(ctx, e){
-    const result = yield [[this, 'mp'], ctx, e, null];
+    const result = yield [[this, 'mp'], ctx, e, null, null];
     if(!result[0]) return result;
 
     const [freeVars, imps] = result[1];
@@ -884,10 +895,11 @@ class Call extends Expr{
 
         args.reverse();
 
-        if(arity === 1)
+        if(arity === 1){
           return [p, `${
-            ctx.name2str(op)} ${
+            ctx.name2str(op)}${
             yield [[args[0], 'toStr'], ctx, idents, ps[0]]}`];
+        }
 
         if(arity === 2)
           return [p, `${

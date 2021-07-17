@@ -66,9 +66,8 @@ class Proof{
     const subgoal = subgoals[0];
     const subgoalStr = yield [[subgoal, 'toStr'], ctx];
 
-    // return subgoalStr
-
-    return `${subgoalStr}\n\nRemaining subgoals: ${subgoalsNum - 1}`;
+    return subgoalStr
+    // return `${subgoalStr}\n\n[${subgoalsNum - 1}]`;
   }
 }
 

@@ -35,12 +35,23 @@ lemma psub: ∀P Q. P = Q  ⟶  P  ⟶  Q
 lemma eq_com: ∀a b. a = b  ⟶  b = a
   - sub[λx. x = a] 1 refl %
 
-lemma eq_tran: ∀a b c. a = b  ⟶  b = c  ⟶  a = c
+lemma eq_tran: ∀a c b. a = b  ⟶  b = c  ⟶  a = c
   - eq_com 1*
-  - sub[λx. x = c] 1 2 %
+  - sub[λx. x = b] 1 2 %
+
+lemma rsub: ∀P a b. a = b  ⟶  P b  ⟶  P a
+  - eq_com 1*
+  - sub 1 2 %
+
+lemma prsub: ∀P Q. P = Q  ⟶  Q  ⟶  P
+  - rsub[λx. x] 1 2 %
 
 lemma fun_cong: ∀f g a. f = g  ⟶  f a = g a
   - sub[λx. a c = x c] 1 refl %
+
+lemma fun_cong2: ∀f g a b. f = g  ⟶  f a b = g a b
+  - fun_cong 1 [c]
+  - fun_cong 1 %
 
 lemma arg_cong: ∀f a b. a = b  ⟶  f a = f b
   - sub[λx. a b = a x] 1 refl %
@@ -48,3 +59,412 @@ lemma arg_cong: ∀f a b. a = b  ⟶  f a = f b
 lemma cong: ∀f g a b. f = g  ⟶  a = b  ⟶  f a = g b
   - fun_cong 1 [c]
   - sub[λx. a c = b x] 1 2 %
+
+lemma imp_refl: ∀P. P  ⟶  P
+  - 1 %
+
+lemma lk_lem1: ∀P Q. P  ⟶  Q  ⟶  P
+  - 1 %
+
+lemma lk_lem2: ∀P Q R. (P  ⟶  Q  ⟶  R)  ⟶  (P  ⟶  Q)  ⟶  P  ⟶  R
+  - 2* 3+
+  - 1 3 2 %  
+
+spacing ( ⟷ ) 1 1 1
+
+const undefined :: 'a
+
+def (¬)   [prefix 70]: λP. P  ⟶  False
+def (∧)   [infixl 35]: λP Q. ¬(P  ⟶  ¬Q)
+def (∨)   [infixl 30]: λP Q. ¬P  ⟶  Q
+def ( ⟷ ) [infixl 24]: λP Q. (P  ⟶  Q) ∧ (Q  ⟶  P)
+def (≠)   [infixl 50]: λa b. ¬(a = b)
+
+lemma not_def: ∀P. ¬ P = (P  ⟶  False)
+  - fun_cong ¬_def %
+
+lemma conj_def: ∀P Q. (P ∧ Q) = ¬(P  ⟶  ¬ Q)
+  - fun_cong2 ∧_def %
+
+lemma disj_def: ∀P Q. (P ∨ Q) = (¬P  ⟶  Q)
+  - fun_cong2 ∨_def %
+
+lemma iff_def: ∀P Q. (P  ⟷  Q) = ((P  ⟶  Q) ∧ (Q  ⟶  P))
+  - fun_cong2 ⟷_def %
+
+lemma neq_def: ∀a b. (a ≠ b) = ¬(a = b)
+  - fun_cong2 ≠_def %
+
+lemma falI: ∀P. P  ⟶  ¬P  ⟶  False
+  - psub not_def 2 1 %
+
+lemma falE: ∀P. False  ⟶  P
+  - bool_induct[λx. x] true 1 %
+
+lemma notI: ∀P. (P  ⟶  False)  ⟶  ¬P
+  - eq_com not_def
+  - psub 2 1 %
+
+lemma notI2: ∀P. P  ⟶  ¬¬P
+  - falI 1
+  - notI 1 %
+
+lemma nfalse: ¬False
+  - notI imp_refl %
+
+lemma true_neq_false: ¬ (True = False)
+  - notI %
+  - psub 1 true %
+
+lemma bool_exh: ∀a P. (a = True  ⟶  P)  ⟶  (a = False  ⟶  P)  ⟶  P
+  - bool_induct[λx. a = x  ⟶  b] 1 2 refl %
+
+lemma eq_truE: ∀P. P = True  ⟶  P
+  - prsub 1 true %
+
+lemma eq_falE: ∀P. P = False  ⟶  ¬P
+  - psub 1
+  - notI 1 %
+
+lemma falE2: ∀P Q. P  ⟶  ¬P  ⟶  Q
+  - falI 1 2
+  - falE 1 %
+
+lemma notE: ∀P. ¬¬P  ⟶  P
+  - bool_exh[a, a] %
+  - eq_truE 2 %
+  - eq_falE 2
+  - falE2 2 1 %
+
+lemma conjI: ∀P Q. P  ⟶  Q  ⟶  P ∧ Q
+  - prsub conj_def %
+  - notI %
+  - 3 1
+  - falI 1 2 %
+
+lemma imp_swap: ∀P Q R. (P  ⟶  Q  ⟶  R)  ⟶  Q  ⟶  P  ⟶  R
+  - 1 3 2 %
+
+lemma falE2_swap: ∀P Q. ¬P  ⟶  P  ⟶  Q
+  - falE2 2 1 %
+
+lemma notE2: ∀P. (¬P  ⟶  False)  ⟶  P
+  - notI 1
+  - notE 1 %
+
+lemma conjE1: ∀P Q. P ∧ Q  ⟶  P
+  - psub conj_def 1
+  - notE2 %
+  - falE2_swap 2
+  - falI 2 1 %
+
+lemma cpos_pp: ∀Q P. (P  ⟶  Q)  ⟶  ¬Q  ⟶  ¬P
+  - notI %
+  - 1 3
+  - falI 2 1 %
+
+lemma cpos_pn: ∀Q P. (P  ⟶  ¬Q)  ⟶  Q  ⟶  ¬P
+  - notI %
+  - 1 3
+  - falI 1 2 %
+
+lemma cpos_np: ∀Q P. (¬P  ⟶  Q)  ⟶  ¬Q  ⟶  P
+  - notE2 %
+  - 1 3
+  - falI 2 1 %
+
+lemma cpos_nn: ∀Q P. (¬P  ⟶  ¬Q)  ⟶  Q  ⟶  P
+  - notE2 %
+  - 1 3
+  - falI 1 2 %
+
+lemma conjE2: ∀P Q. P ∧ Q  ⟶  Q
+  - psub conj_def 1
+  - notE2 %
+  - lk_lem1 2
+  - falI 2 1 %
+
+lemma conj_com: ∀P Q. P ∧ Q  ⟶  Q ∧ P
+  - conjE1 1+
+  - conjE2 1
+  - conjI 2 1 %
+
+lemma disjI1: ∀P Q. P  ⟶  P ∨ Q
+  - prsub disj_def %
+  - falE2 1 2 %
+
+lemma disjI2: ∀P Q. P  ⟶  Q ∨ P
+  - prsub disj_def %
+  - 1 %
+
+lemma imp_tran: ∀P R Q. (P  ⟶  Q)  ⟶  (Q  ⟶  R)  ⟶  P  ⟶  R
+  - 1 3
+  - 1 2 %
+
+lemma excm_exh: ∀P Q. (P  ⟶  Q)  ⟶  (¬P  ⟶  Q)  ⟶  Q
+  - bool_exh[a] %
+  - eq_truE 3
+  - 1 3 %
+  - eq_falE 3
+  - 2 3 %
+
+lemma disjE: ∀P Q R. P ∨ Q  ⟶  (P  ⟶  R)  ⟶  (Q  ⟶  R)  ⟶  R
+  - psub disj_def 1*
+  - excm_exh[a] %
+  - 2 4 %
+  - 1 4
+  - 2 3 %
+
+lemma iffI: ∀P Q. (P  ⟶  Q)  ⟶  (Q  ⟶  P)  ⟶  (P  ⟷  Q)
+  - prsub iff_def %
+  - conjI 1 2 %
+
+lemma iffE1: ∀P Q. (P  ⟷  Q)  ⟶  P  ⟶  Q
+  - psub iff_def 1*
+  - conjE1 1 2 %
+
+lemma iffE2: ∀P Q. (P  ⟷  Q)  ⟶  Q  ⟶  P
+  - psub iff_def 1*
+  - conjE2 1 2 %
+
+lemma disj_com: ∀P Q. P ∨ Q  ⟶  Q ∨ P
+  - disjE 1 %
+  - disjI2 1 %
+  - disjI1 1 %
+
+lemma iff_com: ∀P Q. (P  ⟷  Q)  ⟶  (Q  ⟷  P)
+  - iffE1 1+
+  - iffE2 1
+  - iffI 2 1 %
+
+lemma eq_truI: ∀P. P  ⟶  P = True
+  - bool_exh[a] %
+  - 2 %
+  - eq_falE 2
+  - falE2 1 2 %
+
+lemma eq_falI: ∀P. ¬P  ⟶  P = False
+  - bool_exh[a] %
+  - eq_truE 2
+  - falE2 2 1 %
+  - 2 %
+
+lemma eq_tran1: ∀a b c. a = c  ⟶  b = c  ⟶  a = b
+  - eq_com 2
+  - eq_tran 1 2 %
+
+lemma eq_tran2: ∀a b c. c = a  ⟶  c = b  ⟶  a = b
+  - eq_com 1*
+  - eq_tran 1 2 %
+
+lemma imp_eq_p: ∀P Q. P  ⟶  Q  ⟶  P = Q
+  - eq_truI 1*
+  - eq_truI 2
+  - eq_tran1 1 2 %
+
+lemma eq_notI: ∀P Q. P = Q  ⟶  ¬P = ¬Q
+  - arg_cong 1 %
+
+lemma ntru_eq_fal: ¬True = False
+  - eq_falI %
+  - notI2 true %
+
+lemma nfal_eq_tru: ¬False = True
+  - eq_truI nfalse %
+
+lemma add_sup: ∀Q P. P  ⟶  Q  ⟶  P
+  - 1 %
+
+lemma not2_eq: ∀P. ¬¬P = P
+  - excm_exh[a] %
+  - imp_eq_p %
+  - notI2 1 %
+  - 1 %
+  - eq_falI 1
+  - rsub[λx. ¬¬x = x] 1 %
+  - rsub[λx. ¬x = False] nfal_eq_tru %
+  - ntru_eq_fal %
+
+lemma eq_notE: ∀P Q. ¬P = ¬Q  ⟶  P = Q
+  - arg_cong[(¬)] 1
+  - sub[λx. x = ¬¬b] not2_eq 1
+  - sub[λx. a = x] not2_eq 1 %
+
+lemma imp_eq_n: ∀P Q. ¬P  ⟶  ¬Q  ⟶  P = Q
+  - imp_eq_p 1 2
+  - eq_notE 1 %
+
+lemma imp_neq: ∀P Q. P  ⟶  ¬Q  ⟶  ¬ (P = Q)
+  - notI %
+  - eq_truI 1*
+  - eq_falI 2*
+  - sub[λx. x = b] 1 3
+  - eq_tran 2 1
+  - bool_dif 1 %
+
+lemma iff_eq': ∀P Q. (P  ⟷  Q)  ⟷  (P = Q)
+  - iffI %
+  - excm_exh[a] %
+  - iffE1 1 2+
+  - imp_eq_p 1 2 %
+  - iffE2 1*
+  - cpos_pp 1 2+
+  - imp_eq_n 1 2 %
+  - psub 1+
+  - prsub 1
+  - iffI 1 2 %
+
+lemma iff_eq: ∀P Q. (P  ⟷  Q) = (P = Q)
+  - iffE1 iff_eq' iff_eq' %
+
+lemma excm: ∀P. P ∨ ¬P
+  - excm_exh[a] %
+  - disjI1 1 %
+  - disjI2 1 %
+
+lemma not_P_and_not_P: ∀P. ¬(P ∧ ¬P)
+  - notI %
+  - conjE1 1+
+  - conjE2 1
+  - falI 1 2 %
+
+lemma conj_assoc: ∀P Q R. (P ∧ Q) ∧ R  ⟷  P ∧ (Q ∧ R)
+  - iffI %
+  - conjE1 1+
+  - conjE1 2+
+  - conjE2 2
+  - conjE2 1
+  - conjI 2 3
+  - conjI 1 2 %
+  - conjE1 1+
+  - conjE2 1
+  - conjE1 2+
+  - conjE2 2
+  - conjI 1* 2
+  - conjI 1 2 %
+
+lemma disj_assoc: ∀P Q R. (P ∨ Q) ∨ R  ⟷  P ∨ (Q ∨ R)
+  - iffI %
+  - disjE 1 %
+  - disjE 1 %
+  - disjI1 1 %
+  - disjI1 1
+  - disjI2 1 %
+  - disjI2 1
+  - disjI2 1 %
+  - disjE 1 %
+  - disjI1 1
+  - disjI1 1 %
+  - disjE 1 %
+  - disjI2 1
+  - disjI1 1 %
+  - disjI2 1 %
+
+lemma uni_swap: ∀P. (∀a b. P a b)  ⟶  (∀a b. P b a)
+  - 1 %
+
+lemma iff_equiv_eq: ( ⟷ ) = (=)
+  - ext {1}iff_eq
+  - ext {1}1 %
+
+lemma imp_iff_p: ∀P Q. P  ⟶  Q  ⟶  (P  ⟷  Q)
+  - imp_eq_p 1 2
+  - prsub iff_eq 1 %
+
+lemma imp_iff_n: ∀P Q. ¬P  ⟶  ¬Q  ⟶  (P  ⟷  Q)
+  - imp_eq_n 1 2
+  - prsub iff_eq 1 %
+
+lemma iff_tran: ∀P Q R. (P  ⟷  R)  ⟶  (R  ⟷  Q)  ⟶  (P  ⟷  Q)
+  - psub iff_eq 1*
+  - psub iff_eq 2*
+  - prsub iff_eq %
+  - eq_tran 1 2 %
+
+lemma iff_tran1: ∀P Q R. (P  ⟷  R)  ⟶  (Q  ⟷  R)  ⟶  (P  ⟷  Q)
+  - psub iff_eq 1*
+  - psub iff_eq 2*
+  - prsub iff_eq %
+  - eq_tran1 1 2 %
+
+lemma iff_tran2: ∀P R Q. (R  ⟷  P)  ⟶  (R  ⟷  Q)  ⟶  (P  ⟷  Q)
+  - psub iff_eq 1*
+  - psub iff_eq 2*
+  - prsub iff_eq %
+  - eq_tran2 1 2 %
+
+lemma not_P_eq_not_P: ∀P. ¬(P = ¬P)
+  - notI %
+  - excm_exh[a] %
+  - psub 1 2+
+  - falI 1 2 %
+  - prsub 1* 2+
+  - falI 1 2 %
+
+lemma not_P_iff_not_P: ∀P. ¬(P  ⟷  ¬P)
+  - rsub[λx. ¬(x a (¬a))] iff_equiv_eq not_P_eq_not_P %
+
+lemma iff_sub: ∀F P Q. (P  ⟷  Q)  ⟶  F P  ⟶  F Q
+  - psub iff_eq 1*
+  - sub 1 2 %
+
+lemma eq_com_iff: ∀P Q. (P = Q)  ⟷  (Q = P)
+  - iffI %
+  - eq_com 1 %
+  - eq_com 1 %
+
+lemma eq_com_eq: ∀P Q. (P = Q) = (Q = P)
+  - psub iff_eq eq_com_iff %
+
+lemma eq_tru_eq_P: ∀P. (P = True) = P
+  - psub iff_eq %
+  - iffI %
+  - eq_truE 1 %
+  - eq_truI 1 %
+
+lemma eq_fal_eq_not_P: ∀P. (P = False) = ¬P
+  - psub iff_eq %
+  - iffI %
+  - eq_falE 1 %
+  - eq_falI 1 %
+
+lemma iff_PQQ_P: ∀P Q. ((P  ⟷  Q)  ⟷  Q)  ⟶  P
+  - notE2 %
+  - eq_falI 2
+  - sub[λx. (x  ⟷  b)  ⟷  b] 2 1
+  - sub[λx. x (x False b) b] iff_equiv_eq 1
+  - sub[λx. x = b, False = b, b = False] eq_com_eq 1
+  - sub[λx. x = b, b = False, ¬b] eq_fal_eq_not_P 1
+  - eq_com 1
+  - falI 1 not_P_eq_not_P %
+
+lemma iff_com_eq: ∀P Q. (P  ⟷  Q) = (Q  ⟷  P)
+  - psub iff_eq %
+  - iffI %
+  - iff_com 1 %
+  - iff_com 1 %
+
+lemma iff_assoc: ∀P Q R. ((P  ⟷  Q)  ⟷  R)  ⟷  (P  ⟷  (Q  ⟷  R))
+  - iffI %
+  - iffI %
+  - iffI %
+  - imp_iff_p 2 3
+  - iffE1 1 2 %
+  - iffE2 1* 3
+  - iffE1 1 2 %
+  - psub iff_eq 2
+  - rsub[λx. (a  ⟷  b)  ⟷  x] 2 1
+  - iff_PQQ_P 1 %
+  - iffI %
+  - sub[λx. a  ⟷  x, b  ⟷  c, c  ⟷  b] iff_com_eq 1*
+  - iff_com 1*
+  - iff_sub[λx. (c  ⟷  b)  ⟷  x] 2 1
+  - iff_PQQ_P 1 %
+  - iffI %
+  - iffE1 1* 3
+  - iffE2 1 2 %
+  - imp_iff_p 3 2
+  - iffE2 1 2 %
+
+lemma eq_assoc: ∀P Q R. ((P = Q) = R)  ⟷  (P = (Q = R))
+  - sub[λx. (x (x a b) c)  ⟷  (x a (x b c))] iff_equiv_eq iff_assoc %
