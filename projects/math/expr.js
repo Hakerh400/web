@@ -472,6 +472,16 @@ class Expr{
     if(freeVars.length !== 0)
       return [0, `Some universally quantified variables remained unassigned`];
 
+    const impsNum = imps.length;
+
+    for(let i = 0; i !== impsNum; i++){
+      const imp = imps[i];
+      const result = yield [[imp, 'simplify'], ctx];
+      if(!result[0]) return result;
+
+      imps[i] = result[1];
+    }
+
     return [1, imps];
   }
 
@@ -762,9 +772,9 @@ class Lambda extends NamedExpr{
     const lamSym = ctx.getMeta('lambda');
     assert(lamSym !== null);
 
-    return [ctx.getPrec(lamSym), `${lamSym}${
+    return [ctx.getPrec(lamSym), `(${lamSym}${
       names.join(' ')}. ${
-      yield [[e, 'toStr'], ctx, idents]}`];
+      yield [[e, 'toStr'], ctx, idents]})`];
   }
 }
 

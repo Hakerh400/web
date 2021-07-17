@@ -31,7 +31,7 @@ class Context{
       for(const key of templateKeys)
         this[key] = template[key](this);
 
-      this.ops[' '] = [null, [80, [0, 1]]];
+      this.ops[' '] = [null, [80, [80, 80.5]]];
     }else{
       for(const key of templateKeys)
         this[key] = ctx[key];

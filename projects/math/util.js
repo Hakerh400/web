@@ -4,11 +4,11 @@ const assert = require('assert');
 
 const identChars = O.chars('a', 'z');
 
-let n = 0;
+// let n = 0;
 const newSym = () => {
-  n++;
+  // n++;
   // if(n === 24) debugger;
-  return Symbol(n);
+  return Symbol();
 };
 
 const copyObj = obj => {

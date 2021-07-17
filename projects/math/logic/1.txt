@@ -514,3 +514,49 @@ lemma uni_exi: ∀P. (∀a. P a)  ⟶  (∃b. P b)
 lemma exi_uni: ∀P. (∀a b. P a = P b)  ⟶  (∃c. P c)  ⟶  (∀d. P d)
   - exiE 2 %
   - psub 1 2 %
+
+def ∃! [binder]: λP. (∃a. P a) ∧ (∀a b. P a  ⟶  P b  ⟶  a = b)
+
+lemma uniq_def: ∀P. (∃!a. P a) = ((∃a. P a) ∧ (∀a b. P a  ⟶  P b  ⟶  a = b))
+  - fun_cong ∃!_def [a]
+  - imp_swap eq_tran 1 %
+  - arg_cong %
+  - ext %
+  - refl %
+
+lemma uniqI: ∀P. (∃a. P a)  ⟶  (∀a b. P a  ⟶  P b  ⟶  a = b)  ⟶  ∃!a. P a
+  - prsub uniq_def %
+  - conjI 1 {2}2 %
+
+lemma uniqE': ∀P a. P a  ⟶  (∀c d. P c  ⟶  P d  ⟶  c = d)  ⟶  P = λx. a = x
+  - ext %
+  - iffI %
+  - 2 1 3 %
+  - arg_cong 3
+  - psub 3 1 %
+
+lemma eq_equiv_com: (=) = (λx y. y = x)
+  - ext %
+  - ext %
+  - eq_com_eq %
+
+lemma uniqE: ∀P. (∃!a. P a)  ⟶  P (THE a. P a)
+  - psub uniq_def 1
+  - conjE1 1+
+  - conjE2 1
+  - exiE 1 %
+  - uniqE' 2+ {2}1+
+  - rsub[λx. x (THE y. x y), λx. b = x, a] %
+  - 3 %
+  - eq_com %
+  - rsub[λx. (THE y. x b y) = b] eq_equiv_com %
+  - the %
+
+type nat 0
+
+const 0   :: nat
+const Suc :: nat  ⟹  nat
+
+axiom nat_dif: ∀n. ¬(0 = Suc n)
+axiom nat_inj: ∀m n. Suc m = Suc n  ⟶  m = n
+axiom nat_ind: ∀P. P 0  ⟶  (∀n. P n  ⟶  P (Suc n))  ⟶  ∀n. P n
