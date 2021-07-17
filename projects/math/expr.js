@@ -506,7 +506,8 @@ class NamedExpr extends Expr{
 
     if(isStr(sym))
       return sym;
-    // return String(this.name).match(/\d+/)[0];
+
+    // if(O.z) return String(this.name).match(/\d+/)[0];
 
     const symStrObj = idents[0];
     const strSymObj = idents[1];
@@ -627,10 +628,16 @@ class Ident extends NamedExpr{
   }
 
   *toStr1(ctx, idents){
-    const name = this.getName(ctx, idents);
-    const name1 = ctx.name2str(name, 1);
+    let name = this.getName(ctx, idents);
+    name = ctx.name2str(name, 1);
 
-    return [null, name1];
+    // if(!this.isType&&this.type!==null){
+    //   O.z=1;
+    //   name=`${name}::(${(yield [[this.type, 'toStr'], ctx]).replace(/\s+/g, '').replace(/⟹/g, '->')})`
+    //   O.z=0;
+    // }
+
+    return [null, name];
   }
 }
 

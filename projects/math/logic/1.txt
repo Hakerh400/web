@@ -18,6 +18,7 @@ meta arrow  ( ⟹ )
 meta lambda (λ)
 meta uni    (∀)
 meta imp    ( ⟶ )
+meta eq     (=)
 
 axiom true:        True
 axiom bool_dif:    ∀P. True = False  ⟶  P
@@ -27,3 +28,23 @@ axiom refl: ∀a. a = a
 axiom sub:  ∀P a b. a = b  ⟶  P a  ⟶  P b
 axiom ext:  ∀f g. (∀a. f a = g a)  ⟶  f = g
 axiom the:  ∀a. (THE b. b = a) = a
+
+lemma psub: ∀P Q. P = Q  ⟶  P  ⟶  Q
+  - sub[λx. x] 1 2 %
+
+lemma eq_com: ∀a b. a = b  ⟶  b = a
+  - sub[λx. x = a] 1 refl %
+
+lemma eq_tran: ∀a b c. a = b  ⟶  b = c  ⟶  a = c
+  - eq_com 1*
+  - sub[λx. x = c] 1 2 %
+
+lemma fun_cong: ∀f g a. f = g  ⟶  f a = g a
+  - sub[λx. a c = x c] 1 refl %
+
+lemma arg_cong: ∀f a b. a = b  ⟶  f a = f b
+  - sub[λx. a b = a x] 1 refl %
+
+lemma cong: ∀f g a b. f = g  ⟶  a = b  ⟶  f a = g b
+  - fun_cong 1 [c]
+  - sub[λx. a c = b x] 1 2 %

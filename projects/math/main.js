@@ -720,6 +720,11 @@ const processLine = function*(lineIndex, ctx){
   };
 
   const applySpecsAndMPs = function*(proof){
+    line = line.trimRight();
+
+    const matchGoal = line.endsWith(' %');
+    if(matchGoal) line = line.slice(0, -2);
+
     const {subgoal} = proof;
     const {premises, goal} = subgoal;
     const premisesNum = premises.length;
@@ -867,34 +872,38 @@ const processLine = function*(lineIndex, ctx){
       offsetIndex,
       insertionIndex,
       premisesNew,
+      matchGoal,
     }];
   };
 
   const proofDirectiveFuncs = {
-    *'*'(proof){
-      const {subgoal} = proof;
-      const {prop, offsetIndex, insertionIndex, premisesNew} = yield [call, applySpecsAndMPs, proof];
-
-      const proofNew = proof.copy();
-      const subgoalNew = subgoal.copy();
-
-      subgoalNew.premises = premisesNew;
-      subgoalNew.addPremise(prop, insertionIndex);
-
-      proofNew.setSubgoal(subgoalNew, 1);
-
-      ctx = ctx.copy();
-      ctx.proof = proofNew;
-
-      return O.tco(ret, yield [[prop, 'toStr'], ctx]);
-    },
-
-    *'%'(proof){
+    *'-'(proof){
       const {subgoal} = proof;
       const {goal} = subgoal;
-      const {prop, offsetIndex, insertionIndex, premisesNew} = yield [call, applySpecsAndMPs, proof];
+
+      const {
+        prop,
+        offsetIndex,
+        insertionIndex,
+        premisesNew,
+        matchGoal,
+      } = yield [call, applySpecsAndMPs, proof];
 
       const proofNew = proof.copy();
+
+      if(!matchGoal){
+        const subgoalNew = subgoal.copy();
+
+        subgoalNew.premises = premisesNew;
+        subgoalNew.addPremise(prop, insertionIndex);
+
+        proofNew.setSubgoal(subgoalNew, 1);
+
+        ctx = ctx.copy();
+        ctx.proof = proofNew;
+
+        return O.tco(ret, yield [[prop, 'toStr'], ctx]);
+      }
 
       proofNew.subgoals = proofNew.subgoals.slice();
       proofNew.removeSubgoal();
@@ -920,6 +929,8 @@ const processLine = function*(lineIndex, ctx){
         ctx.proof = proofNew;
       }else{
         ctx.proof = null;
+        ctx.rules = util.copyObj(ctx.rules);
+        ctx.rules[proof.name] = proof.prop;
       }
 
       const finalStr = goalStrs.length !== 0 ?
