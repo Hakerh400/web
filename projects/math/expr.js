@@ -361,8 +361,8 @@ class Expr{
     return O.tco([expr, 'simplify'], ctx);
   }
 
-  // Modus Ponens
-  *mp(ctx, e){
+  // Modus ponens
+  *mp(ctx, e, offset=0){
     let result;
 
     result = yield [[this, 'simplify'], ctx];
@@ -376,8 +376,8 @@ class Expr{
     const [unis1, imps1] = expr.getPropInfo(ctx);
     const [unis2, imps2] = ant.getPropInfo(ctx)//[[], [ant]]
 
-    if(imps1.length === 1)
-      return [0, `No premises found`];
+    if(offset !== null && imps1.length <= offset + 1)
+      return [0, `Not enough premises to apply modus ponens`];
 
     const vars1 = O.arr2obj(unis1, null);
     const vars2 = O.arr2obj(unis2, null);
@@ -385,27 +385,46 @@ class Expr{
 
     const unifier = yield [[Unifier.ValueUnifier, 'new'], ctx, vars];
 
-    const lhs = imps1.shift();
+    const offsetNew = offset !== null ? offset : -1;
+    const lhs = imps1.splice(offsetNew, 1)[0];
     const rhs = Expr.fromImps(ctx, imps2);
 
     unifier.addEq(lhs, rhs);
     result = yield [[unifier, 'solve']];
     if(!result[0]) return result;
 
-    const exprNew = Expr.fromImps(ctx, imps1);
+    const impsNum = imps1.length;
+    const varsArr = [];
     const freeVars = [];
-
-    let exprFinal = exprNew;
+    const freeVarsNew = [];
 
     for(const sym of O.keys(vars)){
-      const val = vars[sym];
-
-      if(val === null){
-        freeVars.push(sym);
+      if(vars[sym] !== null){
+        varsArr.push(sym);
         continue;
       }
 
-      exprFinal = yield [[exprFinal, 'substIdent'], sym, val];
+      freeVars.push(sym);
+    }
+
+    for(let i = 0; i !== impsNum; i++){
+      let imp = imps1[i];
+
+      for(const sym of varsArr){
+        const val = vars[sym];
+        imp = yield [[imp, 'substIdent'], sym, val];
+      }
+
+      const impFreeIdents = yield [[imp, 'getFreeIdents'], ctx];
+
+      for(const sym of freeVars){
+        if(!O.has(impFreeIdents, sym)) continue;
+        if(freeVarsNew.includes(sym)) continue;
+
+        freeVarsNew.push(sym);
+      }
+
+      imps1[i] = imp;
     }
 
     /*const freeIdents = yield [[exprFinal, 'getFreeIdents'], ctx];
@@ -417,18 +436,32 @@ class Expr{
       return [0, `Universally quantified variable escaped antecedent`];
     }*/
 
-    return [1, [freeVars, exprFinal]];
+    return [1, [freeVarsNew, imps1]];
   }
 
-  // Direct application of Modus Ponens
-  *mpDir(ctx, e){
-    const result = yield [[this, 'mp'], ctx, e];
+  // Direct application of modus ponens
+  *mpDir(ctx, e, offset){
+    const result = yield [[this, 'mp'], ctx, e, offset];
     if(!result[0]) return result;
 
-    const [freeVars, expr] = result[1];
+    const [freeVars, imps] = result[1];
+    const expr = Expr.fromImps(ctx, imps);
     const exprNew = expr.addUnis(ctx, freeVars);
 
     return O.tco([exprNew, 'simplify'], ctx);
+  }
+
+  // Reverse application of modus ponens
+  *mpRev(ctx, e){
+    const result = yield [[this, 'mp'], ctx, e, null];
+    if(!result[0]) return result;
+
+    const [freeVars, imps] = result[1];
+
+    if(freeVars.length !== 0)
+      return [0, `Some universally quantified variables remained unassigned`];
+
+    return [1, imps];
   }
 
   getLamArgType(ctx){

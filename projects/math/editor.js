@@ -86,8 +86,8 @@ class Editor{
     const line = this.getLine(cy);
     const lineLen = line.length;
 
-    const tSize = su.getTabSize(line);
-    const tStr = su.getTabStr(line);
+    const tSize = su.getSpSize(line);
+    const tStr = su.getSpStr(line);
 
     const p1 = line.slice(0, cx);
     const p2 = line.slice(cx);

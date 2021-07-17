@@ -31,13 +31,27 @@ const getTabSize = line => {
 
   for(let i = 0; i !== lineLen; i++)
     if(line[i] !== ' ')
+      return i / tabSize | 0;
+
+  return lineLen / tabSize | 0;
+};
+
+const getTabStr = line => {
+  return tab(getTabSize(line));
+};
+
+const getSpSize = line => {
+  const lineLen = line.length;
+
+  for(let i = 0; i !== lineLen; i++)
+    if(line[i] !== ' ')
       return i;
 
   return lineLen;
 };
 
-const getTabStr = line => {
-  return tab(getTabSize(line));
+const getSpStr = line => {
+  return sp(getSpSize(line));
 };
 
 const tab = (size, str='') => {
@@ -93,6 +107,8 @@ module.exports = {
   isStrDelim,
   getTabSize,
   getTabStr,
+  getSpSize,
+  getSpStr,
   tab,
   sp,
   isOpenParen,

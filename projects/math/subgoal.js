@@ -36,12 +36,15 @@ class Subgoal{
     premises.splice(index, 0, prop);
   }
 
-  *addProp(call, ctx, prop){
+  *addGoal(ctx, prop){
     assert(this.goal === null);
 
     const {identsObj, identsArr, premises} = this;
 
-    prop = yield [call, [prop, 'simplify'], ctx];
+    let result = yield [[prop, 'simplify'], ctx];
+    if(!result[0]) return result;
+
+    prop = result[1];
 
     const newNames = O.obj();
     const symExprObj = O.obj();
@@ -105,6 +108,17 @@ class Subgoal{
       premises.push(imp);
 
     this.goal = goal;
+  }
+
+  *replaceGoal(ctx, goal){
+    assert(this.goal !== null);
+
+    this.identsObj = util.copyObj(this.identsObj);
+    this.identsArr = this.identsArr.slice();
+    this.premises = this.premises.slice();
+    this.goal = null;
+
+    return O.tco([this, 'addGoal'], ctx, goal);
   }
 
   *toStr(ctx){

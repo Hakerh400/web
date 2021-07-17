@@ -23,8 +23,16 @@ class Proof{
     this.subgoals = this.subgoals.slice();
   }
 
-  hasSubgoal(){
+  get hasSubgoal(){
     return this.subgoals.length !== 0;
+  }
+
+  get finished(){
+    return this.subgoals.length === 0;
+  }
+
+  get subgoal(){
+    return O.fst(this.subgoals);
   }
 
   setSubgoal(subgoal, copy=0){
@@ -32,14 +40,6 @@ class Proof{
     if(copy) this.copySubgoals();
 
     this.subgoals[0] = subgoal;
-  }
-
-  isFinished(){
-    return this.subgoals.length === 0;
-  }
-
-  get subgoal(){
-    return O.fst(this.subgoals);
   }
 
   addSubgoals(subgoals){
@@ -57,14 +57,18 @@ class Proof{
   }
 
   *toStr(ctx){
-    const {subgoal} = this;
+    const {subgoals} = this;
+    const subgoalsNum = subgoals.length;
 
-    if(subgoal === null)
+    if(subgoalsNum === 0)
       return `No subgoals!`;
 
+    const subgoal = subgoals[0];
     const subgoalStr = yield [[subgoal, 'toStr'], ctx];
 
-    return subgoalStr;
+    // return subgoalStr
+
+    return `${subgoalStr}\n\nRemaining subgoals: ${subgoalsNum - 1}`;
   }
 }
 

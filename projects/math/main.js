@@ -162,6 +162,35 @@ const onUpdatedLine = lineIndex => {
 }
 
 const processLine = function*(lineIndex, ctx){
+  const ctxPrev = ctx;
+
+  const mkLineDataStr = function*(str){
+    const hadProof = ctxPrev.hasProof;
+
+    if(!hadProof)
+      return str;
+
+    const {proof} = ctxPrev;
+    const {name, prop} = ctxPrev;
+    const {hasProof} = ctx;
+
+    if(!hasProof)
+      return `lemma ${
+        proof.name}: ${
+        yield [[proof.prop, 'toStr'], ctxPrev]}`;
+
+    assert(proof.name === ctx.proof.name);
+
+    return `${
+      yield [[proof, 'toStr'], ctxPrev]}\n\n${
+      '-'.repeat(50)}\n\n${str}`;
+  };
+
+  const mkLineData = function*(str, err){
+    const strNew = yield [mkLineDataStr, str];
+    return new LineData(lineIndex, ctx, strNew, err);
+  };
+
   const processResult = function*(result){
     if(!result) return result;
 
@@ -170,7 +199,7 @@ const processLine = function*(lineIndex, ctx){
       const msg = typeof err === 'string' ?
         err : err.msg//su.tab(err.pos, `^ ${err.msg}`);
 
-      return O.breakRec(new LineData(lineIndex, ctx, msg, 1));
+      return O.breakRec(yield [mkLineData, msg, 1]);
     }
 
     return result[1];
@@ -181,8 +210,8 @@ const processLine = function*(lineIndex, ctx){
     return O.tco(processResult, result);
   };
 
-  const ret = str => {
-    return [1, new LineData(lineIndex, ctx, str)];
+  const ret = function*(str){
+    return [1, yield [mkLineData, str]];
   };
 
   const err = function*(msg){
@@ -210,7 +239,12 @@ const processLine = function*(lineIndex, ctx){
     return ctx.name2str(name, 2);
   };
 
-  if(eol()) return null;
+  if(eol()){
+    if(!ctx.hasProof)
+      return null;
+
+    return O.tco(mkLineData, '');
+  }
 
   const stack = [];
 
@@ -585,7 +619,7 @@ const processLine = function*(lineIndex, ctx){
 
       ctx.setSpacingInfo(name, [before, after, inParens]);
 
-      return ret(`spacing ${name2str(name)} ${before} ${after} ${inParens}`);
+      return O.tco(ret, `spacing ${name2str(name)} ${before} ${after} ${inParens}`);
     },
 
     *type(){
@@ -611,7 +645,7 @@ const processLine = function*(lineIndex, ctx){
       assert(O.has(insertIdentSortFuncs, sort));
       yield [call, insertIdentSortFuncs[sort], name, [arity, info]];
 
-      return ret(`type ${name2str(name)} ${arity}`);
+      return O.tco(ret, `type ${name2str(name)} ${arity}`);
     },
 
     *const(){
@@ -632,7 +666,7 @@ const processLine = function*(lineIndex, ctx){
       assert(O.has(insertIdentSortFuncs, sort));
       yield [call, insertIdentSortFuncs[sort], name, [type, info]];
 
-      return ret(`const ${name2str(name)} :: ${yield [[type, 'toStr'], ctx]}`);
+      return O.tco(ret, `const ${name2str(name)} :: ${yield [[type, 'toStr'], ctx]}`);
     },
 
     *meta(){
@@ -655,7 +689,7 @@ const processLine = function*(lineIndex, ctx){
       yield [call, metaSymbolFuncs[name], ident];
       ctx.meta[name] = ident;
 
-      return ret(`meta ${name} ${name2str(ident)}`);
+      return O.tco(ret, `meta ${name} ${name2str(ident)}`);
     },
 
     *axiom(){
@@ -666,7 +700,7 @@ const processLine = function*(lineIndex, ctx){
       ctx.rules = util.copyObj(ctx.rules);
       ctx.rules[name] = prop;
 
-      return ret(`axiom ${name}: ${yield [[prop, 'toStr'], ctx]}`);
+      return O.tco(ret, `axiom ${name}: ${yield [[prop, 'toStr'], ctx]}`);
     },
 
     *lemma(){
@@ -676,109 +710,223 @@ const processLine = function*(lineIndex, ctx){
       ctx = ctx.copy();
 
       const subgoal = new Subgoal();
-      yield [call, [subgoal, 'addProp'], call, ctx, prop];
+      yield [call, [subgoal, 'addGoal'], ctx, prop];
 
       ctx.createProof(name, prop);
       ctx.proof.addSubgoal(subgoal);
 
-      return ret(yield [[ctx.proof, 'toStr'], ctx]);
+      return O.tco(ret, yield [[ctx.proof, 'toStr'], ctx]);
     },
+  };
+
+  const applySpecsAndMPs = function*(proof){
+    const {subgoal} = proof;
+    const {premises, goal} = subgoal;
+    const premisesNum = premises.length;
+
+    const premisesStatus = O.obj();
+
+    let prop = null;
+    let insertionIndex = null;
+    let offsetIndex = 0;
+
+    const setPremiseStatus = function*(index, keep){
+      if(O.has(premisesStatus, index) && premisesStatus[index] ^ keep)
+        return [0, `Status mismatch for premise ${index + 1}`];
+
+      premisesStatus[index] = keep;
+    };
+
+    const setInsIndex = function*(index){
+      if(insertionIndex !== null)
+        return [0, `Multiple appearances of \`*\` premise attribute`];
+
+      insertionIndex = index;
+    };
+
+    const processPremiseAttribs = function*(index, attribs){
+      const attribsNum = attribs.length;
+      const keep = attribs.includes('+');
+      const ins = attribs.includes('*');
+
+      if(keep + ins !== attribsNum)
+        return [0, `Invalid premise attributes ${O.sf(attribs)}`];
+
+      yield [call, setPremiseStatus, index, keep];
+      if(!ins) return;
+
+      yield [call, setInsIndex, index + attribs.startsWith('+')];
+    };
+
+    const parsePremiseIndex = function*(tk){
+      if(!/^\d/.test(tk)) return null;
+
+      const match = tk.match(/^(\d+)(.*)$/);
+      assert(match !== null);
+
+      const indexStr = match[1]
+      const attribs = match[2];
+
+      if(!su.isInt(indexStr))
+        return [0, `Invalid premise index ${O.sf(indexStr)}`];
+
+      const index = Number(indexStr) - 1;
+
+      if(!(index >= 0 && index < premisesNum))
+        return [0, `There is no premise with index ${tk}`];
+
+      yield [call, processPremiseAttribs, index, attribs];
+
+      return [1, index];
+    };
+
+    while(!eol()){
+      let propNew = null;
+      let specs = null;
+
+      if(!line.startsWith('[')){
+        const tk = yield [call, getToken, 0, 0];
+
+        if(tk === null)
+          return syntErr();
+
+        const premiseIndex = yield [call, parsePremiseIndex, tk];
+
+        if(premiseIndex !== null){
+          // Premise
+
+          propNew = premises[premiseIndex];
+        }else{
+          // Other rule
+
+          const rule = ctx.getRule(tk);
+
+          if(rule === null)
+            return [0, `Undefined rule ${O.sf(tk)}`];
+
+          propNew = rule;
+        }
+      }
+
+      if(line.startsWith('[')){
+        const exprStrs = yield [call, getBrackets, 0];
+
+        if(exprStrs.length === 0)
+          return [0, `Empty specification parameters`];
+
+        specs = [];
+
+        for(const str of exprStrs)
+          specs.push(yield [call, parser.parse, ctx, str]);
+      }
+
+      if(neol() && !line.startsWith(' '))
+        return syntErr();
+
+      trimLine();
+
+      if(propNew === null){
+        assert(specs !== null);
+        assert(specs.length !== 0);
+
+        if(prop === null)
+          return [0, `Specification cannot be the first transformation`];
+
+        prop = yield [call, [prop, 'specArr'], ctx, specs];
+        continue;
+      }
+
+      if(specs !== null)
+        propNew = yield [call, [propNew, 'specArr'], ctx, specs];
+
+      if(prop === null){
+        prop = propNew;
+        continue;
+      }
+
+      prop = yield [call, [prop, 'mpDir'], ctx, propNew];
+    }
+
+    if(prop === null)
+      return [0, `This proof directive requires at least one proposition`];
+
+    prop = yield [call, [prop, 'simplify'], ctx];
+
+    const premisesNew = premises.filter((p, i) => {
+      if(!O.has(premisesStatus, i)) return 1;
+      if(premisesStatus[i]) return 1;
+
+      if(insertionIndex !== null && i < insertionIndex)
+        insertionIndex--;
+
+      return 0;
+    });
+
+    return [1, {
+      prop,
+      offsetIndex,
+      insertionIndex,
+      premisesNew,
+    }];
   };
 
   const proofDirectiveFuncs = {
     *'*'(proof){
       const {subgoal} = proof;
-      const {premises, goal} = subgoal;
-      const premisesNum = premises.length;
-
-      let prop = null;
-      let index = null;
-
-      while(!eol()){
-        let propNew = null;
-        let specs = null;
-
-        if(!line.startsWith('[')){
-          const tk = yield [call, getToken, 0, 0];
-
-          if(tk === null)
-            return syntErr();
-
-          if(su.isInt(tk)){
-            // Premise
-
-            const i = Number(tk);
-
-            if(!(i >= 1 && i <= premisesNum))
-              return [0, `There is no premise with index ${tk}`];
-
-            propNew = premises[i - 1];
-          }else{
-            // Other rule
-
-            const rule = ctx.getRule(tk);
-
-            if(rule === null)
-              return [0, `Undefined rule ${O.sf(tk)}`];
-
-            propNew = rule;
-          }
-        }
-
-        if(line.startsWith('[')){
-          const exprStrs = yield [call, getBrackets, 0];
-
-          if(exprStrs.length === 0)
-            return [0, `Empty specification parameters`];
-
-          specs = [];
-
-          for(const str of exprStrs)
-            specs.push(yield [call, parser.parse, ctx, str]);
-        }
-
-        if(neol() && !line.startsWith(' '))
-          return syntErr();
-
-        trimLine();
-
-        if(propNew === null){
-          assert(specs !== null);
-          assert(specs.length !== 0);
-
-          if(prop === null)
-            return [0, `Specification cannot be the first transformation`];
-
-          prop = yield [call, [prop, 'specArr'], ctx, specs];
-          continue;
-        }
-
-        if(specs !== null)
-          propNew = yield [call, [propNew, 'specArr'], ctx, specs];
-
-        if(prop === null){
-          prop = propNew;
-          continue;
-        }
-
-        prop = yield [call, [prop, 'mpDir'], ctx, propNew];
-      }
-
-      if(prop === null)
-        return [0, `This proof directive requires at least one proposition`];
-
-      prop = yield [call, [prop, 'simplify'], ctx];
+      const {prop, offsetIndex, insertionIndex, premisesNew} = yield [call, applySpecsAndMPs, proof];
 
       const proofNew = proof.copy();
       const subgoalNew = subgoal.copy();
 
-      subgoalNew.addPremise(prop, index, 1);
+      subgoalNew.premises = premisesNew;
+      subgoalNew.addPremise(prop, insertionIndex);
+
       proofNew.setSubgoal(subgoalNew, 1);
 
       ctx = ctx.copy();
       ctx.proof = proofNew;
 
-      return ret(yield [[ctx.proof, 'toStr'], ctx]);
+      return O.tco(ret, yield [[prop, 'toStr'], ctx]);
+    },
+
+    *'%'(proof){
+      const {subgoal} = proof;
+      const {goal} = subgoal;
+      const {prop, offsetIndex, insertionIndex, premisesNew} = yield [call, applySpecsAndMPs, proof];
+
+      const proofNew = proof.copy();
+
+      proofNew.subgoals = proofNew.subgoals.slice();
+      proofNew.removeSubgoal();
+
+      const goalsNew = yield [call, [prop, 'mpRev'], ctx, goal];
+
+      const goalStrs = [];
+      const toStrIdents = util.obj2();
+
+      for(let i = goalsNew.length - 1; i !== -1; i--){
+        const goal = goalsNew[i];
+        goalStrs.push(yield [[goal, 'toStr'], ctx, toStrIdents]);
+
+        const subgoalNew = subgoal.copy();
+        yield [call, [subgoalNew, 'replaceGoal'], ctx, goal];
+
+        proofNew.addSubgoal(subgoalNew);
+      }
+
+      ctx = ctx.copy();
+
+      if(proofNew.hasSubgoal){
+        ctx.proof = proofNew;
+      }else{
+        ctx.proof = null;
+      }
+
+      const finalStr = goalStrs.length !== 0 ?
+        goalStrs.join('\n') :
+        'The subgoal is done!';
+
+      return O.tco(ret, finalStr);
     },
   };
 
