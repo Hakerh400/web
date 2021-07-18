@@ -121,10 +121,9 @@ class Subgoal{
     return O.tco([this, 'addGoal'], ctx, goal);
   }
 
-  *toStr(ctx){
+  *toStr(ctx, toStrIdents=util.obj2()){
     const {identsArr, premises, goal} = this;
     const premisesNum = premises.length;
-    const toStrIdents = util.obj2();
 
     const sections = [];
     let lines = [];

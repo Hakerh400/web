@@ -56,7 +56,7 @@ class Proof{
     this.subgoals.shift();
   }
 
-  *toStr(ctx){
+  *toStr(ctx, toStrIdents=util.obj2()){
     const {subgoals} = this;
     const subgoalsNum = subgoals.length;
 
@@ -64,9 +64,9 @@ class Proof{
       return `No subgoals!`;
 
     const subgoal = subgoals[0];
-    const subgoalStr = yield [[subgoal, 'toStr'], ctx];
+    const subgoalStr = yield [[subgoal, 'toStr'], ctx, toStrIdents];
 
-    return subgoalStr
+    return subgoalStr;
     // return `${subgoalStr}\n\n[${subgoalsNum - 1}]`;
   }
 }

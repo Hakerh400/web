@@ -107,6 +107,10 @@ class Context{
     return util.isNum(info[0]);
   }
 
+  hasVal(name){
+    return this.has(name) && !this.hasType(name);
+  }
+
   getTypeArity(name){
     if(!this.hasType(name)) return null;
     return this.getInfo(name)[0];

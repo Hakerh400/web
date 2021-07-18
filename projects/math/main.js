@@ -1013,6 +1013,56 @@ const processLine = function*(lineIndex, ctx){
 
       return O.tco(ret, finalStr);
     },
+
+    *show(){
+      const exprStrs = yield [call, getBrackets];
+
+      if(exprStrs.length === 0)
+        return [0, `At least one proposition must be specified in the \`show\` directive`];
+
+      const boolSym = yield [call, getMeta, 'bool', 1];
+
+      const toStrIdents = util.obj2();
+      yield [[ctx.proof.subgoal, 'toStr'], ctx, toStrIdents];
+
+      const props = [];
+      const propStrs = [];
+
+      for(const str of exprStrs){
+        let prop = yield [call, parser.parse, ctx, str];
+        prop = yield [call, [prop, 'simplify'], ctx];
+
+        yield [call, assertEq, prop.type, boolSym];
+
+        props.push(prop);
+        propStrs.push(yield [[prop, 'toStr'], ctx, toStrIdents]);
+      }
+
+      const propsNum = props.length;
+
+      ctx = ctx.copy();
+
+      const proof = ctx.proof = ctx.proof.copy();
+      const subgoals = proof.subgoals = proof.subgoals.slice();
+      const subgoal = proof[subgoals[0]] = proof.subgoal.copy();
+      const premises = subgoal.premises = subgoal.premises.slice();
+
+      const subgoalsNew = [];
+
+      for(let i = 0; i !== propsNum; i++){
+        const prop = props[i];
+
+        const subgoalNew = subgoal.copy();
+        yield [[subgoalNew, 'replaceGoal'], ctx, prop];
+
+        subgoalsNew.push(subgoalNew);
+        premises.push(prop);
+      }
+
+      proof.subgoals = [subgoal, ...subgoalsNew, ...subgoals.slice(1)];
+
+      return O.tco(ret, propStrs.join('\n'));
+    },
   };
 
   const processLine = function*(){
@@ -1187,6 +1237,16 @@ const onKeyDown = evt => {
         break flagCases;
       }
 
+      if(code === 'ArrowLeft'){
+        mainEditor.scrollLeft();
+        break flagCases;
+      }
+
+      if(code === 'ArrowRight'){
+        mainEditor.scrollRight();
+        break flagCases;
+      }
+
       break flagCases;
     }
 
@@ -1240,6 +1300,7 @@ const save = () => {
     cx: mainEditor.cx,
     cy: mainEditor.cy,
     cxPrev: mainEditor.cxPrev,
+    scrollX: mainEditor.scrollX,
     scrollY: mainEditor.scrollY,
   });
 };
@@ -1250,12 +1311,14 @@ const load = () => {
     cx,
     cy,
     cxPrev,
+    scrollX,
     scrollY,
   } = JSON.parse(localStorage[project]);
 
   mainEditor.cx = cx;
   mainEditor.cy = cy;
   mainEditor.cxPrev = cxPrev;
+  mainEditor.scrollX = scrollX;
   mainEditor.scrollY = scrollY;
   mainEditor.setText(str);
 };

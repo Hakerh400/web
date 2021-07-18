@@ -4,12 +4,13 @@ const assert = require('assert');
 const Expr = require('./expr');
 const Context = require('./context');
 const cs = require('./parser-ctors');
+const util = require('./util');
 const su = require('./str-util');
 
 const {Term, Op, Binder, End} = cs;
 const {Ident, Call, Lambda} = Expr;
 
-const reservedChars = '(),.:';
+const reservedChars = '(),.:#';
 
 const reservedCharsObj = O.arr2obj(reservedChars);
 
@@ -19,6 +20,11 @@ const isReservedChar = tk => {
 };
 
 const parse = function*(ctx, str, isType=0){
+  const proof = !isType ? ctx.proof : null;
+  const subgoal = proof !== null ? proof.subgoal : null;
+  const premises = subgoal !== null ? subgoal.premises : null;
+  const goal = subgoal !== null ? subgoal.goal : null;
+
   const strLen = str.length;
   const parens = [];
 
@@ -359,6 +365,114 @@ const parse = function*(ctx, str, isType=0){
 
         assert(str[inc()] === ')');
         parens.pop();
+
+        push(new Term(expr));
+        continue;
+      }
+
+      if(tk === '#'){
+        if(premises === null)
+          err(`Cannot use \`#\` outside of a proof`);
+
+        assert(!isType);
+        assert(goal !== null);
+
+        const premisesNum = premises.length;
+        let expr;
+
+        let tk = getToken();
+
+        if(tk === '.'){
+          expr = goal;
+        }else{
+          if(!su.isInt(tk))
+            err(`Expected a premise number or a goal after \`#\``);
+
+          const i = Number(tk) - 1;
+
+          if(!(i >= 0 && i < premisesNum))
+            err(`Invalid premise number ${tk} found in \`#\``);
+
+          expr = premises[i];
+
+          if(getToken() !== '.')
+            err(`Expected \`.\` after the premise number`);
+        }
+
+        tk = getToken();
+
+        if(tk !== '.'){
+          for(const c of tk){
+            if(c === ')')
+              err(`Missing another \`.\` after the list of references`);
+
+            if(!/[01]/.test(c))
+              err(`Invalid character ${O.sf(c)} found in \`#\``);
+
+            if(expr.isIdent)
+              err(`Cannot dereference an integer`);
+
+            const n = c | 0;
+
+            if(expr.isLam){
+              if(n) err(`Cannot dereference second sub-expression from a lambda expression`);
+
+              expr = expr.expr;
+              continue;
+            }
+
+            if(expr.isCall){
+              expr = n ? expr.arg : expr.target;
+              continue;
+            }
+
+            assert.fail();
+          }
+
+          if(getToken() !== '.')
+            err(`Expected \`.\` after the list of references`);
+        }
+
+        let name = getToken();
+
+        if(name === ')')
+          err(`Missing identifier name in \`#\``);
+
+        if(isReservedChar(name))
+          err(`${O.sf(name)} is not a valid identifier name`);
+        
+        if(!ctx.hasVal(name)){
+          const toStrIdents = util.obj2();
+          const symStrObj = toStrIdents[0];
+          const strSymObj = toStrIdents[1];
+
+          yield [[subgoal, 'toStr'], ctx, toStrIdents];
+
+          if(!O.has(strSymObj, name))
+            err(`Undefined identifier ${O.sf(name)} used in \`#\``);
+
+          name = strSymObj[name];
+        }
+
+        const symNew = util.newSym();
+
+        expr = yield [[expr, 'substIdent'], name, new Ident(symNew)];
+        expr = new Lambda(symNew, expr);
+
+        const freeIdents = yield [[expr, 'getFreeIdents'], ctx];
+        const freeIdentsArr = O.keys(freeIdents);
+
+        if(freeIdentsArr.length !== 0){
+          const toStrIdents = util.obj2();
+          const symStrObj = toStrIdents[0];
+
+          yield [[subgoal, 'toStr'], ctx, toStrIdents];
+          
+          const sym = freeIdentsArr[0];
+          assert(O.has(symStrObj, sym));
+
+          err(`Identifier ${O.sf(symStrObj[sym])} appears free in \`#\``);
+        }
 
         push(new Term(expr));
         continue;

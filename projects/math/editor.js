@@ -22,7 +22,7 @@ class Editor{
   markedLine = null;
 
   render(g, w, h){
-    const {lines, scrollY, markedLine} = this;
+    const {lines, scrollX, scrollY, markedLine} = this;
     const linesNum = lines.length;
 
     for(let y = 0; y !== h; y++){
@@ -42,10 +42,11 @@ class Editor{
       }
 
       for(let x = 0; x !== w; x++){
-        if(x >= lineLen) break;
+        const charIndex = scrollX + x;
+        if(charIndex >= lineLen) break;
 
         g.fillStyle = 'black';
-        g.fillText(line[x], x + .5, y + .5);
+        g.fillText(line[charIndex], x + .5, y + .5);
       }
     }
 
@@ -54,7 +55,8 @@ class Editor{
   }
 
   drawCursor(g, w, h){
-    const {cx, cy, scrollY} = this;
+    const {cx, cy, scrollX, scrollY} = this;
+
     const x = cx - scrollX;
     const y = cy - scrollY;
 
@@ -62,8 +64,8 @@ class Editor{
     if(y < 0 || y >= h) return;
 
     g.beginPath();
-    g.moveTo(cx, y);
-    g.lineTo(cx, y + 1);
+    g.moveTo(x, y);
+    g.lineTo(x, y + 1);
     g.stroke();
   }
 
@@ -74,6 +76,15 @@ class Editor{
 
   scrollDown(){
     this.scrollY++;
+  }
+
+  scrollLeft(){
+    if(this.scrollX === 0) return;
+    this.scrollX--;
+  }
+
+  scrollRight(){
+    this.scrollX++;
   }
 
   processKey(key, addTab=1){

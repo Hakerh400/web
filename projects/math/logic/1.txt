@@ -560,3 +560,445 @@ const Suc :: nat  ⟹  nat
 axiom nat_dif: ∀n. ¬(0 = Suc n)
 axiom nat_inj: ∀m n. Suc m = Suc n  ⟶  m = n
 axiom nat_ind: ∀P. P 0  ⟶  (∀n. P n  ⟶  P (Suc n))  ⟶  ∀n. P n
+
+def (<)  [infixl 50]: λa b. ∃f. f 0 = Suc a ∧ (∀c. f (Suc c) = Suc (f c)) ∧ ∃d. f d = b
+def (<=) [infixl 50]: λa b. a < b ∨ a = b
+
+lemma lt_def: ∀a b. (a < b) = ∃f. f 0 = Suc a ∧ (∀c. f (Suc c) = Suc (f c)) ∧ ∃d. f d = b
+  - fun_cong2 <_def %
+
+lemma lte_def: ∀a b. (a <= b) = (a < b ∨ a = b)
+  - fun_cong2 <=_def %
+
+lemma lt_simp1: ∀a. 0 < Suc a
+  - nat_ind[#..a] %
+  - prsub lt_def %
+  - exiI[#.10.b, Suc] %
+  - conjI %
+  - conjI %
+  - refl %
+  - refl %
+  - exiI[#.10.b, 0] %
+  - refl %
+  - psub lt_def 1
+  - prsub lt_def %
+  - exiE[#1.10.c] 1 %
+  - exiI[#.10.f, c] %
+  - conjE1 1+
+  - conjE1 2+
+  - conjE2 2
+  - conjE2 1
+  - conjI %
+  - conjI %
+  - 1 %
+  - 2 %
+  - exiE[#3.10.e] 3 %
+  - exiI[#.10.f, Suc d] %
+  - eq_tran 2 %
+  - arg_cong 2 %
+
+def id: λx. x
+
+lemma id_def1: ∀a. id a = a
+  - fun_cong id_def %
+
+lemma not2_equiv_id: (λx. ¬¬x) = id
+  - ext %
+  - rsub[λx. x = id a] not2_eq %
+  - eq_com id_def1 %
+
+lemma dmrg_pu1: ∀P. (∀a. ¬P a)  ⟶  ¬(∃a. P a)
+  - dmrg_pu[λx. ¬a x] {1}1
+  - sub[λx. ¬(∃b. x (a b))] not2_equiv_id 1
+  - imp_swap cpos_pp 1 %
+  - exiE[λx. a x] 1 %
+  - exiI[λx. id (a x), b] %
+  - prsub id_def1 %
+  - 1 %
+
+lemma lt_simp2: ∀a. ¬(a < 0)
+  - notI %
+  - psub lt_def 1
+  - exiE[#1.10.b] 1 %
+  - conjE1 1+
+  - conjE1 2+
+  - conjE2 2
+  - conjE2 1
+  - falI 3 %
+  - dmrg_pu1[λx. b x = 0] %
+  - nat_ind[λx. ¬(b x = 0)] %
+  - notI %
+  - eq_tran2 3 1
+  - falI 2 nat_dif %
+  - notI %
+  - eq_tran2 4 2
+  - falI 3 nat_dif %
+
+def pred: λa. THE b. a = Suc b
+
+lemma pred_def1: ∀a. pred a = THE b. a = Suc b
+  - fun_cong pred_def %
+
+lemma nat_exh: ∀a P. (a = 0  ⟶  P)  ⟶  ((∃b. a = Suc b)  ⟶  P)  ⟶  P
+  - nat_ind[λa. (a = 0  ⟶  b)  ⟶  ((∃b. a = Suc b)  ⟶  b)  ⟶  b, a] %
+  - 3 refl %
+  - 5 %
+  - exiI[#.10.f, c] refl %
+  - 1 3 %
+  - 2 3 %
+
+lemma uniq_eq: ∀a. ∃!b. b = a
+  - uniqI[λx. x = a] %
+  - exiI[#.10.b, a] refl %
+  - eq_tran1 1 2 %
+
+lemma suc_uniq: ∀a b. a = Suc b  ⟶  ∃!c. a = Suc c
+  - uniqI[#.10.c] %
+  - exiI[#.10.c, b] 1 %
+  - eq_tran2 2 3
+  - nat_inj 2 %
+
+lemma inj_def_eq: ∀f. inj f = (∀a b. (f a = f b) = (a = b))
+  - iffI %
+  - psub inj_def1 1
+  - iffI %
+  - 1 2 %
+  - arg_cong 2 %
+  - prsub inj_def1 %
+  - psub 1 2 %
+
+lemma the1: ∀a. (THE b. a = b) = a
+  - sub[λx. (THE y. x y) = a, λx. x = a, λx. a = x] %
+  - ext %
+  - eq_com_eq %
+  - the %
+
+lemma the_inj: ∀f. inj f  ⟶  ∀a. (THE b. f b = f a) = a
+  - psub inj_def_eq 1
+  - sub[λx. (THE y. x y) = b, λx. x = b, λx. a x = a b] %
+  - ext %
+  - eq_com 1 %
+  - the %
+
+lemma the_inj1: ∀f. inj f  ⟶  ∀a. (THE b. f a = f b) = a
+  - sub[λx. (THE y. x y) = b, λx. a x = a b, λx. a b = a x] %
+  - ext %
+  - eq_com_eq %
+  - the_inj 1 %
+
+lemma suc_inj: inj Suc
+  - prsub inj_def1 %
+  - nat_inj 1 %
+
+lemma pred_suc: ∀a. pred (Suc a) = a
+  - eq_tran pred_def1 %
+  - the_inj1 suc_inj %
+
+lemma suc_pred: ∀a. ¬(a = 0)  ⟶  Suc (pred a) = a
+  - nat_exh[a] %
+  - falE2 2 1 %
+  - exiE[#2.10.b] 2 %
+  - rsub[#..a] 2 %
+  - arg_cong %
+  - eq_tran1 pred_suc refl %
+
+lemma neq_0_exi_suc: ∀a. ¬(a = 0) = (∃b. a = Suc b)
+  - iffI %
+  - nat_exh[a] %
+  - falE2 2 1 %
+  - 2 %
+  - exiE[#1.10.b] 1 %
+  - imp_swap cpos_pn 1 %
+  - rsub[#..a] 1 nat_dif %
+
+lemma lt_simp3: ∀a b. (Suc a < Suc b) = (a < b)
+  - iffI %
+  - psub lt_def 1
+  - prsub lt_def %
+  - exiE[#1.10.c] 1 %
+  - conjE1 1+
+  - conjE1 2+
+  - conjE2 2
+  - conjE2 1
+  - exiE[λx. c x = Suc b] 3 %
+  - exiI[#.10.f, λx. pred (c x)] %
+  - conjI %
+  - conjI %
+  - rsub[λx. pred x = Suc a] 1 %
+  - eq_tran pred_suc refl %
+  - rsub[λx. pred x = Suc (pred (c e))] 2+ %
+  - eq_tran pred_suc %
+  show [∀x. ¬(c x = 0)]
+  - suc_pred 4
+  - eq_com 4 %
+  - nat_exh[f] %
+  - arg_cong[c] 4
+  - notI %
+  - eq_tran2 5 4
+  - eq_tran 4 1
+  - falI 3 nat_dif %
+  - exiE[#4.10.h] 4 %
+  - notI %
+  - arg_cong[c] 4*
+  - eq_tran2 5 4
+  - eq_tran 4 2
+  - falI 3 nat_dif %
+  - exiI[#.10.f, d] %
+  - rsub[λx. pred x = b] 3 %
+  - pred_suc %
+  - psub lt_def 1
+  - prsub lt_def %
+  - exiE[#1.10.c] 1 %
+  - conjE1 1+
+  - conjE1 2+
+  - conjE2 2
+  - conjE2 1
+  - exiI[#.10.f, λx. Suc (c x)] %
+  - conjI %
+  - conjI %
+  - arg_cong 1 %
+  - arg_cong 2 %
+  - exiE[#3.10.e] 3 %
+  - exiI[#.10.f, d] %
+  - arg_cong 3 %
+
+lemma not_lt_refl: ∀a. ¬(a < a)
+  - nat_ind[#..a] %
+  - lt_simp2 %
+  - imp_swap cpos_pp 1 %
+  - psub lt_simp3 1 %
+
+lemma lt_suc: ∀a. a < Suc a
+  - nat_ind[#..a] %
+  - lt_simp1 %
+  - prsub lt_simp3 1 %
+
+lemma nat_inf: ∀a. ∃b. a < b
+  - exiI[#.10.b, Suc a] %
+  - lt_suc %
+
+lemma gt_imp_neq_0: ∀a b. a < b  ⟶  ¬(b = 0)
+  - notI %
+  - sub[#1..b] 2 1
+  - falI 1 lt_simp2 %
+
+def lt_tran_prop: λa. ∀b c. a < b  ⟶  b < c  ⟶  a < c
+
+lemma lt_tran_prop_def1: ∀a. lt_tran_prop a = ∀b c. a < b  ⟶  b < c  ⟶  a < c
+  - fun_cong lt_tran_prop_def %
+
+lemma neq_0_imp_gt_0: ∀a. ¬(a = 0)  ⟶  0 < a
+  - psub neq_0_exi_suc 1
+  - exiE[#1.10.b] 1 %
+  - rsub[#..a] 1 %
+  - lt_simp1 %
+
+lemma lt_tran: ∀a b c. a < b  ⟶  b < c  ⟶  a < c
+  show [lt_tran_prop 0, (∀a. lt_tran_prop a  ⟶  lt_tran_prop (Suc a))]
+  - nat_ind 3 {1}4
+  - psub lt_tran_prop_def1 3 1 2 %
+  - prsub lt_tran_prop_def1 %
+  show [¬(e = 0)]
+  - neq_0_imp_gt_0 5 %
+  - gt_imp_neq_0 4 %
+  - psub lt_tran_prop_def1 4
+  - prsub lt_tran_prop_def1 %
+  - gt_imp_neq_0 5+
+  - gt_imp_neq_0 6+
+  - psub neq_0_exi_suc 7*
+  - psub neq_0_exi_suc 8*
+  - exiE[#7.10.i] 7 %
+  - exiE[#7.10.j] 7 %
+  - sub[#5..e] 7+ 5*
+  - sub[#6..e] 7 6*
+  - sub[#6..f] 7+ 6*
+  - rsub[#..f] 7 %
+  - psub lt_simp3 5*
+  - psub lt_simp3 6*
+  - prsub lt_simp3 %
+  - 4 5 6 %
+
+lemma gt_0_neq_0: ∀a. (0 < a) = ¬(a = 0)
+  - iffI %
+  - notI %
+  - sub[#1..a] 2 1
+  - falI 1 not_lt_refl %
+  - neq_0_imp_gt_0 1 %
+
+lemma gt_neq_0_eq: ∀a. (∃b. b < a) = ¬(a = 0)
+  - iffI %
+  - exiE[#1.10.b] 1 %
+  - gt_imp_neq_0 1 %
+  - psub neq_0_exi_suc 1
+  - exiE[#1.10.b] 1 %
+  - rsub[#..a] 1 %
+  - exiI[#.10.c, 0] %
+  - lt_simp1 %
+
+lemma gt_neq_0: ∀a b. b < a  ⟶  ¬(a = 0)
+  - psub gt_neq_0_eq %
+  - exiI[#.10.c, b] 1 %
+
+lemma neq_suc: ∀a. ¬(a = Suc a)
+  - nat_ind[#..a] %
+  - nat_dif %
+  - imp_swap cpos_pp 1 %
+  - nat_inj 1 %
+
+lemma lt_suc_ab: ∀a b. a = b  ⟶  a < Suc b
+  - sub[#..b] 1 %
+  - lt_suc %
+
+lemma lt_lt_suc: ∀a b. a < b  ⟶  a < Suc b
+  - nat_ind[λa. ∀b. a < b  ⟶  a < Suc b] %
+  - lt_simp1 %
+  - prsub lt_simp3 %
+  - gt_neq_0 3+
+  - psub neq_0_exi_suc 4
+  - exiE[#4.10.f] 4 %
+  - sub[#3..d] 4+ 3*
+  - rsub[#..d] 4 %
+  - psub lt_simp3 3
+  - 2 3 %
+  - 1 %
+
+lemma gt_exi_suc: ∀a b. a < b  ⟶  ∃c. b = Suc c
+  - gt_neq_0 1
+  - psub neq_0_exi_suc 1 %
+
+lemma suc_lt_lt: ∀a b. Suc a < b  ⟶  a < b
+  - nat_exh[a] %
+  - rsub[#..a] 2 %
+  - gt_neq_0 1
+  - psub neq_0_exi_suc 1
+  - exiE[#1.10.c] 1 %
+  - rsub[#..b] 1 %
+  - lt_simp1 %
+  - exiE[#2.10.c] 2 %
+  - gt_exi_suc 1+
+  - exiE[#3.10.d] 3 %
+  - sub[#1..b] 3+ 1*
+  - rsub[#..b] 3 %
+  - psub lt_simp3 1*
+  - lt_lt_suc 1 %
+
+lemma lt_exh: ∀a b. (a < b) = (¬(b = 0) ∧ (a = 0 ∨ pred a < pred b))
+  - iffI %
+  - conjI %
+  - gt_neq_0 1 %
+  - nat_exh[a] %
+  - disjI1 2 %
+  - gt_exi_suc 1+
+  - exiE[#2.10.c] 2 %
+  - exiE[#2.10.d] 2 %
+  - sub[#1..a] 2+ 1+
+  - sub[#4..b] 3+ 4
+  - psub lt_simp3 4
+  show [pred a = c, pred b = d]
+  show [pred a < pred b]
+  - disjI2 7 %
+  - rsub[#4..c] 5 4*
+  - rsub[#4..d] 5 4 %
+  - rsub[#..a] 2 %
+  - pred_suc %
+  - rsub[#..b] 3 %
+  - pred_suc %
+  - conjE1 1+
+  - conjE2 1
+  - psub neq_0_exi_suc 1*
+  - exiE[#1.10.c] 1 %
+  - sub[#1..b] 2+ 1*
+  - rsub[#..b] 2 %
+  - sub[λx. a = 0 ∨ pred a < x] pred_suc 1
+  - disjE 1 %
+  - rsub[#..a] 1 %
+  - lt_simp1 %
+  - nat_exh[a] %
+  - rsub[#..a] 2 %
+  - lt_simp1 %
+  - exiE[#2.10.d] 2 %
+  - sub[#1..a] 2+ 1*
+  - rsub[#..a] 2 %
+  - sub[λx. x < c] pred_suc 1
+  - prsub lt_simp3 1 %
+
+lemma suc_inj_eq: ∀a b. (Suc a = Suc b) = (a = b)
+  - iffI %
+  - nat_inj 1 %
+  - arg_cong 1 %
+
+lemma exiE1: ∀P Q. (∃b. Q b)  ⟶  (∀c. Q c  ⟶  P)  ⟶  P
+  - exiE[#1.10.c] 1 %
+  - 1 2 %
+
+lemma inj_suc: inj Suc
+  - suc_inj %
+
+lemma pred_eq_0: ∀a. pred a = 0  ⟶  a = 0 ∨ a = Suc 0
+  - nat_ind[λa. pred a = 0  ⟶  a = 0 ∨ a = Suc 0] %
+  - disjI1 refl %
+  - eq_tran2 pred_suc 3
+  - arg_cong 3
+  - disjI2 3 %
+  - 1 %
+
+lemma suc_eq: ∀a b. (Suc a = Suc b) = (a = b)
+  - iffI %
+  - nat_inj 1 %
+  - arg_cong 1 %
+
+lemma lt_suc_lte: ∀a b. a < b  ⟶  Suc a <= b
+  - prsub lte_def %
+  - gt_exi_suc 1+
+  - exiE[#2.10.c] 2 %
+  - sub[#1..b] 2+ 1*
+  - rsub[#..b] 2 %
+  - rsub[λx. x ∨ Suc a = Suc c] lt_simp3 %
+  - rsub[λx. a < c ∨ x] suc_eq %
+  - nat_ind[λa. ∀c. a < Suc c  ⟶  a < c ∨ a = c] %
+  - nat_exh[d] %
+  - eq_com 3
+  - disjI2 3 %
+  - exiE[#3.10.e] 3 %
+  show [0 < d]
+  - disjI1 4 %
+  - rsub[#..d] 3 %
+  - lt_simp1 %
+  - psub lt_simp3 3
+  - gt_exi_suc 3+
+  - exiE[#4.10.g] 4 %
+  - sub[#3..e] 4+ 3*
+  - rsub[#..e] 4 %
+  - rsub[λx. x ∨ Suc d = Suc f] lt_simp3 %
+  - rsub[λx. d < f ∨ x] suc_eq %
+  - 2 3 %
+  - 1 %
+
+lemma lt_not_refl: ∀a. ¬(a < a)
+  - not_lt_refl %
+
+lemma eq_imp_not_lt: ∀a b. a = b  ⟶  ¬(a < b)
+  - sub[#..b] 1 lt_not_refl %
+
+lemma lt_imp_neq: ∀a b. a < b  ⟶  ¬(a = b)
+  - cpos_pn eq_imp_not_lt 1 %
+
+lemma lt_imp_not_gt: ∀a b. a < b  ⟶  ¬(b < a)
+  - notI %
+  - lt_tran 1 2
+  - falI 1 lt_not_refl %
+
+lemma gte_0: ∀a. 0 <= a
+  - prsub lte_def %
+  - nat_exh[a] %
+  - eq_com 1
+  - disjI2 1 %
+  - exiE[#1.10.b] 1 %
+  - rsub[#..a] 1 %
+  - disjI1 lt_simp1 %
+
+lemma not_lt_imp_gte: ∀a b. ¬(a < b)  ⟶  b <= a
+  - 
+
+lemma lt_antisym: ∀a b. a = b ∨ (a < b ∨ b < a)
+  - 
