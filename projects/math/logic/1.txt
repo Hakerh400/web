@@ -1257,7 +1257,7 @@ lemma uniqE2: ∀P a b. (∃!c. P c)  ⟶  P a  ⟶  P b  ⟶  a = b
   - conjE2 1*
   - 1 2 3 %
 
-lemma uniq2func: ∀P. (∀a. ∃!b. P a b)  ⟶  ∃!f. ∀a b. (f a = b) = (P a b)
+lemma uniq2fun: ∀P. (∀a. ∃!b. P a b)  ⟶  ∃!f. ∀a b. (f a = b) = (P a b)
   - uniqI[#.10.d] %
   - exiI[#.10.d, λx. THE y. a x y] %
   - 1*+[b]
@@ -1274,11 +1274,119 @@ lemma uniq2func: ∀P. (∀a. ∃!b. P a b)  ⟶  ∃!f. ∀a b. (f a = b) = (P 
   - prsub 3* 1
   - eq_tran1 1 2 %
 
-lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (nat_map z f n)
-  show [∃!F. ∀z f n. F z f 0 = z ∧ F z f (Suc n) = f (F z f n)]
-  - uniqE[#1.10.d] 1
-  - rsub[#..nat_map] nat_map_def %
+lemma lte_refl: ∀a. a <= a
+  - prsub lte_def %
+  - disjI2 refl %
+
+lemma lte_0_eq_0: ∀a. (a <= 0) = (a = 0)
+  - iffI %
+  - psub lte_def 1
+  - disjE 1 %
+  - falE2 1 lt_simp2 %
   - 1 %
-  - uniqI[#.10.d] %
-  show [∀N. ∃!F. ∀z f n. n <= N  ⟶  F z f 0 = z ∧ F z f (Suc n) = f (F z f n)]
-  - 
+  - rsub[#..a] 1 lte_refl %
+
+lemma lte_uniq_fun: ∀P. (∀N. ∃!F. ∀n. n <= N  ⟶  P (F n))  ⟶  ∃!F. ∀n. (λx y. y) (n <= n) (P (F n))
+  - uniqI[#.10.e] %
+  - exiI[#.10.e, λN. (THE F. ∀n. n <= N  ⟶  a (F n)) N] %
+  - 1[b]
+  - uniqE[#1.10.c] 1 lte_refl %
+  - ext %
+  - 1*[d]
+  - uniqE2[#1.10.e] 1* [b, c]
+  show [∀e. e <= d  ⟶  a (b e), ∀f. f <= d  ⟶  a (c f)]
+  - 1* {1}4 {1}5
+  - fun_cong 1 %
+  - 2 %
+  - 3 %
+
+lemma lt_imp_lte: ∀a b. a < b  ⟶  a <= b
+  - prsub lte_def %
+  - disjI1 1 %
+
+lemma eq_imp_lte: ∀a b. a = b  ⟶  a <= b
+  - sub[#..b] 1 lte_refl %
+
+lemma lte_suc2: ∀a b. (Suc a <= Suc b) = (a <= b)
+  - iffI %
+  - psub lte_def 1
+  - disjE 1 %
+  - psub lt_simp3 1
+  - lt_imp_lte 1 %
+  - nat_inj 1
+  - eq_imp_lte 1 %
+  - psub lte_def 1
+  - disjE 1 %
+  - prsub lt_simp3 1
+  - lt_imp_lte 1 %
+  - arg_cong 1 [Suc]
+  - eq_imp_lte 1 %
+
+lemma lt_suc_lte1: ∀a b. a < Suc b  ⟶  a <= b
+  - lt_suc_lte 1
+  - psub lte_suc2 1 %
+
+lemma nat_ind_lte: ∀P. P 0  ⟶  (∀N. (∀n. n <= N  ⟶  P n)  ⟶  P (Suc N))  ⟶  ∀n. P n
+  show [∀N n. n <= N  ⟶  a n]
+  - 3 lte_refl %
+  - nat_ind[λN. ∀n. n <= N  ⟶  a n] [d, d] %
+  rem 3
+  - psub lte_0_eq_0 3
+  - rsub 3 1 %
+  rem 3
+  - 2+ {1}3+
+  - psub lte_def 4*
+  - disjE 4 %
+  - lt_suc_lte1 5
+  - 3 5 %
+  - rsub 5 4 %
+  - lte_refl %
+
+lemma not_suc_lt: ∀a. ¬(Suc a < a)
+  - notI %
+  - lt_lt_suc 1
+  - falI 1 lt_not_refl %
+
+lemma not_suc_lte: ∀a. ¬(Suc a <= a)
+  - notI %
+  - psub lte_def 1
+  - disjE 1 %
+  - falI 1 not_suc_lt %
+  - eq_com 1
+  - falI 1 neq_suc %
+
+lemma not_lte_exi_ind: ¬(∀P. (∀N. ∃n. n <= N  ⟶  P n)  ⟶  ∀n. P n)
+  - dmrg_pe1[#.110.a] %
+  - exiI[#.10.a, λx. False] %
+  - notI %
+  - 1 %
+  - exiI[#.10.b, Suc a] %
+  - falI 1 not_suc_lte %
+
+lemma quant_eq1: ∀P Q R. (∀a. P a  ⟶  Q a)  ⟶  (∀a. Q a  ⟶  P a)  ⟶  R P = R Q
+  - iffI 1 2
+  - ext {1}1
+  - arg_cong 1 %
+
+lemma quant_eq: ∀P Q R. R P  ⟶  (∀a. P a  ⟶  Q a)  ⟶  (∀a. Q a  ⟶  P a)  ⟶  R Q
+  - quant_eq1 {1}2 {1}3 [c]
+  - psub 2 1 %
+
+lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (nat_map z f n)
+  - nat_map_def
+  show [(∃!) #1.110.d]
+  - uniqE[#2.10.h] 2 [a, b, c]
+  - rsub[#..nat_map] 1 2 %
+  rem 1
+  show [∃!F. (∀z f. F z f 0 = z) ∧ (∀n z f. F z f (Suc n) = f (F z f n))]
+  - quant_eq 1 %
+  - conjE1 1+
+  - conjE2 1
+  - conjI 1 2 %
+  - conjI %
+  - conjE1 1 %
+  - conjE2 1 %
+  show [∀N. ∃!F. (∀z f. F z f 0 = 0) ∧ (∀n z f. n <= N  ⟶  F z f (Suc n) = f (F z f n))]
+  - uniqI[#.10.k] %
+  - exiI[#.10.k, λN. (THE F. (∀z f. F z f 0 = 0) ∧ (∀n z f. n <= N  ⟶  F z f (Suc n) = f (F z f n))) N] %
+  -
