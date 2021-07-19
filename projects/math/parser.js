@@ -109,7 +109,7 @@ const parse = function*(ctx, str, isType=0){
   };
 
   const ident2str = name => {
-    return su.addParens(ctx.name2str(name));
+    return ctx.name2str(name, 1);
   };
 
   const parse = function*(isType=0, idents=null, isGroup=0){
@@ -410,7 +410,7 @@ const parse = function*(ctx, str, isType=0){
               err(`Invalid character ${O.sf(c)} found in \`#\``);
 
             if(expr.isIdent)
-              err(`Cannot dereference an integer`);
+              err(`Cannot dereference an identifier`);
 
             const n = c | 0;
 
@@ -467,7 +467,7 @@ const parse = function*(ctx, str, isType=0){
           const symStrObj = toStrIdents[0];
 
           yield [[subgoal, 'toStr'], ctx, toStrIdents];
-          
+
           const sym = freeIdentsArr[0];
           assert(O.has(symStrObj, sym));
 

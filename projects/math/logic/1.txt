@@ -1118,3 +1118,167 @@ lemma lt_trich: ∀a b. (a < b ∧ ¬(b < a) ∧ ¬(a = b)) ∨ (¬(a < b) ∧ b
   - cpos_pp 1* 2+
   - nlt_ngt_imp_eq 1 2
   - falI 2 1 %
+
+type pair 2
+const Pair :: 'a  ⟹  'b  ⟹  pair 'a 'b
+
+axiom pair_ind: ∀P a. (∀a b. P (Pair a b))  ⟶  P a
+axiom pair_inj: ∀a b c d. Pair a b = Pair c d  ⟶  a = c ∧ b = d
+
+def fst: THE F. ∀a b. F (Pair a b) = a
+def snd: THE F. ∀a b. F (Pair a b) = b
+
+lemma theI: ∀P a. P a  ⟶  (∀b. P b  ⟶  b = a)  ⟶  (THE b. P b) = a
+  show [∃!x. a x]
+  - uniqE[#3.10.d] 3
+  - 2 3 %
+  - uniqI[#.10.d] %
+  - exiI[#.10.d, b] 1 %
+  - 2+ 3*
+  - 2 4
+  - eq_tran1 2 3 %
+
+lemma fst_simp: ∀a b. fst (Pair a b) = a
+  show [∃!F. ∀a b. F (Pair a b) = a]
+  - uniqE[#1.10.c] 1
+  - rsub[#..fst] fst_def %
+  - 1 %
+  - uniqI[#.10.c] %
+  - exiI[#.10.c, λp. THE a. ∃b. (λx y. y) (a = b) (p = Pair a b)] %
+  - theI[#.0110.e] %
+  - exiI[#.10.e, d] refl %
+  - exiE[#1.10.f] 1 %
+  - pair_inj 1
+  - conjE1 1
+  - eq_com 1 %
+  - ext %
+  - pair_ind[#..e] %
+  - eq_tran1 1 %
+  - eq_tran 1 refl %
+
+lemma snd_simp: ∀a b. snd (Pair a b) = b
+  show [∃!F. ∀a b. F (Pair a b) = b]
+  - uniqE[#1.10.c] 1
+  - rsub[#..snd] snd_def %
+  - 1 %
+  - uniqI[#.10.c] %
+  - exiI[#.10.c, λp. THE y. ∃x. (λx y. y) (x = y) (p = Pair x y)] %
+  - theI[#.0110.e] %
+  - exiI[#.10.e, c] refl %
+  - exiE[#1.10.f] 1 %
+  - pair_inj 1
+  - conjE2 1
+  - eq_com 1 %
+  - ext %
+  - pair_ind[#..e] %
+  - eq_tran1 1 %
+  - eq_tran 1 refl %
+
+def if: THE F. ∀a b. F True a b = a ∧ F False a b = b
+
+lemma dmrg_pe1: ∀P. (∃a. ¬P a)  ⟶  ¬(∀a. P a)
+  - notI %
+  - exiE[#1.10.b] 1 %
+  - falI 1 2 %
+
+type unit 0
+const Unit :: unit
+
+axiom unit_ind: ∀P a. P Unit  ⟶  P a
+
+lemma not_the_imp_p: ¬(∀P a. (THE a. P a) = a  ⟶  P a)
+  - dmrg_pe1[#.110.a] %
+  - exiI[#.10.a, λx. False] %
+  - dmrg_pe1[#.110.a] %
+  - exiI[#.10.a, Unit] %
+  - notI %
+  show [(THE a. False) = Unit]
+  - 1 2 %
+  - unit_ind[λx. x = Unit] refl %
+
+lemma if_simps: ∀a b. if True a b = a ∧ if False a b = b
+  show [∃!F. ∀a b. F True a b = a ∧ F False a b = b]
+  - uniqE[#1.10.c] 1
+  - rsub[#..if] if_def %
+  - conjI %
+  - conjE1 1 %
+  - conjE2 1 %
+  - uniqI[#.10.c] %
+  - exiI[#.10.c, λP a b. THE x. (P  ⟶  x = a) ∧ (¬P  ⟶  x = b)] %
+  - conjI %
+  - theI[#.0110.e] %
+  - conjI %
+  - refl %
+  - falE2 true 1 %
+  - conjE1 1
+  - 1 true %
+  - theI[#.0110.e] %
+  - conjI %
+  - falE 1 %
+  - refl %
+  - conjE2 1
+  - 1 nfalse %
+  - ext %
+  - ext %
+  - ext %
+  - 1*[f, g]
+  - 2*[f, g]
+  - bool_exh[e] %
+  - rsub[#..e] 3 %
+  - conjE1 1*
+  - conjE1 2*
+  - eq_tran1 1 2 %
+  - rsub[#..e] 3 %
+  - conjE2 1*
+  - conjE2 2*
+  - eq_tran1 1 2 %
+
+lemma if_simp1: ∀a b. if True a b = a
+  - conjE1 if_simps %
+
+lemma if_simp2: ∀a b. if False a b = b
+  - conjE2 if_simps %
+
+def nat_map: THE F. ∀z f n. F z f 0 = z ∧ F z f (Suc n) = f (F z f n)
+
+lemma uni_eq_fun_true: (∀) = (=) (λx. True)
+  - ext %
+  - iffI %
+  - eta[a]
+  - rsub[#1..a] 2 1
+  - eq_com %
+  - ext %
+  - eq_truI 1 %
+  - sub[#..a] 1 %
+  - true %
+
+lemma uniqE2: ∀P a b. (∃!c. P c)  ⟶  P a  ⟶  P b  ⟶  a = b
+  - psub uniq_def 1*
+  - conjE2 1*
+  - 1 2 3 %
+
+lemma uniq2func: ∀P. (∀a. ∃!b. P a b)  ⟶  ∃!f. ∀a b. (f a = b) = (P a b)
+  - uniqI[#.10.d] %
+  - exiI[#.10.d, λx. THE y. a x y] %
+  - 1*+[b]
+  - uniqE[#1.10.d] 2*
+  - iffI %
+  - sub[#..c] 3 2 %
+  - uniqE2 1 2 3 %
+  - ext %
+  - 1*[d]
+  - 2*[d]
+  - 3*[d]
+  - uniqE[#1.10.e] 1*
+  - prsub 2* 1+
+  - prsub 3* 1
+  - eq_tran1 1 2 %
+
+lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (nat_map z f n)
+  show [∃!F. ∀z f n. F z f 0 = z ∧ F z f (Suc n) = f (F z f n)]
+  - uniqE[#1.10.d] 1
+  - rsub[#..nat_map] nat_map_def %
+  - 1 %
+  - uniqI[#.10.d] %
+  show [∀N. ∃!F. ∀z f n. n <= N  ⟶  F z f 0 = z ∧ F z f (Suc n) = f (F z f n)]
+  - 
