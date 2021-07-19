@@ -1044,7 +1044,7 @@ const processLine = function*(lineIndex, ctx){
 
       const proof = ctx.proof = ctx.proof.copy();
       const subgoals = proof.subgoals = proof.subgoals.slice();
-      const subgoal = proof[subgoals[0]] = proof.subgoal.copy();
+      const subgoal = proof.subgoals[0] = proof.subgoal.copy();
       const premises = subgoal.premises = subgoal.premises.slice();
 
       const subgoalsNew = [];
@@ -1062,6 +1062,50 @@ const processLine = function*(lineIndex, ctx){
       proof.subgoals = [subgoal, ...subgoalsNew, ...subgoals.slice(1)];
 
       return O.tco(ret, propStrs.join('\n'));
+    },
+
+    *rem(){
+      const {proof} = ctx;
+      const {subgoals, subgoal} = proof;
+      const {premises} = subgoal;
+      const premisesNum = premises.length;
+
+      const indicesStrs = line.split(' ');
+      const indicesObj = O.obj();
+
+      if(eol()) return [0, `Expected at least one premise index`];
+
+      for(const str of indicesStrs){
+        const str1 = str.trim();
+
+        if(!su.isInt(str1))
+          return [0, `Expected a premise index, but got ${O.sf(str1)}`];
+
+        const n = Number(str1) - 1;
+
+        if(!(n >= 0 && n < premisesNum))
+          return [0, `There is no premise with index ${str1}`];
+
+        if(O.has(indicesObj, n))
+          return [0, `Duplicate premise index ${n}`];
+
+        indicesObj[n] = 1;
+      }
+
+      ctx = ctx.copy();
+
+      const proofNew = ctx.proof = proof.copy();
+      const subgoalsNew = proofNew.subgoals = subgoals.slice();
+      const subgoalNew = proofNew.subgoals[0] = subgoal.copy();
+
+      const premisesNew = premises.filter((a, i) => {
+        return !O.has(indicesObj, i);
+      });
+
+      subgoalNew.premises = premisesNew;
+      line = '';
+
+      return O.tco(ret, '');
     },
   };
 
