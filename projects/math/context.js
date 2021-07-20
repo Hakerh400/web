@@ -63,9 +63,20 @@ class Context{
     return O.has(this.meta, name);
   }
 
-  getMeta(name){
-    if(!this.hasMeta(name)) return null;
+  getMetaM(name){
+    if(!this.hasMeta(name))
+      return null;
+
     return this.meta[name];
+  }
+
+  getMeta(name){
+    const meta = this.getMetaM(name);
+
+    if(meta === null)
+      throw `Meta symbol ${O.sf(name)} must already be defined`;
+
+    return meta;
   }
 
   hasSpacingInfo(name){

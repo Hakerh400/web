@@ -285,7 +285,7 @@ class Expr{
 
   *simplify(ctx){
     if(this.isType)
-      return [1, yield [[this, 'alpha'], ctx]];
+      return yield [[this, 'alpha'], ctx];
 
     const freeIdents = yield [[this, 'getFreeIdents'], ctx];
     assert(util.empty(freeIdents));
@@ -294,7 +294,7 @@ class Expr{
     let result = yield [[expr, 'unifyTypes'], ctx];
 
     if(!result[0])
-      return [0, `Unification error: ${result[1]}`];
+      throw `Unification error: ${result[1]}`;
 
     expr = yield [[expr, 'beta'], ctx];
 
@@ -306,7 +306,7 @@ class Expr{
     result = yield [[expr, 'unifyTypes'], ctx];
     assert(result[0]);
 
-    return [1, expr];
+    return expr;
   }
 
   *eq(other){
@@ -350,12 +350,12 @@ class Expr{
       expr = result[1];
     }
 
-    return [1, expr];
+    return expr;
   }
 
   *spec(ctx, e){
     if(this.getUni(ctx) === null)
-      return [0, `Expression is not universally quantified`];
+      throw `Expression is not universally quantified`;
 
     const e1 = yield [[e, 'alpha'], ctx];
     const expr = new Call(this.arg, e1);
@@ -384,11 +384,11 @@ class Expr{
     const [unis2, imps2] = ant.getPropInfo(ctx, antUnisNum1);
 
     if(antUnisNum1 !== null && unis2.length !== antUnisNum1)
-      return [0, `Not enough universal quantifiers in the antecedent (expected ${
-        antUnisNum}, but got ${antUnisTotal - unis2.length})`];
+      throw `Not enough universal quantifiers in the antecedent (expected ${
+        antUnisNum}, but got ${antUnisTotal - unis2.length})`;
 
     if(offset !== null && imps1.length <= offset + 1)
-      return [0, `Not enough premises to apply modus ponens`];
+      throw `Not enough premises to apply modus ponens`;
 
     const vars1 = O.arr2obj(unis1, null);
     const vars2 = O.arr2obj(unis2, null);
@@ -444,10 +444,10 @@ class Expr{
       if(!O.has(vars2, sym)) continue;
       if(!O.has(freeIdents, sym)) continue;
 
-      return [0, `Universally quantified variable escaped antecedent`];
+      throw `Universally quantified variable escaped antecedent`;
     }*/
 
-    return [1, [freeVarsNew, imps1]];
+    return [freeVarsNew, imps1];
   }
 
   // Direct application of modus ponens
@@ -470,7 +470,7 @@ class Expr{
     const [freeVars, imps] = result[1];
 
     if(freeVars.length !== 0)
-      return [0, `Some universally quantified variables remained unassigned`];
+      throw `Some universally quantified variables remained unassigned`;
 
     const impsNum = imps.length;
 
@@ -482,7 +482,7 @@ class Expr{
       imps[i] = result[1];
     }
 
-    return [1, imps];
+    return imps;
   }
 
   getLamArgType(ctx){

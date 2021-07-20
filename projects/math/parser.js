@@ -28,7 +28,7 @@ const parse = function*(ctx, str, isType=0){
   const strLen = str.length;
   const parens = [];
 
-  const lamSym = ctx.getMeta('lambda');
+  const lamSym = ctx.getMetaM('lambda');
 
   let iPrev = 0;
   let i = 0;
@@ -594,23 +594,18 @@ const parse = function*(ctx, str, isType=0){
     err(`Not enough arguments for type ${O.rec([ident, 'toStr'], ctx)}`);
   };
 
-  try{
-    const expr = O.rec(parse, isType);
+  const expr = yield [parse, isType];
 
-    if(i !== str.length){
-      assert(str[i] === ')');
-      iPrev = i;
-      err(`Unmatched closed parenthese`);
-    }
-
-    if(isType)
-      checkFinished(expr);
-
-    return [1, expr];
-  }catch(e){
-    if(!(e instanceof ParserError)) throw e;
-    return [0, e];
+  if(i !== str.length){
+    assert(str[i] === ')');
+    iPrev = i;
+    err(`Unmatched closed parenthese`);
   }
+
+  if(isType)
+    checkFinished(expr);
+
+  return expr;
 };
 
 class ParserError{

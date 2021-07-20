@@ -140,12 +140,22 @@ const onNav = () => {
 const onUpdatedLine = lineIndex => {
   const {lines} = mainEditor;
 
+  if(linesData.length === 0 && lineIndex !== 0)
+    linesData.push(mkInitialLineData());
+
+  while(linesData.length < lineIndex){
+    const ctx = O.last(linesData).ctx;
+    linesData.push(new LineData(linesData.length, ctx));
+  }
+
+  assert(linesData.length >= lineIndex);
+
   linesData.length = lineIndex;
   mainEditor.markedLine = null;
 
   for(let i = lineIndex; i !== lines.length; i++){
-    const dataPrev = linesData[i - 1];
-    const ctx = i === 0 ? new Context() : dataPrev.ctx;
+    const dataPrev = i !== 0 ? linesData[i - 1] : mkInitialLineData();
+    const ctx = dataPrev.ctx;
     const data = O.rec(processLine, i, ctx);
 
     if(data === null){
@@ -161,6 +171,10 @@ const onUpdatedLine = lineIndex => {
     }
   }
 }
+
+const mkInitialLineData = () => {
+  return new LineData(0, new Context());
+};
 
 const processLine = function*(lineIndex, ctx){
   const ctxPrev = ctx;
@@ -206,13 +220,8 @@ const processLine = function*(lineIndex, ctx){
     return result[1];
   };
 
-  const call = function*(fn, ...args){
-    const result = yield [fn, ...args];
-    return O.tco(processResult, result);
-  };
-
   const ret = function*(str){
-    return [1, yield [mkLineData, str]];
+    return yield [mkLineData, str];
   };
 
   const err = function*(msg){
@@ -220,7 +229,7 @@ const processLine = function*(lineIndex, ctx){
   };
 
   const syntErr = () => {
-    return [0, `Syntax error near ${O.sf(line.trim())}`];
+    throw `Syntax error near ${O.sf(line.trim())}`;
   };
 
   const {lines} = mainEditor;
@@ -258,7 +267,7 @@ const processLine = function*(lineIndex, ctx){
     assert(stack.length !== 0);
 
     if(assertEmpty)
-      yield [call, assertEol];
+      yield [assertEol];
 
     const str = line;
     line = stack.pop();
@@ -268,28 +277,28 @@ const processLine = function*(lineIndex, ctx){
 
   const assertEol = function*(){
     if(neol())
-      return [0, `Extra tokens found at the end: ${O.sf(line.trim())}`];
+      throw `Extra tokens found at the end: ${O.sf(line.trim())}`;
 
     return [1];
   };
 
   const assertFreeRule = function*(name){
     if(ctx.hasRule(name))
-      return [0, `Rule ${O.sf(name)} already exists`];
+      throw `Rule ${O.sf(name)} already exists`;
 
     return [1];
   };
 
   const assertFree = function*(name){
     if(ctx.hasName(name))
-      return [0, `Identifier ${name2str(name)} already exists`];
+      throw `Identifier ${name2str(name)} already exists`;
 
     return [1];
   };
 
   const assertDefined = function*(name){
     if(!ctx.hasName(name))
-      return [0, `Undefined identifier ${name2str(name)}`];
+      throw `Undefined identifier ${name2str(name)}`;
 
     return [1];
   };
@@ -297,8 +306,8 @@ const processLine = function*(lineIndex, ctx){
   const assertEq = function*(actual, str){
     const {isType} = actual;
 
-    const expr = yield [call, parser.parse, ctx, str, isType];
-    const expected = yield [call, [expr, 'simplify'], ctx];
+    const expr = yield [parser.parse, ctx, str, isType];
+    const expected = yield [[expr, 'simplify'], ctx];
 
     if(yield [[actual, 'eqAlpha'], expected])
       return [1];
@@ -307,9 +316,9 @@ const processLine = function*(lineIndex, ctx){
     const str2 = yield [[actual, 'toStr'], ctx];
 
     if(str2 !== str1)
-      return [0, `${isType ? 'Types' : 'Values'} do not match\n${
+      throw `${isType ? 'Types' : 'Values'} do not match\n${
         su.tab(1, `Expected: ${str1}`)}\n${
-        su.tab(1, `Actual:${' '.repeat(2)} ${str2}`)}`];
+        su.tab(1, `Actual:${' '.repeat(2)} ${str2}`)}`;
   };
 
   const trimLine = (trim=1) => {
@@ -321,7 +330,7 @@ const processLine = function*(lineIndex, ctx){
     line = line.slice(str.length);
     trimLine(trim);
 
-    return [1, str];
+    return str;
   };
 
   const getToken = function*(parens=0, trim){
@@ -330,28 +339,28 @@ const processLine = function*(lineIndex, ctx){
     if(match !== null)
       return O.tco(advance, match[0], trim);
 
-    if(!parens) return [1, null];
+    if(!parens) return null;
 
     match = line.match(/^\(\s*([^\s\(\)\[\]\,\.\:]+)\s*\)/);
-    if(match === null) return [1, null];
+    if(match === null) return null;
 
-    yield [call, advance, match[0], trim];
+    yield [advance, match[0], trim];
 
-    return [1, match[1]];
+    return match[1];
   };
 
   const getIdent = function*(){
-    const name = yield [call, getToken, 1];
+    const name = yield [getToken, 1];
 
     if(name === null)
-      return [0, `Missing identifier`];
+      throw `Missing identifier`;
 
-    return [1, name];
+    return name;
   };
 
   const getExact = function*(str){
     if(!line.startsWith(str))
-      return [0, `Expected ${O.sf(str)} near ${O.sf(line.trim())}`];
+      throw `Expected ${O.sf(str)} near ${O.sf(line.trim())}`;
 
     return O.tco(advance, str);
   };
@@ -360,7 +369,7 @@ const processLine = function*(lineIndex, ctx){
     const end = line.indexOf(c2);
 
     if(!line.startsWith(c1) || end === -1)
-      return [0, `Invalid parenthesis near ${O.sf(line.trim())}`];
+      throw `Invalid parenthesis near ${O.sf(line.trim())}`;
     
     let str = line.slice(1, end);
     line = line.slice(end + 1);
@@ -369,9 +378,9 @@ const processLine = function*(lineIndex, ctx){
     str = str.trim();
 
     if(str.length === 0)
-      return [1, []];
+      return [];
 
-    return [1, str.split(',').map(a => a.trim())];
+    return str.split(',').map(a => a.trim());
   };
 
   const getParens = function*(trim){
@@ -393,23 +402,23 @@ const processLine = function*(lineIndex, ctx){
     if(min !== null && max !== null)
       assert(min <= max);
 
-    const tk = yield [call, getToken];
+    const tk = yield [getToken];
 
     if(tk === null)
-      return [0, `Missing number`];
+      throw `Missing number`;
 
     if(!su.isInt(tk))
-      return [0, `Invalid number ${O.sf(tk)}`];
+      throw `Invalid number ${O.sf(tk)}`;
 
     const n = BigInt(tk);
 
     if(min !== null && n < min)
-      return [0, `Number ${n} is too small (must be at least ${min})`];
+      throw `Number ${n} is too small (must be at least ${min})`;
 
     if(max !== null && n > max)
-      return [0, `Number ${n} is too big (must be at most ${max})`];
+      throw `Number ${n} is too big (must be at most ${max})`;
 
-    return [1, n];
+    return n;
   };
 
   const getNat = function*(max){
@@ -419,13 +428,13 @@ const processLine = function*(lineIndex, ctx){
   const getSmallNat = function*(max=smallNatMax){
     assert(max <= smallNatMax);
 
-    const n = yield [call, getNat, max];
-    return [1, Number(n)];
+    const n = yield [getNat, max];
+    return Number(n);
   };
 
   const getMediumNat = function*(){
-    const n = yield [call, getNat, mediumNatMax];
-    return [1, Number(n)];
+    const n = yield [getNat, mediumNatMax];
+    return Number(n);
   };
 
   const getArity = function*(){
@@ -437,87 +446,84 @@ const processLine = function*(lineIndex, ctx){
   };
 
   const getIdentInfo = function*(){
-    const elems = yield [call, getBrackets];
+    const elems = yield [getBrackets];
 
     if(elems.length !== 1)
-      return [0, `Expected exactly one element in [${elems.join(', ')}]`];
+      throw `Expected exactly one element in [${elems.join(', ')}]`;
 
-    yield [call, push, elems[0]];
+    yield [push, elems[0]];
 
-    const sort = yield [call, getToken];
+    const sort = yield [getToken];
 
     if(sort === null)
-      return [0, `Missing identifier sort`];
+      throw `Missing identifier sort`;
 
     if(!O.has(parseIdentSortFuncs, sort))
-      return [0, `Unknown identifier sort ${O.sf(sort)}`];
+      throw `Unknown identifier sort ${O.sf(sort)}`;
 
-    const info = yield [call, parseIdentSortFuncs[sort]];
-    yield [call, pop];
+    const info = yield [parseIdentSortFuncs[sort]];
+    yield [pop];
 
-    return [1, info];
+    return info;
   };
 
   const getMeta = function*(name, addParens=0){
     let sym = ctx.getMeta(name);
 
-    if(sym === null)
-      return [0, `Meta symbol ${O.sf(name)} must already be defined`];
-
     if(addParens)
       sym = su.addParens(sym);
 
-    return [1, sym];
+    return sym;
   };
 
   const getExpr = function*(isType){
-    const exprRaw = yield [call, parser.parse, ctx, line, isType];
-    const expr = yield [call, [exprRaw, 'simplify'], ctx];
+    const exprRaw = yield [parser.parse, ctx, line, isType];
+    const expr = yield [[exprRaw, 'simplify'], ctx];
 
     line = '';
 
-    return [1, expr];
+    return expr;
   };
 
   const getProp = function*(){
-    const prop = yield [call, getExpr];
-    const boolSym = yield [call, getMeta, 'bool', 1];
+    const prop = yield [getExpr];
+    const boolSym = yield [getMeta, 'bool', 1];
 
-    yield [call, assertEq, prop.type, boolSym];
+    yield [assertEq, prop.type, boolSym];
 
-    return [1, prop];
+    return prop;
   };
 
   const getRuleName = function*(ruleType){
-    const name = yield [call, getToken];
+    const name = yield [getToken];
 
     if(name === null)
-      return [0, `Missing ${ruleType} name`];
+      throw `Missing ${ruleType} name`;
 
-    yield [call, assertFreeRule, name];
-    yield [call, getExact, ':'];
+    yield [assertFreeRule, name];
+    yield [getExact, ':'];
 
-    return [1, name];
+    return name;
   };
 
   const parseIdentSortFuncs = {
     *prefix(){
-      const prec = yield [call, getPrec];
-      return [1, ['operator', [prec, [prec]]]];
+      const prec = yield [getPrec];
+      return ['operator', [prec, [prec]]];
     },
 
     *infixl(){
-      const prec = yield [call, getPrec];
-      return [1, ['operator', [prec, [prec, prec + .5]]]];
+      const prec = yield [getPrec];
+      return ['operator', [prec, [prec, prec + .5]]];
     },
 
     *infixr(){
-      const prec = yield [call, getPrec];
-      return [1, ['operator', [prec, [prec + .5, prec]]]];
+      const prec = yield [getPrec];
+      return ['operator', [prec, [prec + .5, prec]]];
     },
 
     *binder(){
-      return [1, ['binder', [0, [0]]]];
+      return ['binder', [0, [0]]];
     },
   };
 
@@ -540,84 +546,84 @@ const processLine = function*(lineIndex, ctx){
 
   const metaSymbolFuncs = {
     *bool(name){
-      yield [call, assertDefined, name];
+      yield [assertDefined, name];
 
       const arity = ctx.getTypeArity(name);
 
       if(arity !== 0)
-        return [0, `Bool type cannot have arguments`];
+        throw `Bool type cannot have arguments`;
     },
 
     *arrow(name){
-      yield [call, assertDefined, name];
+      yield [assertDefined, name];
 
       const arity = ctx.getTypeArity(name);
 
       if(arity !== 2)
-        return [0, `Arrow must be a binary type`];
+        throw `Arrow must be a binary type`;
 
       ctx.meta.arrow = name;
     },
 
     *lambda(name){
-      yield [call, assertFree, name];
+      yield [assertFree, name];
     },
 
     *uni(name){
-      yield [call, assertDefined, name];
+      yield [assertDefined, name];
 
       if(ctx.hasType(name))
-        return [0, `Universal quantifier cannot be a type`];
+        throw `Universal quantifier cannot be a type`;
 
       const type = ctx.getType(name);
       assert(type !== null);
 
-      const boolSym = yield [call, getMeta, 'bool', 1];
-      const arrowSym = yield [call, getMeta, 'arrow', 1];
+      const boolSym = yield [getMeta, 'bool', 1];
+      const arrowSym = yield [getMeta, 'arrow', 1];
 
-      yield [call, assertEq, type, `${arrowSym} (${arrowSym} 'a ${boolSym}) ${boolSym}`];
+      yield [assertEq, type, `${arrowSym} (${arrowSym} 'a ${boolSym}) ${boolSym}`];
     },
 
     *imp(name){
-      yield [call, assertDefined, name];
+      yield [assertDefined, name];
 
       if(ctx.hasType(name))
-        return [0, `Implication cannot be a type`];
+        throw `Implication cannot be a type`;
 
       const type = ctx.getType(name);
       assert(type !== null);
 
-      const boolSym = yield [call, getMeta, 'bool', 1];
-      const arrowSym = yield [call, getMeta, 'arrow', 1];
+      const boolSym = yield [getMeta, 'bool', 1];
+      const arrowSym = yield [getMeta, 'arrow', 1];
 
-      yield [call, assertEq, type, `${arrowSym} ${boolSym} (${arrowSym} ${boolSym} ${boolSym})`];
+      yield [assertEq, type, `${arrowSym} ${boolSym} (${arrowSym} ${boolSym} ${boolSym})`];
     },
 
     *eq(name){
-      yield [call, assertDefined, name];
+      yield [assertDefined, name];
 
       if(ctx.hasType(name))
-        return [0, `Equality cannot be a type`];
+        throw `Equality cannot be a type`;
 
       const type = ctx.getType(name);
       assert(type !== null);
 
-      const boolSym = yield [call, getMeta, 'bool', 1];
-      const arrowSym = yield [call, getMeta, 'arrow', 1];
+      const boolSym = yield [getMeta, 'bool', 1];
+      const arrowSym = yield [getMeta, 'arrow', 1];
 
-      yield [call, assertEq, type, `${arrowSym} 'a (${arrowSym} 'a ${boolSym})`];
+      yield [assertEq, type, `${arrowSym} 'a (${arrowSym} 'a ${boolSym})`];
     },
   };
 
   const directiveFuncs = {
     *spacing(){
-      const name = yield [call, getIdent];
-      const before = yield [call, getSmallNat];
-      const after = yield [call, getSmallNat];
-      const inParens = yield [call, getSmallNat, 1];
+      const name = yield [getIdent];
+      const before = yield [getSmallNat];
+      const after = yield [getSmallNat];
+      const inParens = yield [getSmallNat, 1];
 
       if(ctx.hasSpacingInfo(name))
-        return [0, `Spacing has already been defined for ${name2str(name)}`];
+        throw `Spacing has already been defined for ${name2str(name)}`;
 
       ctx = ctx.copy();
       ctx.spacing = util.copyObj(ctx.spacing);
@@ -628,78 +634,78 @@ const processLine = function*(lineIndex, ctx){
     },
 
     *type(){
-      const name = yield [call, getIdent];
-      yield [call, assertFree, name];
+      const name = yield [getIdent];
+      yield [assertFree, name];
 
-      const arity = yield [call, getArity];
+      const arity = yield [getArity];
 
       let sort = 'identifier';
       let info = [0, []];
 
       if(line.startsWith('[')){
-        [sort, info] = yield [call, getIdentInfo];
+        [sort, info] = yield [getIdentInfo];
 
         if(sort !== 'operator')
-          return [0, `Type identifier ${
+          throw `Type identifier ${
             name2str(name)} cannot be defined as \`${
-            sort}\``];
+            sort}\``;
       }
 
       ctx = ctx.copy();
 
       assert(O.has(insertIdentSortFuncs, sort));
-      yield [call, insertIdentSortFuncs[sort], name, [arity, info]];
+      yield [insertIdentSortFuncs[sort], name, [arity, info]];
 
       return O.tco(ret, `type ${name2str(name)} ${arity}`);
     },
 
     *const(){
-      const name = yield [call, getIdent];
-      yield [call, assertFree, name];
+      const name = yield [getIdent];
+      yield [assertFree, name];
 
       let sort = 'identifier';
       let info = [0, []];
 
       if(line.startsWith('['))
-        [sort, info] = yield [call, getIdentInfo];
+        [sort, info] = yield [getIdentInfo];
 
-      yield [call, getExact, '::'];
-      const type = yield [call, getExpr, 1];
+      yield [getExact, '::'];
+      const type = yield [getExpr, 1];
 
       ctx = ctx.copy();
 
       assert(O.has(insertIdentSortFuncs, sort));
-      yield [call, insertIdentSortFuncs[sort], name, [type, info]];
+      yield [insertIdentSortFuncs[sort], name, [type, info]];
 
       return O.tco(ret, `const ${name2str(name)} :: ${yield [[type, 'toStr'], ctx]}`);
     },
 
     *meta(){
-      const name = yield [call, getToken];
+      const name = yield [getToken];
 
       if(name === null)
-        return [0, `Missing meta symbol name`];
+        throw `Missing meta symbol name`;
 
       if(!O.has(metaSymbolFuncs, name))
-        return [0, `Unknown meta symbol ${O.sf(name)}`];
+        throw `Unknown meta symbol ${O.sf(name)}`;
 
       if(ctx.hasMeta(name))
-        return [0, `Meta symbol ${O.sf(name)} has already been defined`];
+        throw `Meta symbol ${O.sf(name)} has already been defined`;
 
-      const ident = yield [call, getIdent, 0];
+      const ident = yield [getIdent, 0];
 
       ctx = ctx.copy();
       ctx.meta = util.copyObj(ctx.meta);
 
-      yield [call, metaSymbolFuncs[name], ident];
+      yield [metaSymbolFuncs[name], ident];
       ctx.meta[name] = ident;
 
       return O.tco(ret, `meta ${name} ${name2str(ident)}`);
     },
 
     *axiom(){
-      const name = yield [call, getRuleName, 'axiom'];
-      const prop = yield [call, getProp];
+      const name = yield [getRuleName, 'axiom'];
+      const prop = yield [getProp];
 
       ctx = ctx.copy();
       ctx.rules = util.copyObj(ctx.rules);
@@ -709,13 +715,13 @@ const processLine = function*(lineIndex, ctx){
     },
 
     *lemma(){
-      const name = yield [call, getRuleName, 'lemma'];
-      const prop = yield [call, getProp];
+      const name = yield [getRuleName, 'lemma'];
+      const prop = yield [getProp];
 
       ctx = ctx.copy();
 
       const subgoal = new Subgoal();
-      yield [call, [subgoal, 'addGoal'], ctx, prop];
+      yield [[subgoal, 'addGoal'], ctx, prop];
 
       ctx.createProof(name, prop);
       ctx.proof.addSubgoal(subgoal);
@@ -724,34 +730,34 @@ const processLine = function*(lineIndex, ctx){
     },
 
     *def(){
-      const name = yield [call, getIdent];
-      yield [call, assertFree, name];
+      const name = yield [getIdent];
+      yield [assertFree, name];
 
       let sort = 'identifier';
       let info = [0, []];
 
       if(line.startsWith('['))
-        [sort, info] = yield [call, getIdentInfo];
+        [sort, info] = yield [getIdentInfo];
 
-      yield [call, getExact, ':'];
+      yield [getExact, ':'];
 
-      const val = yield [call, getExpr];
+      const val = yield [getExpr];
       const type = val.type;
 
       ctx = ctx.copy();
 
       assert(O.has(insertIdentSortFuncs, sort));
-      yield [call, insertIdentSortFuncs[sort], name, [type, info]];
+      yield [insertIdentSortFuncs[sort], name, [type, info]];
 
-      const eqSym = yield [call, getMeta, 'eq'];
+      const eqSym = yield [getMeta, 'eq'];
       const ruleName = `${name}_def`;
-      const rule = yield [call, [Expr.mkBinOp(eqSym, new Ident(name), val), 'simplify'], ctx];
+      const rule = yield [[Expr.mkBinOp(eqSym, new Ident(name), val), 'simplify'], ctx];
 
       ctx.rules = util.copyObj(ctx.rules);
       const {rules} = ctx;
 
       if(O.has(rules, ruleName))
-        return [0, `Rule ${O.sf(ruleName)} already exists`];
+        throw `Rule ${O.sf(ruleName)} already exists`;
 
       rules[ruleName] = rule;
 
@@ -782,14 +788,14 @@ const processLine = function*(lineIndex, ctx){
 
     const setPremiseStatus = function*(index, keep){
       if(O.has(premisesStatus, index) && premisesStatus[index] ^ keep)
-        return [0, `Status mismatch for premise ${index + 1}`];
+        throw `Status mismatch for premise ${index + 1}`;
 
       premisesStatus[index] = keep;
     };
 
     const setInsIndex = function*(index){
       if(insertionIndex !== null)
-        return [0, `Multiple appearances of \`*\` premise attribute`];
+        throw `Multiple appearances of \`*\` premise attribute`;
 
       insertionIndex = index;
     };
@@ -800,12 +806,12 @@ const processLine = function*(lineIndex, ctx){
       const ins = attribs.includes('*');
 
       if(keep + ins !== attribsNum)
-        return [0, `Invalid premise attributes ${O.sf(attribs)}`];
+        throw `Invalid premise attributes ${O.sf(attribs)}`;
 
-      yield [call, setPremiseStatus, index, keep];
+      yield [setPremiseStatus, index, keep];
       if(!ins) return;
 
-      yield [call, setInsIndex, index + attribs.startsWith('+')];
+      yield [setInsIndex, index + attribs.startsWith('+')];
     };
 
     const parsePremiseIndex = function*(tk){
@@ -818,16 +824,16 @@ const processLine = function*(lineIndex, ctx){
       const attribs = match[2];
 
       if(!su.isInt(indexStr))
-        return [0, `Invalid premise index ${O.sf(indexStr)}`];
+        throw `Invalid premise index ${O.sf(indexStr)}`;
 
       const index = Number(indexStr) - 1;
 
       if(!(index >= 0 && index < premisesNum))
-        return [0, `There is no premise with index ${tk}`];
+        throw `There is no premise with index ${tk}`;
 
-      yield [call, processPremiseAttribs, index, attribs];
+      yield [processPremiseAttribs, index, attribs];
 
-      return [1, index];
+      return index;
     };
 
     while(!eol()){
@@ -836,33 +842,33 @@ const processLine = function*(lineIndex, ctx){
       let unisNum = null;
 
       if(line.startsWith('{')){
-        const elems = yield [call, getBraces, 0];
+        const elems = yield [getBraces, 0];
 
         if(elems.length !== 1)
-          return [0, `Expected exactly one element in the braces, but got ${
-            elems.length}`];
+          throw `Expected exactly one element in the braces, but got ${
+            elems.length}`;
 
         const str = elems[0];
 
         if(!su.isInt(str))
-          return [0, `Invalid parameter {${str}}`];
+          throw `Invalid parameter {${str}}`;
 
         unisNum = Number(str);
 
         if(unisNum < 0)
-          return [0, `Universal quantifier number must be a positive integer`];
+          throw `Universal quantifier number must be a positive integer`;
 
         if(/^\s/.test(line))
-          return [0, `Missing an expression after the universal quantifier number`];
+          throw `Missing an expression after the universal quantifier number`;
       }
 
       if(!line.startsWith('[')){
-        const tk = yield [call, getToken, 0, 0];
+        const tk = yield [getToken, 0, 0];
 
         if(tk === null)
           return syntErr();
 
-        const premiseIndex = yield [call, parsePremiseIndex, tk];
+        const premiseIndex = yield [parsePremiseIndex, tk];
 
         if(premiseIndex !== null){
           // Premise
@@ -874,22 +880,22 @@ const processLine = function*(lineIndex, ctx){
           const rule = ctx.getRule(tk);
 
           if(rule === null)
-            return [0, `Undefined rule ${O.sf(tk)}`];
+            throw `Undefined rule ${O.sf(tk)}`;
 
           propNew = rule;
         }
       }
 
       if(line.startsWith('[')){
-        const exprStrs = yield [call, getBrackets, 0];
+        const exprStrs = yield [getBrackets, 0];
 
         if(exprStrs.length === 0)
-          return [0, `Empty specification parameters`];
+          throw `Empty specification parameters`;
 
         specs = [];
 
         for(const str of exprStrs)
-          specs.push(yield [call, parser.parse, ctx, str]);
+          specs.push(yield [parser.parse, ctx, str]);
       }
 
       if(neol() && !line.startsWith(' '))
@@ -902,30 +908,30 @@ const processLine = function*(lineIndex, ctx){
         assert(specs.length !== 0);
 
         if(unisNum !== null)
-          return [0, `Universal quantifier number cannot be defined for pure specification`];
+          throw `Universal quantifier number cannot be defined for pure specification`;
 
         if(prop === null)
-          return [0, `Pure specification cannot be the first transformation`];
+          throw `Pure specification cannot be the first transformation`;
 
-        prop = yield [call, [prop, 'specArr'], ctx, specs];
+        prop = yield [[prop, 'specArr'], ctx, specs];
         continue;
       }
 
       if(specs !== null)
-        propNew = yield [call, [propNew, 'specArr'], ctx, specs];
+        propNew = yield [[propNew, 'specArr'], ctx, specs];
 
       if(prop === null){
         prop = propNew;
         continue;
       }
 
-      prop = yield [call, [prop, 'mpDir'], ctx, propNew, unisNum];
+      prop = yield [[prop, 'mpDir'], ctx, propNew, unisNum];
     }
 
     if(prop === null)
-      return [0, `This proof directive requires at least one proposition`];
+      throw `This proof directive requires at least one proposition`;
 
-    prop = yield [call, [prop, 'simplify'], ctx];
+    prop = yield [[prop, 'simplify'], ctx];
 
     const premisesNew = premises.filter((p, i) => {
       if(!O.has(premisesStatus, i)) return 1;
@@ -937,13 +943,13 @@ const processLine = function*(lineIndex, ctx){
       return 0;
     });
 
-    return [1, {
+    return {
       prop,
       offsetIndex,
       insertionIndex,
       premisesNew,
       matchGoal,
-    }];
+    };
   };
 
   const proofDirectiveFuncs = {
@@ -957,7 +963,7 @@ const processLine = function*(lineIndex, ctx){
         insertionIndex,
         premisesNew,
         matchGoal,
-      } = yield [call, applySpecsAndMPs, proof];
+      } = yield [applySpecsAndMPs, proof];
 
       const proofNew = proof.copy();
 
@@ -978,7 +984,7 @@ const processLine = function*(lineIndex, ctx){
       proofNew.subgoals = proofNew.subgoals.slice();
       proofNew.removeSubgoal();
 
-      const goalsNew = yield [call, [prop, 'mpRev'], ctx, goal];
+      const goalsNew = yield [[prop, 'mpRev'], ctx, goal];
 
       const goalStrs = [];
       const toStrIdents = util.obj2();
@@ -990,7 +996,7 @@ const processLine = function*(lineIndex, ctx){
         const subgoalNew = subgoal.copy();
         subgoalNew.premises = premisesNew;
 
-        yield [call, [subgoalNew, 'replaceGoal'], ctx, goal];
+        yield [[subgoalNew, 'replaceGoal'], ctx, goal];
 
         proofNew.addSubgoal(subgoalNew);
       }
@@ -1015,12 +1021,12 @@ const processLine = function*(lineIndex, ctx){
     },
 
     *show(){
-      const exprStrs = yield [call, getBrackets];
+      const exprStrs = yield [getBrackets];
 
       if(exprStrs.length === 0)
-        return [0, `At least one proposition must be specified in the \`show\` directive`];
+        throw `At least one proposition must be specified in the \`show\` directive`;
 
-      const boolSym = yield [call, getMeta, 'bool', 1];
+      const boolSym = yield [getMeta, 'bool', 1];
 
       const toStrIdents = util.obj2();
       yield [[ctx.proof.subgoal, 'toStr'], ctx, toStrIdents];
@@ -1029,10 +1035,10 @@ const processLine = function*(lineIndex, ctx){
       const propStrs = [];
 
       for(const str of exprStrs){
-        let prop = yield [call, parser.parse, ctx, str];
-        prop = yield [call, [prop, 'simplify'], ctx];
+        let prop = yield [parser.parse, ctx, str];
+        prop = yield [[prop, 'simplify'], ctx];
 
-        yield [call, assertEq, prop.type, boolSym];
+        yield [assertEq, prop.type, boolSym];
 
         props.push(prop);
         propStrs.push(yield [[prop, 'toStr'], ctx, toStrIdents]);
@@ -1073,21 +1079,21 @@ const processLine = function*(lineIndex, ctx){
       const indicesStrs = line.split(' ');
       const indicesObj = O.obj();
 
-      if(eol()) return [0, `Expected at least one premise index`];
+      if(eol()) throw `Expected at least one premise index`;
 
       for(const str of indicesStrs){
         const str1 = str.trim();
 
         if(!su.isInt(str1))
-          return [0, `Expected a premise index, but got ${O.sf(str1)}`];
+          throw `Expected a premise index, but got ${O.sf(str1)}`;
 
         const n = Number(str1) - 1;
 
         if(!(n >= 0 && n < premisesNum))
-          return [0, `There is no premise with index ${str1}`];
+          throw `There is no premise with index ${str1}`;
 
         if(O.has(indicesObj, n))
-          return [0, `Duplicate premise index ${n}`];
+          throw `Duplicate premise index ${n}`;
 
         indicesObj[n] = 1;
       }
@@ -1110,122 +1116,33 @@ const processLine = function*(lineIndex, ctx){
   };
 
   const processLine = function*(){
-    const directive = yield [call, getToken];
+    const directive = yield [getToken];
     let data;
 
     if(directive === null)
-      return [0, `Missing directive`];
+      throw `Missing directive`;
 
     if(!ctx.hasProof){
       if(!O.has(directiveFuncs, directive))
-        return [0, `Unknown directive ${O.sf(directive)}`];
+        throw `Unknown directive ${O.sf(directive)}`;
 
-      data = yield [call, directiveFuncs[directive]];
+      data = yield [directiveFuncs[directive]];
     }else{
       if(!O.has(proofDirectiveFuncs, directive))
-        return [0, `Unknown proof directive ${O.sf(directive)}`];
+        throw `Unknown proof directive ${O.sf(directive)}`;
 
       const {proof} = ctx;
       assert(proof.hasSubgoal);
 
-      data = yield [call, proofDirectiveFuncs[directive], proof];
+      data = yield [proofDirectiveFuncs[directive], proof];
     }
 
-    yield [call, assertEol];
-    return [1, data];
+    yield [assertEol];
+    return data;
   };
 
-  yield O.tco(call, processLine);
-
-  // return new LineData(lineIndex, ctx, `Line ${lineIndex + 1}`);
-
-  /*outputEditor.removeLines();
-
-  const getLine = index => {
-    return mainEditor.getLine(index);
-  };
-
-  const setLine = (index, str) => {
-    outputEditor.setLine(index, str);
-  };
-
-  const exprRaw = yield [call, parser.parse, ctx, getLine(0)];
-  let expr = yield [call, [exprRaw, 'simplify'], ctx];
-
-  const toStrIdents = util.obj2();
-  const [symStrObj, strSymObj] = toStrIdents;
-
-  const toStr = function*(a){
-    if(util.isStr(a)) return a;
-
-    if(util.isSym(a)){
-      assert(O.has(symStrObj, a));
-      return symStrObj[a];
-    }
-
-    if(a === null) return 'null';
-
-    if(O.isArr(a))
-      return su.addBrackets((yield [O.mapr, a, toStr]).join(', '));
-
-    if(a instanceof Expr)
-      return O.tco([a, 'toStr'], ctx, toStrIdents);
-
-    assert.fail();
-  };
-
-  const set = function*(n, a){
-    setLine(n, yield [toStr, a]);
-  };
-
-  yield [set, 0, expr];
-
-  const spec = yield [call, parser.parse, ctx, getLine(1)];
-  expr = yield [call, [expr, 'spec'], ctx, spec];
-
-  yield [set, 1, expr];
-
-  const ant = yield [call, parser.parse, ctx, getLine(2)];
-  expr = yield [call, [expr, 'mpDir'], ctx, ant];
-
-  yield [set, 2, expr];
-
-  return;*/
-
-  /*const specsLine = getLine(1).trim();
-
-  if(specsLine.length !== 0){
-    const specStrs = specsLine.split(',');
-    let exprNew = expr;
-
-    for(const str of specStrs){
-      const spec = yield [call, parser.parse, ctx, str];
-      exprNew = yield [call, [exprNew, 'spec'], ctx, spec];
-    }
-
-    yield [set, 5, exprNew];
-    yield [set, 6, exprNew.arg.type];
-  }*/
-
-  /*const types = result[1];
-  const identsArr = O.keys(types);
-  const identsNum = identsArr.length;
-
-  const idents2 = util.obj2();
-  const symStrObj = idents2[0];
-  const strSymObj = idents2[1];
-
-  setLine(1, yield [[expr, 'toStr'], ctx, idents2]);
-
-  for(let i = 0; i !== identsNum; i++){
-    const sym = identsArr[i];
-    assert(O.has(symStrObj, sym));
-
-    const name = symStrObj[sym];
-    const type = O.rec([types[sym], 'toStr'], ctx, idents2);
-
-    setLine(2 + i, `${name} :: ${type}`);
-  }*/
+  const result = yield O.try(processLine);
+  return O.tco(processResult, result);
 };
 
 const updateDisplay = () => {
