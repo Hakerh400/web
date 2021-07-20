@@ -20,9 +20,9 @@ meta uni    (∀)
 meta imp    ( ⟶ )
 meta eq     (=)
 
-axiom true:        True
-axiom bool_dif:    ∀P. True = False  ⟶  P
-axiom bool_induct: ∀P a. P True  ⟶  P False  ⟶  P a
+axiom true:     True
+axiom bool_dif: ∀P. True = False  ⟶  P
+axiom bool_ind: ∀P. P True  ⟶  P False  ⟶  (∀) P
 
 axiom refl: ∀a. a = a
 axiom sub:  ∀P a b. a = b  ⟶  P a  ⟶  P b
@@ -89,7 +89,7 @@ lemma falI: ∀P. P  ⟶  ¬P  ⟶  False
   - psub not_def 2 1 %
 
 lemma falE: ∀P. False  ⟶  P
-  - bool_induct[λx. x] true 1 %
+  - bool_ind[λx. x] true 1 %
 
 lemma notI: ∀P. (P  ⟶  False)  ⟶  ¬P
   - eq_com not_def
@@ -107,7 +107,7 @@ lemma true_neq_false: ¬ (True = False)
   - psub 1 true %
 
 lemma bool_exh: ∀a P. (a = True  ⟶  P)  ⟶  (a = False  ⟶  P)  ⟶  P
-  - bool_induct[λx. a = x  ⟶  b] 1 2 refl %
+  - bool_ind[λx. a = x  ⟶  b] 1 2 refl %
 
 lemma eq_truE: ∀P. P = True  ⟶  P
   - prsub 1 true %
@@ -573,7 +573,7 @@ const Suc :: nat  ⟹  nat
 
 axiom nat_dif: ∀n. ¬(0 = Suc n)
 axiom nat_inj: ∀m n. Suc m = Suc n  ⟶  m = n
-axiom nat_ind: ∀P. P 0  ⟶  (∀n. P n  ⟶  P (Suc n))  ⟶  ∀n. P n
+axiom nat_ind: ∀P. P 0  ⟶  (∀n. P n  ⟶  P (Suc n))  ⟶  (∀) P
 
 def (<)  [infixl 50]: λa b. ∃f. f 0 = Suc a ∧ (∀c. f (Suc c) = Suc (f c)) ∧ ∃d. f d = b
 def (<=) [infixl 50]: λa b. a < b ∨ a = b
@@ -596,8 +596,8 @@ lemma lt_simp1: ∀a. 0 < Suc a
   - refl %
   - psub lt_def 1
   - prsub lt_def %
-  - exiE[#1.10.c] 1 %
-  - exiI[c] %
+  - exiE 1 %
+  - exiI[a] %
   - conjE1 1+
   - conjE1 2+
   - conjE2 2
@@ -606,8 +606,8 @@ lemma lt_simp1: ∀a. 0 < Suc a
   - conjI %
   - 1 %
   - 2 %
-  - exiE[#3.10.e] 3 %
-  - exiI[Suc d] %
+  - exiE 3 %
+  - exiI[Suc c] %
   - eq_tran 2 %
   - arg_cong 2 %
 
@@ -754,7 +754,7 @@ lemma lt_simp3: ∀a b. (Suc a < Suc b) = (a < b)
   - eq_tran2 5 4
   - eq_tran 4 1
   - falI 3 nat_dif %
-  - exiE[#4.10.h] 4 %
+  - exiE 4 %
   - notI %
   - arg_cong[c] 4*
   - eq_tran2 5 4
@@ -813,6 +813,7 @@ lemma neq_0_imp_gt_0: ∀a. ¬(a = 0)  ⟶  0 < a
 lemma lt_tran: ∀a b c. a < b  ⟶  b < c  ⟶  a < c
   show [lt_tran_prop 0, (∀a. lt_tran_prop a  ⟶  lt_tran_prop (Suc a))]
   - nat_ind 3 {1}4
+  - psub eta1 3
   - psub lt_tran_prop_def1 3 1 2 %
   - prsub lt_tran_prop_def1 %
   show [¬(e = 0)]
@@ -889,7 +890,7 @@ lemma suc_lt_lt: ∀a b. Suc a < b  ⟶  a < b
   - rsub[#..a] 2 %
   - gt_neq_0 1
   - psub neq_0_exi_suc 1
-  - exiE[#1.10.c] 1 %
+  - exiE 1 %
   - rsub[#..b] 1 %
   - lt_simp1 %
   - exiE[#2.10.c] 2 %
@@ -934,7 +935,7 @@ lemma lt_exh: ∀a b. (a < b) = (¬(b = 0) ∧ (a = 0 ∨ pred a < pred b))
   - nat_exh[a] %
   - rsub[#..a] 2 %
   - lt_simp1 %
-  - exiE[#2.10.d] 2 %
+  - exiE 2 %
   - sub[#1..a] 2+ 1*
   - rsub[#..a] 2 %
   - sub[λx. x < c] pred_suc 1
@@ -974,21 +975,21 @@ lemma lt_suc_lte: ∀a b. a < b  ⟶  Suc a <= b
   - rsub[λx. x ∨ Suc a = Suc c] lt_simp3 %
   - rsub[λx. a < c ∨ x] suc_eq %
   - nat_ind[λa. ∀c. a < Suc c  ⟶  a < c ∨ a = c] %
-  - nat_exh[d] %
+  - nat_exh[b] %
   - eq_com 3
   - disjI2 3 %
-  - exiE[#3.10.e] 3 %
-  show [0 < d]
+  - exiE 3 %
+  show [0 < b]
   - disjI1 4 %
-  - rsub[#..d] 3 %
+  - rsub[#..b] 3 %
   - lt_simp1 %
   - psub lt_simp3 3
   - gt_exi_suc 3+
-  - exiE[#4.10.g] 4 %
-  - sub[#3..e] 4+ 3*
-  - rsub[#..e] 4 %
-  - rsub[λx. x ∨ Suc d = Suc f] lt_simp3 %
-  - rsub[λx. d < f ∨ x] suc_eq %
+  - exiE 4 %
+  - sub[#3..d] 4+ 3*
+  - rsub[#..d] 4 %
+  - rsub[λx. x ∨ Suc b = Suc e] lt_simp3 %
+  - rsub[λx. b < e ∨ x] suc_eq %
   - 2 3 %
   - 1 %
 
@@ -1037,14 +1038,14 @@ lemma nlt_ngt_imp_eq: ∀a b. ¬(a < b)  ⟶  ¬(b < a)  ⟶  a = b
   - notE2 %
   - cpos_pp eq_com 2
   - psub neq_0_exi_suc 2
-  - exiE[#2.10.d] 2 %
+  - exiE 2 %
   - sub[#1..c] 2 1
   - falI lt_simp1 1 %
   rem 1 2
   - nat_exh[d] %
   - sub[#3..d] 4 3
   - falE2 lt_simp1 3 %
-  - exiE[#4.10.f] 4 %
+  - exiE 4 %
   - sub[#2..d] 4+ 2*
   - prsub lt_simp3
   - cpos_pp 5+ 2*
@@ -1140,16 +1141,22 @@ lemma lt_trich: ∀a b. (a < b ∧ ¬(b < a) ∧ ¬(a = b)) ∨ (¬(a < b) ∧ b
 type pair 2
 const Pair :: 'a  ⟹  'b  ⟹  pair 'a 'b
 
-axiom pair_ind: ∀P a. (∀a b. P (Pair a b))  ⟶  P a
+axiom pair_ind: ∀P. (∀a b. P (Pair a b))  ⟶  (∀) P
 axiom pair_inj: ∀a b c d. Pair a b = Pair c d  ⟶  a = c ∧ b = d
 
 def fst: THE F. ∀a b. F (Pair a b) = a
 def snd: THE F. ∀a b. F (Pair a b) = b
 
-lemma theI: ∀P a. P a  ⟶  (∀b. P b  ⟶  b = a)  ⟶  (THE b. P b) = a
+lemma theI: ∀P a. P a  ⟶  (∀b. P b  ⟶  b = a)  ⟶  (THE) P = a
   show [∃!x. a x]
   - uniqE[#3.10.d] 3
-  - 2 3 %
+  show [a ((THE) a)]
+  - 2 4 %
+  - imp_swap psub 3 %
+  - arg_cong %
+  - arg_cong %
+  - ext %
+  - refl %
   - uniqI[#.10.d] %
   - exiI[b] %
   - 1 %
@@ -1162,17 +1169,17 @@ lemma fst_simp: ∀a b. fst (Pair a b) = a
   - uniqE[#1.10.c] 1
   - rsub[#..fst] fst_def %
   - 1 %
-  - uniqI[#.10.c] %
+  - uniqI %
   - exiI[λp. THE a. ∃b. (λx y. y) (a = b) (p = Pair a b)] %
-  - theI[#.0110.e] %
-  - exiI[d] %
+  - theI %
+  - exiI[b] %
   - refl %
-  - exiE[#1.10.f] 1 %
+  - exiE 1 %
   - pair_inj 1
   - conjE1 1
   - eq_com 1 %
   - ext %
-  - pair_ind[#..e] %
+  - pair_ind[#..c] %
   - eq_tran1 1 %
   - eq_tran 1 refl %
 
@@ -1181,17 +1188,17 @@ lemma snd_simp: ∀a b. snd (Pair a b) = b
   - uniqE[#1.10.c] 1
   - rsub[#..snd] snd_def %
   - 1 %
-  - uniqI[#.10.c] %
+  - uniqI %
   - exiI[λp. THE y. ∃x. (λx y. y) (x = y) (p = Pair x y)] %
-  - theI[#.0110.e] %
-  - exiI[c] %
+  - theI %
+  - exiI[a] %
   - refl %
-  - exiE[#1.10.f] 1 %
+  - exiE 1 %
   - pair_inj 1
   - conjE2 1
   - eq_com 1 %
   - ext %
-  - pair_ind[#..e] %
+  - pair_ind[#..c] %
   - eq_tran1 1 %
   - eq_tran 1 refl %
 
@@ -1205,7 +1212,7 @@ lemma dmrg_pe1: ∀P. (∃a. ¬P a)  ⟶  ¬(∀a. P a)
 type unit 0
 const Unit :: unit
 
-axiom unit_ind: ∀P a. P Unit  ⟶  P a
+axiom unit_ind: ∀P. P Unit  ⟶  (∀) P
 
 lemma not_the_imp_p: ¬(∀P a. (THE a. P a) = a  ⟶  P a)
   - dmrg_pe1[#.110.a] %
@@ -1224,16 +1231,16 @@ lemma if_simps: ∀a b. if True a b = a ∧ if False a b = b
   - conjI %
   - conjE1 1 %
   - conjE2 1 %
-  - uniqI[#.10.c] %
+  - uniqI %
   - exiI[λP a b. THE x. (P  ⟶  x = a) ∧ (¬P  ⟶  x = b)] %
   - conjI %
-  - theI[#.0110.e] %
+  - theI %
   - conjI %
   - refl %
   - falE2 true 1 %
   - conjE1 1
   - 1 true %
-  - theI[#.0110.e] %
+  - theI %
   - conjI %
   - falE 1 %
   - refl %
@@ -1242,14 +1249,14 @@ lemma if_simps: ∀a b. if True a b = a ∧ if False a b = b
   - ext %
   - ext %
   - ext %
-  - 1*[f, g]
-  - 2*[f, g]
-  - bool_exh[e] %
-  - rsub[#..e] 3 %
+  - 1*[d, e]
+  - 2*[d, e]
+  - bool_exh[c] %
+  - rsub[#..c] 3 %
   - conjE1 1*
   - conjE1 2*
   - eq_tran1 1 2 %
-  - rsub[#..e] 3 %
+  - rsub[#..c] 3 %
   - conjE2 1*
   - conjE2 2*
   - eq_tran1 1 2 %
@@ -1409,6 +1416,6 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   - conjE1 1 %
   - conjE2 1 %
   show [∀N. ∃!F. (∀z f. F z f 0 = 0) ∧ (∀n z f. n <= N  ⟶  F z f (Suc n) = f (F z f n))]
-  - uniqI[#.10.k] %
+  - uniqI %
   - exiI[λN. (THE F. (∀z f. F z f 0 = 0) ∧ (∀n z f. n <= N  ⟶  F z f (Suc n) = f (F z f n))) N] %
   - 

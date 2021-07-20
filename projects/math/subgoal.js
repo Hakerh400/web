@@ -118,6 +118,48 @@ class Subgoal{
     return O.tco([this, 'addGoal'], ctx, goal);
   }
 
+  *getUsedIdents(idents=O.obj()){
+    const {premises, goal} = this;
+    assert(goal !== null);
+
+    for(const prem of premises)
+      yield [[prem, 'getStrIdents'], idents];
+
+    yield [[goal, 'getStrIdents'], idents];
+
+    return idents;
+  }
+
+  *simplify(){
+    const {identsObj, identsArr, premises, goal} = this;
+    const usedIdents = yield [[this, 'getUsedIdents']];
+
+    let unusedIdents = null;
+    let identsObjNew = null;
+
+    for(const name of O.keys(identsObj)){
+      if(O.has(usedIdents, name)) continue;
+
+      if(identsObjNew === null){
+        unusedIdents = O.obj();
+        identsObjNew = util.copyObj(identsObj);
+      }
+
+      unusedIdents[name] = 1;
+      delete identsObjNew[name];
+    }
+
+    if(unusedIdents === null)
+      return this;
+
+    const identsArrNew = identsArr.filter(name => O.has(identsObjNew, name));
+
+    this.identsObj = identsObjNew;
+    this.identsArr = identsArrNew;
+
+    return this;
+  }
+
   *toStr(ctx, toStrIdents=util.obj2()){
     assert(this.goal !== null);
 

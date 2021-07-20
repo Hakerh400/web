@@ -37,7 +37,6 @@ let iw, ih;
 let w, h;
 
 const main = () => {
-  // O.dbgAssert = 1;
   mainEditor.selected = 1;
 
   if(O.has(localStorage, project))
@@ -1056,7 +1055,7 @@ const processLine = function*(lineIndex, ctx){
 
       const proof = ctx.proof = ctx.proof.copy();
       const subgoals = proof.subgoals = proof.subgoals.slice();
-      const subgoal = proof.subgoals[0] = proof.subgoal.copy();
+      const subgoal = proof.subgoal = proof.subgoal.copy();
       const premises = subgoal.premises = subgoal.premises.slice();
 
       const subgoalsNew = [];
@@ -1108,7 +1107,7 @@ const processLine = function*(lineIndex, ctx){
 
       const proofNew = ctx.proof = proof.copy();
       const subgoalsNew = proofNew.subgoals = subgoals.slice();
-      const subgoalNew = proofNew.subgoals[0] = subgoal.copy();
+      const subgoalNew = proofNew.subgoal = subgoal.copy();
 
       const premisesNew = premises.filter((a, i) => {
         return !O.has(indicesObj, i);
@@ -1118,6 +1117,13 @@ const processLine = function*(lineIndex, ctx){
       line = '';
 
       return O.tco(ret, '');
+    },
+
+    *test(){
+      const idents = yield [[ctx.proof.subgoal, 'getUsedIdents']];
+      const identsArr = O.keys(idents);
+
+      return O.tco(ret, identsArr.join('\n'));
     },
   };
 
@@ -1144,6 +1150,10 @@ const processLine = function*(lineIndex, ctx){
     }
 
     yield [assertEol];
+
+    if(ctx.hasProof)
+      ctx.proof.simplify();
+
     return data;
   };
 
@@ -1167,6 +1177,13 @@ const onKeyDown = evt => {
       if(/^Arrow|^(?:Backspace|Home|End|Delete|Tab)$/.test(code)){
         O.pd(evt);
         mainEditor.processKey(code);
+        break cases;
+      }
+
+      if(code === 'F4'){
+        O.pd(evt);
+        if(!hasErr()) break cases;
+        mainEditor.goto(linesData.length - 1);
         break cases;
       }
 
@@ -1208,14 +1225,10 @@ const onKeyDown = evt => {
         const s = prompt();
         if(s === null) break cases;
 
-        let n = Number(s);
+        let n = Number(s) - 1;
         if(isNaN(n)) break cases;
 
-        n = O.bound(n - 1, 0, mainEditor.lines.length - 1);
-
-        mainEditor.setCx(0);
-        mainEditor.cy = n;
-        mainEditor.scrollY = max(n - 20, 0);
+        mainEditor.goto(n);
 
         break cases;
       }

@@ -69,6 +69,7 @@ class Expr{
   *getTypeU(){ O.virtual('getTypeU'); }
   *eq1(){ O.virtual('eq1'); }
   *eqAlpha1(){ O.virtual('eqAlpha1'); }
+  *getStrIdents(){ O.virtual('getStrIdents'); }
   *toStr1(){ O.virtual('toStr1'); }
 
   from(...args){
@@ -627,6 +628,15 @@ class Ident extends NamedExpr{
     idents[name2] = name1;
   }
 
+  *getStrIdents(idents=O.obj()){
+    const {name} = this;
+
+    if(isStr(name))
+      idents[name] = 1;
+
+    return idents;
+  }
+
   *toStr1(ctx, idents){
     let name = this.getName(ctx, idents);
     name = ctx.name2str(name, 1);
@@ -737,6 +747,10 @@ class Lambda extends NamedExpr{
 
   *eqAlpha1(other, idents){
     assert.fail();
+  }
+
+  *getStrIdents(idents=O.obj()){
+    return O.tco([this.expr, 'getStrIdents'], idents);
   }
 
   *toStr1(ctx, idents){
@@ -856,6 +870,11 @@ class Call extends Expr{
       return 0;
 
     return O.tco([this.arg, 'eqAlpha1'], other.arg, idents);
+  }
+
+  *getStrIdents(idents=O.obj()){
+    yield [[this.target, 'getStrIdents'], idents];
+    return O.tco([this.arg, 'getStrIdents'], idents);
   }
 
   *toStr1(ctx, idents){

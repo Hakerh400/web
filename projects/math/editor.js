@@ -69,19 +69,31 @@ class Editor{
     g.stroke();
   }
 
+  goto(n){
+    n = O.bound(n, 0, this.lines.length - 1);
+
+    this.setCx(0);
+    this.cy = n;
+    this.scrollY = max(n - 15, 0);
+  }
+
   scrollUp(moveCur=0){
     if(this.scrollY !== 0)
       this.scrollY--;
 
-    if(moveCur && this.cy !== 0)
+    if(moveCur && this.cy !== 0){
+      this.setCx(0);
       this.cy--;
+    }
   }
 
   scrollDown(moveCur=0){
     this.scrollY++;
 
-    if(moveCur)
+    if(moveCur){
+      this.setCx(0);
       this.cy++;
+    }
   }
 
   scrollLeft(moveCur=0){

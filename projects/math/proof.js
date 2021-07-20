@@ -19,6 +19,10 @@ class Proof{
     );
   }
 
+  simplify(){
+    O.rec([this.subgoal, 'simplify']);
+  }
+
   copySubgoals(){
     this.subgoals = this.subgoals.slice();
   }
@@ -33,6 +37,13 @@ class Proof{
 
   get subgoal(){
     return O.fst(this.subgoals);
+  }
+
+  set subgoal(subgoal){
+    const {subgoals} = this;
+    assert(subgoals.length !== 0)
+
+    subgoals[0] = subgoal;
   }
 
   setSubgoal(subgoal, copy=0){
