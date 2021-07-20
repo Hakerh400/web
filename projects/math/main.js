@@ -1162,67 +1162,87 @@ const onKeyDown = evt => {
   const {ctrlKey, shiftKey, altKey, code} = evt;
   const flags = (ctrlKey << 2) | (shiftKey << 1) | altKey;
 
-  flagCases: {
+  cases: {
     noFlags: if(flags === 0){
       if(/^Arrow|^(?:Backspace|Home|End|Delete|Tab)$/.test(code)){
         O.pd(evt);
         mainEditor.processKey(code);
-        break flagCases;
+        break cases;
       }
 
-      break flagCases;
+      break cases;
+    }
+
+    if(flags === 4 || flags === 1){
+      if(code === 'ArrowUp'){
+        mainEditor.scrollUp(altKey);
+        break cases;
+      }
+
+      if(code === 'ArrowDown'){
+        mainEditor.scrollDown(altKey);
+        break cases;
+      }
+
+      if(code === 'ArrowLeft'){
+        mainEditor.scrollLeft();
+        break cases;
+      }
+
+      if(code === 'ArrowRight'){
+        mainEditor.scrollRight();
+        break cases;
+      }
     }
 
     ctrl: if(flags === 4){
       if(code === 'KeyS'){
         O.pd(evt);
         save();
-        break flagCases;
+        break cases;
       }
 
-      if(code === 'ArrowUp'){
-        mainEditor.scrollUp(1);
-        break flagCases;
+      if(code === 'KeyG'){
+        O.pd(evt);
+
+        const s = prompt();
+        if(s === null) break cases;
+
+        let n = Number(s);
+        if(isNaN(n)) break cases;
+
+        n = O.bound(n - 1, 0, mainEditor.lines.length - 1);
+
+        mainEditor.setCx(0);
+        mainEditor.cy = n;
+        mainEditor.scrollY = max(n - 20, 0);
+
+        break cases;
       }
 
-      if(code === 'ArrowDown'){
-        mainEditor.scrollDown(1);
-        break flagCases;
-      }
-
-      if(code === 'ArrowLeft'){
-        mainEditor.scrollLeft(0);
-        break flagCases;
-      }
-
-      if(code === 'ArrowRight'){
-        mainEditor.scrollRight(0);
-        break flagCases;
-      }
-
-      break flagCases;
+      break cases;
     }
 
     ctrlShift: if(flags === 6){
       if(code === 'KeyD'){
         O.pd(evt);
         mainEditor.processKey('Duplicate');
-        break flagCases;
+        break cases;
       }
 
       if(code === 'ArrowUp'){
         O.pd(evt);
         mainEditor.processKey('MoveUp');
-        break flagCases;
+        break cases;
       }
 
       if(code === 'ArrowDown'){
         O.pd(evt);
         mainEditor.processKey('MoveDown');
-        break flagCases;
+        break cases;
       }
 
-      break flagCases;
+      break cases;
     }
   }
 };

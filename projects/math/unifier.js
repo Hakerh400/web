@@ -35,7 +35,7 @@ class Unifier{
   *toStr(){ O.virtual('toStr'); }
 
   err(msg){
-    return [0, msg];
+    throw msg;
   }
 }
 
@@ -174,7 +174,7 @@ class TypeUnifier extends Unifier{
       assert.fail();
     }
 
-    return [1, identsObj];
+    return identsObj;
   }
 
   *toStr(){
@@ -407,7 +407,7 @@ class ValueUnifier extends Unifier{
     const result = yield [[typeUnifier, 'solve']];
     if(result[0] === 0) return result;
 
-    return [1, varsObj];
+    return varsObj;
   }
 
   *toStr(){
