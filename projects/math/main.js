@@ -511,6 +511,13 @@ const processLine = function*(lineIndex, ctx){
     return name;
   };
 
+  const getPremiseIndex = function*(){
+    const premisesNum = ctx.proof.subgoal.length;
+    const n = Number(yield [getInt, 1, premisesNum]);
+
+    return n - 1;
+  };
+
   const parseIdentSortFuncs = {
     *prefix(){
       const prec = yield [getPrec];
@@ -1075,7 +1082,7 @@ const processLine = function*(lineIndex, ctx){
       return O.tco(ret, propStrs.join('\n'));
     },
 
-    *rem(){
+    *del(){
       const {proof} = ctx;
       const {subgoals, subgoal} = proof;
       const {premises} = subgoal;
@@ -1119,11 +1126,154 @@ const processLine = function*(lineIndex, ctx){
       return O.tco(ret, '');
     },
 
-    *test(){
-      const idents = yield [[ctx.proof.subgoal, 'getUsedIdents']];
-      const identsArr = O.keys(idents);
+    *ren(){
+      const {proof} = ctx;
+      const {subgoals, subgoal} = proof;
+      const {identsObj, identsArr, premises, goal} = subgoal;
 
-      return O.tco(ret, identsArr.join('\n'));
+      const name1 = yield [getIdent];
+
+      if(!O.has(identsObj, name1))
+        throw `There is no local identifier ${name2str(name1)}`;
+
+      const name2 = yield [getIdent];
+      yield [assertFree, name2];
+
+      ctx = ctx.copy();
+
+      const proofNew = ctx.proof = proof.copy();
+      const subgoalsNew = proofNew.subgoals = subgoals.slice();
+      const subgoalNew = proofNew.subgoal = subgoal.copy();
+
+      const identNew = new Ident(name2);
+
+      const identsObjNew = util.copyObj(identsObj);
+      identsObjNew[name2] = identsObjNew[name1];
+      delete identsObjNew[name1];
+
+      const identsArrNew = identsArr.slice();
+      const index = identsArrNew.indexOf(name1);
+
+      assert(index !== -1);
+      identsArrNew[index] = name2;
+
+      const premisesNew = [];
+
+      for(const prem of premises)
+        premisesNew.push(yield [[prem, 'substIdent'], name1, identNew]);
+
+      subgoalNew.identsObj = identsObjNew;
+      subgoalNew.identsArr = identsArrNew;
+      subgoalNew.premises = premisesNew;
+      subgoalNew.goal = yield [[goal, 'substIdent'], name1, identNew];
+
+      return O.tco(ret, '');
+    },
+
+    *let(){
+      const {proof} = ctx;
+      const {subgoals, subgoal} = proof;
+      const {identsObj, identsArr, premises, goal} = subgoal;
+
+      const eqSym = yield [getMeta, 'eq'];
+
+      const name = yield [getIdent];
+      yield [assertFree, name];
+
+      yield [getExact, ':'];
+
+      const val = yield [getExpr];
+
+      ctx = ctx.copy();
+
+      const proofNew = ctx.proof = proof.copy();
+      const subgoalsNew = proofNew.subgoals = subgoals.slice();
+      const subgoalNew = proofNew.subgoal = subgoal.copy();
+
+      const identsObjNew = util.copyObj(identsObj);
+      identsObjNew[name] = [val.type, [0, []]];
+
+      const identsArrNew = identsArr.slice();
+      identsArrNew.push(name);
+
+      subgoalNew.identsObj = identsObjNew;
+      subgoalNew.identsArr = identsArrNew;
+
+      const premisesNew = premises.slice();
+      const prem = yield [[Expr.mkBinOp(eqSym, new Ident(name), val), 'simplify'], ctx];
+      premisesNew.push(prem);
+
+      subgoalNew.premises = premisesNew;
+
+      return O.tco(ret, '');
+    },
+
+    *sub(){
+      const {proof} = ctx;
+      const {subgoals, subgoal} = proof;
+      const {identsObj, identsArr, premises, goal} = subgoal;
+      const premisesNum = premises.length;
+
+      const eqSym = yield [getMeta, 'eq'];
+
+      line = line.trimRight();
+
+      const match = line.match(/^(\d+)(\+?)$/);
+
+      if(match === null)
+        throw `Expected a premise index`;
+
+      const indexStr = match[1];
+
+      if(!su.isInt(indexStr))
+        throw `Invalid premise index`;
+
+      const index = Number(indexStr) - 1;
+
+      if(!(index >= 0 && index < premisesNum))
+        throw `There is no premise with index ${indexStr}`;
+
+      const keep = match[2].length !== 0;
+
+      const prem = premises[index];
+      const info = prem.getBinOp();
+
+      if(info === null || info[0] !== eqSym)
+        throw `The premise is not an equality`;
+
+      const ident = info[1];
+
+      if(!ident.isIdent)
+        throw `LHS must be an identifier`;
+
+      const {name} = ident;
+      const exprNew = info[2];
+
+      ctx = ctx.copy();
+
+      const proofNew = ctx.proof = proof.copy();
+      const subgoalsNew = proofNew.subgoals = subgoals.slice();
+      const subgoalNew = proofNew.subgoal = subgoal.copy();
+
+      const premisesNew = [];
+
+      for(let i = 0; i !== premisesNum; i++){
+        const prem = premises[i];
+
+        if(i === index){
+          if(keep) premisesNew.push(prem);
+          continue;
+        }
+
+        premisesNew.push(yield [[prem, 'substIdent'], name, exprNew]);
+      }
+
+      subgoalNew.premises = premisesNew;
+      subgoalNew.goal = yield [[goal, 'substIdent'], name, exprNew];
+
+      line = '';
+
+      return O.tco(ret, '');
     },
   };
 
@@ -1288,6 +1438,7 @@ const save = () => {
   });
 };
 
+// const str1 = await \u0072equire('./logic/1.txt');
 const load = () => {
   const {
     str,
@@ -1303,7 +1454,10 @@ const load = () => {
   mainEditor.cxPrev = cxPrev;
   mainEditor.scrollX = scrollX;
   mainEditor.scrollY = scrollY;
+
   mainEditor.setText(str);
+  // mainEditor.setText(O.sanl(str1).slice(0, 30).join('\n'));
+  // mainEditor.setText(str1);
 };
 
 const onResize = evt => {

@@ -1034,14 +1034,14 @@ lemma lt_exh_suc: ∀a b. (a < b) = (¬(b = 0) ∧ (a = 0 ∨ Suc a < Suc b))
 
 lemma nlt_ngt_imp_eq: ∀a b. ¬(a < b)  ⟶  ¬(b < a)  ⟶  a = b
   - nat_ind[λa. ∀b. ¬(a < b)  ⟶  ¬(b < a)  ⟶  a = b] %
-  rem 1 2 4
+  del 1 2 4
   - notE2 %
   - cpos_pp eq_com 2
   - psub neq_0_exi_suc 2
   - exiE 2 %
   - sub[#1..c] 2 1
   - falI lt_simp1 1 %
-  rem 1 2
+  del 1 2
   - nat_exh[d] %
   - sub[#3..d] 4 3
   - falE2 lt_simp1 3 %
@@ -1110,14 +1110,14 @@ lemma lt_trich: ∀a b. (a < b ∧ ¬(b < a) ∧ ¬(a = b)) ∨ (¬(a < b) ∧ b
   - conj_imp_npn 2*
   - conjI %
   - conjI %
-  rem 2
+  del 2
   - notI %
   - lt_imp_not_gt 2+
   - lt_imp_neq 2+
   - conjI 2* 3
   - 1* 2
   - falI 1 2 %
-  rem 1
+  del 1
   - notI %
   - lt_imp_not_gt 2+
   - lt_imp_neq 2+
@@ -1358,10 +1358,10 @@ lemma nat_ind_lte: ∀P. P 0  ⟶  (∀N. (∀n. n <= N  ⟶  P n)  ⟶  P (Suc 
   show [∀N n. n <= N  ⟶  a n]
   - 3 lte_refl %
   - nat_ind[λN. ∀n. n <= N  ⟶  a n] [d, d] %
-  rem 3
+  del 3
   - psub lte_0_eq_0 3
   - rsub 3 1 %
-  rem 3
+  del 3
   - 2+ {1}3+
   - psub lte_def 4*
   - disjE 4 %
@@ -1406,7 +1406,7 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   show [(∃!) #1.110.d]
   - uniqE[#2.10.h] 2 [a, b, c]
   - rsub[#..nat_map] 1 2 %
-  rem 1
+  del 1
   show [∃!F. (∀z f. F z f 0 = z) ∧ (∀n z f. F z f (Suc n) = f (F z f n))]
   - quant_eq 1 %
   - conjE1 1+

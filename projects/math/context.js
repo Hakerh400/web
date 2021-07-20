@@ -52,9 +52,9 @@ class Context{
   }
 
   hasName(name){
-    if(O.has(this.idents, name)) return 1;
-    if(O.has(this.ops, name)) return 1;
-    if(O.has(this.binders, name)) return 1;
+    if(this.hasIdent(name)) return 1;
+    if(this.hasOp(name)) return 1;
+    if(this.hasBinder(name)) return 1;
 
     return 0;
   }

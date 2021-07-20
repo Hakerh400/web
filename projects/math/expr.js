@@ -69,7 +69,7 @@ class Expr{
   *getTypeU(){ O.virtual('getTypeU'); }
   *eq1(){ O.virtual('eq1'); }
   *eqAlpha1(){ O.virtual('eqAlpha1'); }
-  *getStrIdents(){ O.virtual('getStrIdents'); }
+  *getStrIdents1(){ O.virtual('getStrIdents1'); }
   *toStr1(){ O.virtual('toStr1'); }
 
   from(...args){
@@ -481,6 +481,17 @@ class Expr{
     return binOp[1];
   }
 
+  *getStrIdents(idents=O.obj(), includeType=0){
+    if(includeType && !this.isType){
+      const {type} = this;
+
+      if(type !== null)
+        yield [[type, 'getStrIdents1'], idents, includeType];
+    }
+
+    return O.tco([this, 'getStrIdents1'], idents, includeType);
+  }
+
   *toStr(ctx, idents=util.obj2(), prec=0){
     const [precNew, str] = yield [[this, 'toStr1'], ctx, idents];
 
@@ -628,7 +639,7 @@ class Ident extends NamedExpr{
     idents[name2] = name1;
   }
 
-  *getStrIdents(idents=O.obj()){
+  *getStrIdents1(idents, includeType){
     const {name} = this;
 
     if(isStr(name))
@@ -749,8 +760,8 @@ class Lambda extends NamedExpr{
     assert.fail();
   }
 
-  *getStrIdents(idents=O.obj()){
-    return O.tco([this.expr, 'getStrIdents'], idents);
+  *getStrIdents1(idents, includeType){
+    return O.tco([this.expr, 'getStrIdents'], idents, includeType);
   }
 
   *toStr1(ctx, idents){
@@ -872,9 +883,9 @@ class Call extends Expr{
     return O.tco([this.arg, 'eqAlpha1'], other.arg, idents);
   }
 
-  *getStrIdents(idents=O.obj()){
-    yield [[this.target, 'getStrIdents'], idents];
-    return O.tco([this.arg, 'getStrIdents'], idents);
+  *getStrIdents1(idents, includeType){
+    yield [[this.target, 'getStrIdents'], idents, includeType];
+    return O.tco([this.arg, 'getStrIdents'], idents, includeType);
   }
 
   *toStr1(ctx, idents){

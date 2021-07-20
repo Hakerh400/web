@@ -105,6 +105,10 @@ class Subgoal{
       premises.push(imp);
 
     this.goal = goal;
+
+    // log(this.identsObj)
+    // log(yield [[this, 'getUsedIdents']])
+    // log();
   }
 
   *replaceGoal(ctx, goal){
@@ -123,9 +127,9 @@ class Subgoal{
     assert(goal !== null);
 
     for(const prem of premises)
-      yield [[prem, 'getStrIdents'], idents];
+      yield [[prem, 'getStrIdents'], idents, 1];
 
-    yield [[goal, 'getStrIdents'], idents];
+    yield [[goal, 'getStrIdents'], idents, 1];
 
     return idents;
   }
