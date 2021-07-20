@@ -291,7 +291,7 @@ class Expr{
     assert(util.empty(freeIdents));
 
     let expr = yield [[this, 'alpha'], ctx];
-    let result = yield [[expr, 'unifyTypes'], ctx];
+    let result = yield O.try([expr, 'unifyTypes'], ctx);
 
     if(!result[0])
       throw `Unification error: ${result[1]}`;
@@ -303,7 +303,7 @@ class Expr{
     expr = Expr.fromImps(ctx, imps);
     expr = expr.addUnis(ctx, unis, yield [[expr, 'getFreeIdents'], ctx]);
 
-    result = yield [[expr, 'unifyTypes'], ctx];
+    result = yield O.try([expr, 'unifyTypes'], ctx);
     assert(result[0]);
 
     return expr;
@@ -343,12 +343,8 @@ class Expr{
   *specArr(ctx, arr){
     let expr = this;
 
-    for(const e of arr){
-      const result = yield [[expr, 'spec'], ctx, e];
-      if(!result[0]) return result;
-
-      expr = result[1];
-    }
+    for(const e of arr)
+      expr = yield [[expr, 'spec'], ctx, e];
 
     return expr;
   }
@@ -365,15 +361,8 @@ class Expr{
 
   // Modus ponens
   *mp(ctx, e, antUnisNum=null, offset=0){
-    let result;
-
-    result = yield [[this, 'simplify'], ctx];
-    if(!result[0]) return result;
-    const expr = result[1];
-
-    result = yield [[e, 'simplify'], ctx];
-    if(!result[0]) return result;
-    const ant = result[1];
+    const expr = yield [[this, 'simplify'], ctx];
+    const ant = yield [[e, 'simplify'], ctx];
 
     const [unis1, imps1] = expr.getPropInfo(ctx);
 
@@ -401,8 +390,7 @@ class Expr{
     const rhs = Expr.fromImps(ctx, imps2);
 
     unifier.addEq(lhs, rhs);
-    result = yield [[unifier, 'solve']];
-    if(!result[0]) return result;
+    yield [[unifier, 'solve']];
 
     const impsNum = imps1.length;
     const varsArr = [];
@@ -452,10 +440,7 @@ class Expr{
 
   // Direct application of modus ponens
   *mpDir(ctx, e, antUnisNum, offset){
-    const result = yield [[this, 'mp'], ctx, e, antUnisNum, offset];
-    if(!result[0]) return result;
-
-    const [freeVars, imps] = result[1];
+    const [freeVars, imps] = yield [[this, 'mp'], ctx, e, antUnisNum, offset];
     const expr = Expr.fromImps(ctx, imps);
     const exprNew = expr.addUnis(ctx, freeVars);
 
@@ -464,10 +449,7 @@ class Expr{
 
   // Reverse application of modus ponens
   *mpRev(ctx, e){
-    const result = yield [[this, 'mp'], ctx, e, null, null];
-    if(!result[0]) return result;
-
-    const [freeVars, imps] = result[1];
+    const [freeVars, imps] = yield [[this, 'mp'], ctx, e, null, null];
 
     if(freeVars.length !== 0)
       throw `Some universally quantified variables remained unassigned`;
@@ -476,10 +458,7 @@ class Expr{
 
     for(let i = 0; i !== impsNum; i++){
       const imp = imps[i];
-      const result = yield [[imp, 'simplify'], ctx];
-      if(!result[0]) return result;
-
-      imps[i] = result[1];
+      imps[i] = yield [[imp, 'simplify'], ctx];
     }
 
     return imps;

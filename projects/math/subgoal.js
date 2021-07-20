@@ -41,10 +41,7 @@ class Subgoal{
 
     const {identsObj, identsArr, premises} = this;
 
-    let result = yield [[prop, 'simplify'], ctx];
-    if(!result[0]) return result;
-
-    prop = result[1];
+    prop = yield [[prop, 'simplify'], ctx];
 
     const newNames = O.obj();
     const symExprObj = O.obj();
@@ -122,6 +119,8 @@ class Subgoal{
   }
 
   *toStr(ctx, toStrIdents=util.obj2()){
+    assert(this.goal !== null);
+
     const {identsArr, premises, goal} = this;
     const premisesNum = premises.length;
 

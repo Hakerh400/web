@@ -69,22 +69,34 @@ class Editor{
     g.stroke();
   }
 
-  scrollUp(){
-    if(this.scrollY === 0) return;
-    this.scrollY--;
+  scrollUp(moveCur=0){
+    if(this.scrollY !== 0)
+      this.scrollY--;
+
+    if(moveCur && this.cy !== 0)
+      this.cy--;
   }
 
-  scrollDown(){
+  scrollDown(moveCur=0){
     this.scrollY++;
+
+    if(moveCur)
+      this.cy++;
   }
 
-  scrollLeft(){
-    if(this.scrollX === 0) return;
-    this.scrollX--;
+  scrollLeft(moveCur=0){
+    if(this.scrollX !== 0)
+      this.scrollX--;
+
+    if(moveCur && this.cx !== 0)
+      this.decCx();
   }
 
-  scrollRight(){
+  scrollRight(moveCur=0){
     this.scrollX++;
+
+    if(moveCur)
+      this.incCx();
   }
 
   processKey(key, addTab=1){
@@ -161,7 +173,8 @@ class Editor{
       }
 
       if(key === 'Home'){
-        this.setCx(cx !== tSize ? tSize : 0);
+        const ts = line.match(/^ */)[0].length;
+        this.setCx(cx !== ts ? ts : 0);
         return;
       }
 

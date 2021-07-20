@@ -34,7 +34,7 @@ const parse = function*(ctx, str, isType=0){
   let i = 0;
 
   const err = msg => {
-    throw new ParserError(ctx, str, iPrev, msg);
+    throw msg//new ParserError(ctx, str, iPrev, msg);
   };
 
   const inc = () => {

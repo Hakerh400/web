@@ -15,6 +15,8 @@ const {min, max} = Math;
 const {project} = O;
 const {Ident, Call, Lambda} = Expr;
 
+const displayLineProcess = 0;
+
 const {g} = O.ceCanvas(1);
 
 const ws = 12;
@@ -24,73 +26,12 @@ const ofs = 15;
 const smallNatMax = 1e3;
 const mediumNatMax = 2 ** 30 - 1;
 
-const idents = {
-  // 'bool': 0,
-
-  // 'True': `bool`,
-  // 'False': `bool`,
-  // 'undefined': `'a`,
-  // 'isFunc': `'a ⟹ bool`,
-};
-
-const ops = {
-  // '⟹': [2, [25, [1, 0]]],
-  // '≡': [2, [70, [0, 1]]],
-
-  // '⟶': [`bool ⟹ bool ⟹ bool`, [25, [1, 0]]],
-  // '⟷': [`bool ⟹ bool ⟹ bool`, [24, [0, 1]]],
-  // '∧': [`bool ⟹ bool ⟹ bool`, [35, [0, 1]]],
-  // '∨': [`bool ⟹ bool ⟹ bool`, [30, [0, 1]]],
-  // '¬': [`bool ⟹ bool`, [40, [0]]],
-  // '=': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
-  // '≠': [`'a ⟹ 'a ⟹ bool`, [50, [0, 1]]],
-  // ' ': [null, [80, [0, 1]]],
-};
-
-const binders = {
-  // 'λ': null,
-  // '∀': `('a ⟹ bool) ⟹ bool`,
-  // '∃': `('a ⟹ bool) ⟹ bool`,
-  // '∃!': `('a ⟹ bool) ⟹ bool`,
-};
-
-const spacing = {};
-
-/*for(const key of O.keys(idents))
-  idents[key] = [idents[key], [0, []]];
-
-for(const key of O.keys(binders))
-  binders[key] = [binders[key], [0, [0]]];
-
-for(const obj of [idents, ops, binders]){
-  for(const key of O.keys(obj)){
-    const info = obj[key];
-    const [typeInfo, precInfo] = info;
-    const [prec, precs] = precInfo;
-
-    if(typeof typeInfo === 'string'){
-      const result = O.rec(parser.parse, ctx, typeInfo, 1);
-      assert(result[0] === 1);
-
-      info[0] = O.rec([result[1], 'alpha'], ctx);
-    }
-
-    const sum = precs.reduce((a, b) => a + b, 1);
-    const div = sum * 2;
-
-    for(let i = 0; i !== precs.length; i++){
-      const p = prec + precs[i] / div;
-      assert(!isNaN(p));
-
-      precs[i] = p;
-    }
-  }
-}*/
-
 const mainEditor = new Editor();
 const outputEditor = new Editor();
 
 const linesData = [];
+
+let dataPrev = null;
 
 let iw, ih;
 let w, h;
@@ -108,6 +49,7 @@ const main = () => {
   aels();
 
   onResize();
+  O.raf(updateDisplay);
 };
 
 const initCanvas = () => {
@@ -124,53 +66,113 @@ const aels = () => {
   O.ael('resize', onResize);
 };
 
-const onNav = () => {
-  const lineIndex = mainEditor.cy;
+const updateDisplay = () => {
+  const {lines, updatedLine} = mainEditor;
+  mainEditor.updatedLine = null;
+
+  if(updatedLine !== null && linesData.length > updatedLine)
+    linesData.length = updatedLine;
+
+  if(!hasErr() && linesData.length !== lines.length)
+    updateNextLine();
+
+  if(!hasErr() && linesData.length !== lines.length){
+    const index = linesData.length;
+    const line = lines[index];
+
+    if(displayLineProcess && line.trim())
+      mainEditor.markedLine = [index, '#f80'];
+  }
+
+  mainEditor.updatedLine = null;
+
+  updateOutput();
+  render();
+
+  O.raf(updateDisplay);
+};
+
+const render = () => {
+  g.clearCanvas('white');
+
+  const iwh = iw / 2;
+  const ihh = ih / 2;
+
+  const wh = w >> 1;
+  const hh = h >> 1;
+
+  const ofs2 = ofs * 2;
+  const width = (iw - ofs2) / ws >> 1;
+  const height = (ih - ofs2) / hs | 0;
+
+  g.beginPath();
+  g.moveTo(iwh, 0);
+  g.lineTo(iwh, ih);
+  g.stroke();
+
+  g.translate(ofs, ofs);
+  g.scale(ws, hs);
+  mainEditor.render(g, width, height);
+  g.resetTransform();
+
+  g.translate(iwh + ofs, ofs);
+  g.scale(ws, hs);
+  outputEditor.render(g, width, height);
+  g.resetTransform();
+};
+
+const updateNextLine = () => {
+  const {lines} = mainEditor;
+  const index = linesData.length;
+
+  mainEditor.markedLine = null;
+
+  const dataPrev = getLastData();
+  const {ctx} = dataPrev;
+  const data = O.rec(processLine, index, ctx);
+
+  if(data === null){
+    linesData.push(dataPrev);
+    return;
+  }
+
+  linesData.push(data);
+
+  if(data.err){
+    mainEditor.markedLine = [index, '#faa'];
+    return;
+  }
+};
+
+const updateOutput = () => {
   const linesDataNum = linesData.length;
+  let lineIndex = mainEditor.cy;
+
+  if(hasErr() && lineIndex >= linesDataNum)
+    lineIndex = linesDataNum - 1;
 
   if(lineIndex >= linesDataNum){
+    if(dataPrev === null) return;
+
+    dataPrev = null;
     outputEditor.clear();
+
     return;
   }
 
   const data = linesData[min(lineIndex, linesDataNum - 1)];
+  if(data === dataPrev) return;
+
+  dataPrev = data;
   outputEditor.setText(data.str);
 };
 
-const onUpdatedLine = lineIndex => {
-  const {lines} = mainEditor;
+const getLastData = () => {
+  const data = O.last(linesData);
+  if(data === null) return mkInitialLineData();
 
-  if(linesData.length === 0 && lineIndex !== 0)
-    linesData.push(mkInitialLineData());
-
-  while(linesData.length < lineIndex){
-    const ctx = O.last(linesData).ctx;
-    linesData.push(new LineData(linesData.length, ctx));
-  }
-
-  assert(linesData.length >= lineIndex);
-
-  linesData.length = lineIndex;
-  mainEditor.markedLine = null;
-
-  for(let i = lineIndex; i !== lines.length; i++){
-    const dataPrev = i !== 0 ? linesData[i - 1] : mkInitialLineData();
-    const ctx = dataPrev.ctx;
-    const data = O.rec(processLine, i, ctx);
-
-    if(data === null){
-      linesData[i] = dataPrev;
-      continue;
-    }
-
-    linesData[i] = data;
-
-    if(data.err){
-      mainEditor.markedLine = [i, '#faa'];
-      break;
-    }
-  }
-}
+  return data;
+};
 
 const mkInitialLineData = () => {
   return new LineData(0, new Context());
@@ -211,10 +213,14 @@ const processLine = function*(lineIndex, ctx){
 
     if(result[0] === 0){
       const err = result[1];
-      const msg = typeof err === 'string' ?
-        err : err.msg//su.tab(err.pos, `^ ${err.msg}`);
 
-      return O.breakRec(yield [mkLineData, msg, 1]);
+      if(!util.isStr(err))
+        throw err;
+
+      // const msg = typeof err === 'string' ?
+      //   err : su.tab(err.pos, `^ ${err.msg}`);
+
+      return O.breakRec(yield [mkLineData, err, 1]);
     }
 
     return result[1];
@@ -1145,25 +1151,11 @@ const processLine = function*(lineIndex, ctx){
   return O.tco(processResult, result);
 };
 
-const updateDisplay = () => {
-  const {updatedLine} = mainEditor;
-  const linesDataNum = linesData.length;
+const hasErr = () => {
+  const data = O.last(linesData);
+  if(data === null) return 0;
 
-  const hasErr = linesDataNum !== 0 ?
-    O.last(linesData).err : 0;
-
-  try{
-    update: {
-      if(updatedLine === null) break update;
-      if(hasErr && updatedLine >= linesDataNum) break update;
-
-      onUpdatedLine(updatedLine);
-    }
-  }finally{
-    mainEditor.updatedLine = null;
-    onNav();
-    render();
-  }
+  return data.err;
 };
 
 const onKeyDown = evt => {
@@ -1189,22 +1181,22 @@ const onKeyDown = evt => {
       }
 
       if(code === 'ArrowUp'){
-        mainEditor.scrollUp();
+        mainEditor.scrollUp(1);
         break flagCases;
       }
 
       if(code === 'ArrowDown'){
-        mainEditor.scrollDown();
+        mainEditor.scrollDown(1);
         break flagCases;
       }
 
       if(code === 'ArrowLeft'){
-        mainEditor.scrollLeft();
+        mainEditor.scrollLeft(0);
         break flagCases;
       }
 
       if(code === 'ArrowRight'){
-        mainEditor.scrollRight();
+        mainEditor.scrollRight(0);
         break flagCases;
       }
 
@@ -1233,8 +1225,6 @@ const onKeyDown = evt => {
       break flagCases;
     }
   }
-
-  updateDisplay();
 };
 
 const onKeyPress = evt => {
@@ -1252,7 +1242,6 @@ const onKeyPress = evt => {
   const addTab = shouldAddTab();
 
   mainEditor.processKey(key, addTab);
-  updateDisplay();
 };
 
 const save = () => {
@@ -1292,36 +1281,6 @@ const onResize = evt => {
   h = ih / hs | 0;
 
   g.resize(iw, ih);
-  updateDisplay();
-};
-
-const render = () => {
-  g.clearCanvas('white');
-
-  const iwh = iw / 2;
-  const ihh = ih / 2;
-
-  const wh = w >> 1;
-  const hh = h >> 1;
-
-  const ofs2 = ofs * 2;
-  const width = (iw - ofs2) / ws >> 1;
-  const height = (ih - ofs2) / hs | 0;
-
-  g.beginPath();
-  g.moveTo(iwh, 0);
-  g.lineTo(iwh, ih);
-  g.stroke();
-
-  g.translate(ofs, ofs);
-  g.scale(ws, hs);
-  mainEditor.render(g, width, height);
-  g.resetTransform();
-
-  g.translate(iwh + ofs, ofs);
-  g.scale(ws, hs);
-  outputEditor.render(g, width, height);
-  g.resetTransform();
 };
 
 main();
