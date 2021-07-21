@@ -36,7 +36,7 @@ class Subgoal{
     premises.splice(index, 0, prop);
   }
 
-  *addGoal(ctx, prop){
+  *addGoal(ctx, prop, insertionIndex=null){
     assert(this.goal === null);
 
     const {identsObj, identsArr, premises} = this;
@@ -101,8 +101,11 @@ class Subgoal{
 
     const goal = imps.pop();
 
-    for(const imp of imps)
-      premises.push(imp);
+    if(insertionIndex === null)
+      insertionIndex = premises.length;
+
+    for(let i = imps.length - 1; i !== -1; i--)
+      premises.splice(insertionIndex, 0, imps[i]);
 
     this.goal = goal;
 
@@ -111,7 +114,7 @@ class Subgoal{
     // log();
   }
 
-  *replaceGoal(ctx, goal){
+  *replaceGoal(ctx, goal, insertionIndex){
     assert(this.goal !== null);
 
     this.identsObj = util.copyObj(this.identsObj);
@@ -119,7 +122,7 @@ class Subgoal{
     this.premises = this.premises.slice();
     this.goal = null;
 
-    return O.tco([this, 'addGoal'], ctx, goal);
+    return O.tco([this, 'addGoal'], ctx, goal, insertionIndex);
   }
 
   *getUsedIdents(idents=O.obj()){

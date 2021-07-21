@@ -11,11 +11,12 @@ const specialChars = require('./special-chars');
 const util = require('./util');
 const su = require('./str-util');
 
-const {min, max} = Math;
+const {min, max, floor, ceil, round} = Math;
 const {project} = O;
 const {Ident, Call, Lambda} = Expr;
 
 const displayLineProcess = 0;
+const lineProcessSpeed = 50;
 
 const {g} = O.ceCanvas(1);
 
@@ -67,23 +68,27 @@ const aels = () => {
 
 const updateDisplay = () => {
   const {lines, updatedLine} = mainEditor;
-  mainEditor.updatedLine = null;
 
-  if(updatedLine !== null && linesData.length > updatedLine)
+  if(updatedLine !== null && linesData.length > updatedLine){
     linesData.length = updatedLine;
-
-  if(!hasErr() && linesData.length !== lines.length)
-    updateNextLine();
-
-  if(!hasErr() && linesData.length !== lines.length){
-    const index = linesData.length;
-    const line = lines[index];
-
-    if(displayLineProcess && line.trim())
-      mainEditor.markedLine = [index, '#f80'];
+    mainEditor.updatedLine = null;
   }
 
-  mainEditor.updatedLine = null;
+  for(let i = 0; i !== lineProcessSpeed; i++){
+    if(hasErr() || linesData.length === lines.length) break;
+
+    updateNextLine();
+
+    if(displayLineProcess){
+      if(hasErr() || linesData.length === lines.length) break;
+
+      const index = linesData.length;
+      const line = lines[index];
+
+      if(displayLineProcess && line.trim())
+        mainEditor.markedLine = [index, '#f80'];
+    }
+  }
 
   updateOutput();
   render();
@@ -151,10 +156,14 @@ const updateOutput = () => {
     lineIndex = linesDataNum - 1;
 
   if(lineIndex >= linesDataNum){
-    if(dataPrev === null) return;
+    // if(dataPrev === null) return;
+
+    const percent = round(
+      (linesDataNum + 1) /
+      (mainEditor.lines.length + 1) * 100);
 
     dataPrev = null;
-    outputEditor.clear();
+    outputEditor.setText(`${percent}%`);
 
     return;
   }
@@ -823,7 +832,7 @@ const processLine = function*(lineIndex, ctx){
       yield [setPremiseStatus, index, keep];
       if(!ins) return;
 
-      yield [setInsIndex, index + attribs.startsWith('+')];
+      yield [setInsIndex, index + !attribs.startsWith('+')];
     };
 
     const parsePremiseIndex = function*(tk){
@@ -1008,7 +1017,7 @@ const processLine = function*(lineIndex, ctx){
         const subgoalNew = subgoal.copy();
         subgoalNew.premises = premisesNew;
 
-        yield [[subgoalNew, 'replaceGoal'], ctx, goal];
+        yield [[subgoalNew, 'replaceGoal'], ctx, goal, insertionIndex];
 
         proofNew.addSubgoal(subgoalNew);
       }
@@ -1157,15 +1166,18 @@ const processLine = function*(lineIndex, ctx){
       assert(index !== -1);
       identsArrNew[index] = name2;
 
+      subgoalNew.identsObj = identsObjNew;
+      subgoalNew.identsArr = identsArrNew;
+
       const premisesNew = [];
 
       for(const prem of premises)
-        premisesNew.push(yield [[prem, 'substIdent'], name1, identNew]);
+        premisesNew.push(yield [[prem, 'substIdentAndSimp'], ctx, name1, identNew]);
 
-      subgoalNew.identsObj = identsObjNew;
-      subgoalNew.identsArr = identsArrNew;
       subgoalNew.premises = premisesNew;
-      subgoalNew.goal = yield [[goal, 'substIdent'], name1, identNew];
+
+      const goalNew = yield [[goal, 'substIdent'], name1, identNew];
+      yield [[subgoalNew, 'replaceGoal'], ctx, goalNew];
 
       return O.tco(ret, '');
     },
@@ -1265,11 +1277,13 @@ const processLine = function*(lineIndex, ctx){
           continue;
         }
 
-        premisesNew.push(yield [[prem, 'substIdent'], name, exprNew]);
+        premisesNew.push(yield [[prem, 'substIdentAndSimp'], ctx, name, exprNew]);
       }
 
       subgoalNew.premises = premisesNew;
-      subgoalNew.goal = yield [[goal, 'substIdent'], name, exprNew];
+
+      const goalNew = yield [[goal, 'substIdent'], name, exprNew];
+      yield [[subgoalNew, 'replaceGoal'], ctx, goalNew];
 
       line = '';
 

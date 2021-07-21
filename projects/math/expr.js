@@ -492,6 +492,11 @@ class Expr{
     return O.tco([this, 'getStrIdents1'], idents, includeType);
   }
 
+  *substIdentAndSimp(ctx, name, expr){
+    const exprNew = yield [[this, 'substIdent'], name, expr];
+    return O.tco([exprNew, 'simplify'], ctx);
+  }
+
   *toStr(ctx, idents=util.obj2(), prec=0){
     const [precNew, str] = yield [[this, 'toStr1'], ctx, idents];
 
