@@ -39,6 +39,9 @@ const projSpeed = 20;
 const explDur = .25;
 const explsize = 2;
 const initBallIndex = 3e3;
+const fontFamily = 'arial';
+const fontSize = 32;
+const textOffset = 10;
 
 const ballCols = [
   [30, 131, 242],
@@ -86,6 +89,7 @@ const balls = [];
 const projs = new Set();
 const expls = new Set();
 
+let points = 0;
 let playerBall = null;
 
 const main = () => {
@@ -190,6 +194,10 @@ const onResize = evt => {
   g.lineCap = 'round';
   g.lineJoin = 'bevel';
 
+  g.textBaseline = 'top';
+  g.textAlign = 'left';
+  g.font = `${fontSize}px ${fontFamily}`;
+
   bg.lineCap = 'round';
   bg.lineJoin = 'bevel';
 
@@ -222,7 +230,9 @@ const frame = () => {
   const explode = bs => {
     for(const ball of bs){
       const {x, y, type} = ball;
+
       expls.add(new Explosion(type, x, y, t));
+      points++;
     }
   };
 
@@ -542,6 +552,9 @@ const render = t => {
     g.fill();
     g.stroke();
   }
+
+  g.fillStyle = 'black';
+  g.fillText(`Points: ${points}`, textOffset, textOffset);
 
   g.restore();
 };
