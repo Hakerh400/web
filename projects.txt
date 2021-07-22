@@ -58,3 +58,4 @@ line-fractal
 cinema
 ladybug
 vectors-angle
+modal

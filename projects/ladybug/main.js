@@ -34,7 +34,7 @@ const rad = 30;
 const diam = rad * 2;
 const playerRad = 100;
 const ballTypes = 6;
-const fwdSpeed = 15//12;
+const fwdSpeed = 15;
 const bckSpeed = 100;
 const projSpeed = 20;
 const explDur = .25;
@@ -53,7 +53,7 @@ const ballCols = [
   [53, 249, 239],
 ].map(a => O.Color.from(a).toString());
 
-// assert(ballCols.length === ballTypes);
+assert(ballCols.length === ballTypes);
 
 await O.addStyle('style.css');
 

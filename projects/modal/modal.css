@@ -1,0 +1,428 @@
+:root{
+  --main-width: 980px;
+  --border-radius: 7px;
+  --navbar-height: 60px;
+  --navbar-color-top: #2ac;
+  --navbar-color-bottom: #178;
+  --semi-transparent: rgba(255, 255, 255, .5);
+}
+
+*{
+  font-family: "Segoe UI";
+}
+
+html{
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body{
+  width: 100%;
+  height: 100%;
+  margin: 0px;
+  white-space: pre;
+  overflow: hidden;
+  background: linear-gradient(
+    to bottom right,
+    #fff,
+    #0ff
+  );
+}
+
+.hidden{
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.fade-in-out{
+  transition: opacity var(--transition-duration);
+  -webkit-transition: opacity var(--transition-duration);
+}
+
+.top{
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+}
+
+.loading{
+  --transition-duration: 1s;
+  opacity: 1;
+  pointer-events: all;
+}
+
+.main{
+  --transition-duration: 1s;
+  text-align: center;
+  overflow-y: auto;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.main::-webkit-scrollbar{
+  display: none;
+}
+
+.modal-outer{
+  --transition-duration: .5s;
+  background: rgba(0, 0, 0, .75);
+  opacity: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.modal-inner-wrapper{
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.modal-inner{
+  position: absolute;
+  top: 0%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  transition: top var(--transition-duration);
+  -webkit-transition: top var(--transition-duration);
+}
+
+.left{
+  width: 100%;
+  text-align: left;
+}
+
+.right{
+  width: 100%;
+  text-align: right;
+}
+
+.float-left{
+  float: left;
+}
+
+.float-right{
+  float: right;
+}
+
+.heading{
+  margin: 0px;
+  margin-bottom: 10px;
+}
+
+.title{
+  text-align: center;
+  margin-top: 10px;
+}
+
+.rect{
+  border: 1px solid;
+  border-color: black;
+  color: var(--semi-transparent);
+  border-radius: var(--border-radius);
+}
+
+.btn{
+  margin: 0px 10px;
+  padding: 8px;
+  border: 1px solid;
+  display: inline-block;
+  border-radius: var(--border-radius);
+  font-size: 18px;
+  cursor: pointer;
+  user-select: none;
+
+  --transition-duration: .2s;
+  transition:
+    color var(--transition-duration),
+    border-color var(--transition-duration),
+    background var(--transition-duration);
+  -webkit-transition:
+    color var(--transition-duration),
+    border-color var(--transition-duration),
+    background var(--transition-duration);
+}
+
+.navbar{
+  width: 100%;
+  height: var(--navbar-height);
+  color: white;
+  background: linear-gradient(
+    to bottom,
+    var(--navbar-color-top),
+    var(--navbar-color-bottom)
+  );
+}
+
+.navbar-item{
+  padding: 0px 8px;
+  font-size: 25px;
+  padding-bottom: 5px;
+  border-color: white;
+  background: rgba(255, 255, 255, .115);
+  transform: translateY(calc(var(--navbar-height) / 2 - 50%));
+}
+
+.navbar-item:hover{
+  color: #00f;
+  border-color: #00f;
+  background: var(--semi-transparent);
+}
+
+.page-content{
+  width: var(--main-width);
+  min-height: 100%;
+  display: inline-block;
+  position: relative;
+  background: var(--semi-transparent);
+}
+
+.page-content:before{
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  box-shadow: 0px 0px 40px rgba(0, 0, 0, .5);
+}
+
+.region{
+  padding: 8px;
+  display: block;
+  color: black;
+}
+
+.page .region{
+  width: calc(100% - (20px - 1px) * 2);
+  margin: 10px;
+  background: var(--semi-transparent);
+}
+
+.modal{
+  padding: 16px;
+  background: #fff;
+}
+
+.page{
+  height: 100%;
+  padding: 0px 16px;
+  text-align: left;
+}
+
+.page-error{
+  text-align: center;
+}
+
+.post{
+  text-align: left;
+}
+
+.post-user{
+  font-weight: bold;
+}
+
+.post-date{
+  margin-left: 8px;
+  font-size: small;
+  color: gray;
+}
+
+.post-content{
+  margin-top: 8px;
+  display: block;
+}
+
+.form{
+  text-align: center;
+}
+
+.input{
+  height: 25px;
+  margin: 10px;
+  display: inline-block;
+}
+
+.textarea{
+  height: 80px;
+  resize: none;
+  font-family: monospace;
+}
+
+.form .input{
+  width: 40%;
+}
+
+.form .dropdown{
+  width: calc(40% + 4px);
+  height: calc(25px + 4px);
+}
+
+.form .btn{
+  margin-top: 9px;
+}
+
+.btn-confirm{
+  background: linear-gradient(
+    to bottom,
+    #1ff,
+    #0bb
+  );
+}
+
+.page-help{
+  text-align: left;
+}
+
+.page .text-editor{
+  background: #6ff;
+}
+
+.text-editor.output-computing{
+  color: #777;
+}
+
+.text-editor.output-error{
+  color: #f00;
+  font-weight: bold;
+}
+
+.left .btn,
+.right .btn{
+  margin: 0px;
+  margin-left: 10px;
+  margin-top: 10px;
+}
+
+.competition-title,
+.functionality-name{
+  font-weight: bold;
+}
+
+.competition-date{
+  font-size: small;
+  color: gray;
+  display: block;
+}
+
+.competition-desc,
+.functionality-desc{
+  margin-top: 8px;
+  display: block;
+}
+
+.captcha{
+  display: inline-block;
+  margin: 10px;
+}
+
+.user-profile-avatar{
+  display: block;
+  width: 100%;
+  margin: 10px 0px;
+  text-align: center;
+}
+
+.user-profile-avatar-img{
+  display: inline-block;
+}
+
+.user-profile-label{
+  display: block;
+  font-weight: bold;
+}
+
+.search-results{
+  width: 100%;
+}
+
+.user-item{
+  display: block;
+  margin: 4px 0px;
+  font-weight: bold;
+}
+
+.user-page-btn{
+  margin: 0px;
+  margin-top: 16px;
+}
+.lang-choice{
+  margin-bottom: 0px;
+}
+
+.tab-strip{
+  position: relative;
+  z-index: 2;
+  margin-left: 10px;
+  margin-top: 20px;
+}
+
+.tab{
+  display: inline-block;
+  padding: 6px 8px;
+  border: 1px solid;
+  margin-right: -1px;
+  margin-bottom: -1px;
+  border-radius: var(--border-radius);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  font-size: 18px;
+  cursor: pointer;
+  user-select: none;
+
+  background: linear-gradient(
+    to bottom,
+    #1ff,
+    #0bb
+  );
+}
+
+.tab.selected{
+  border-bottom-color: #6ff;
+  background: #6ff;
+}
+
+.tab-content:not(.selected){
+  display: none;
+  pointer-events: none;
+}
+
+.tab-content .region{
+  margin-top: 0px;
+  height: 655px;
+  border-top-left-radius: 0;
+}
+
+.canvas-container{
+  position: relative;
+}
+
+.canvas-container canvas{
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  margin-left: 10px;
+  border: 1px solid;
+  border-radius: var(--border-radius);
+  border-top-left-radius: 0;
+}
+
+.sandbox-option-container{
+  margin-left: 10px;
+}
+
+.sandbox-option-container input{
+  width: 210px;
+}
+
+.sandbox-option-container input[type="text"]{
+  height: 21px;
+  margin-bottom: 0px;
+  padding: 0px;
+}
