@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const Trajectory = require('./trajectory');
 const Ball = require('./ball');
 const ladybugPatternData = require('./ladybug-pattern.json');
 
@@ -22,6 +23,18 @@ const hh = h / 2;
 const rad = 30;
 const diam = rad * 2;
 const playerRad = 100;
+const ballTypes = 6;
+
+const ballCols = [
+  [30, 131, 242],
+  [90, 244, 38],
+  [228, 247, 4],
+  [255, 48, 33],
+  [230, 104, 240],
+  [53, 249, 239],
+].map(a => O.Color.from(a).toString());
+
+assert(ballCols.length === ballTypes);
 
 const {g} = O.ceCanvas();
 const {canvas} = g;
@@ -33,47 +46,16 @@ let scale;
 let cx = wh;
 let cy = hh;
 
-let trajectory;
-let trajAdjs;
+let traj;
 
 let playerX;
 let playerY;
 let ladybugPattern;
 
-const chains = [];
+const balls = [];
 
 const main = () => {
-  trajectory = createTrajectory();
-
-  trajAdjs = trajectory.map(([x, y], i) => {
-    const trajLen = trajectory.length;
-
-    const isIn = i => {
-      return i >= 0 && i < trajLen;
-    };
-
-    const calc = dir => {
-      const n = O.bisect(n => {
-        const j = dir === 0 ? i - n : i + n;
-
-        if(j === i) return 0;
-        if(!isIn(j)) return 1;
-
-        const [x1, y1] = trajectory[j];
-        return O.dist(x, y, x1, y1) > diam;
-      });
-
-      const j = dir === 0 ? i - n : i + n;
-
-      if(!isIn(j)) return null;
-      return j;
-    };
-
-    const prev = calc(0);
-    const next = calc(1);
-
-    return [prev, next];
-  });
+  traj = createTrajectory();
 
   playerX = wh;
   playerY = h * .8;
@@ -112,7 +94,7 @@ const createTrajectory = () => {
     ps.push([x, y]);
   }
 
-  return ps;
+  return new Trajectory(ps, rad);
 };
 
 const aels = () => {
@@ -140,11 +122,48 @@ const onResize = evt => {
 };
 
 const frame = () => {
+  if(balls.length === 0){
+    balls.push(newBall(0));
+  }else{
+    let ball = balls[0];
+
+    ball.index += 10;
+
+    for(let i = 0; i !== balls.length; i++){
+      const ball = balls[i];
+
+      if(!ball.isIn){
+        balls.length = i;
+        break;
+      }
+
+      if(i === balls.length - 1)
+        break;
+
+      const next = balls[i + 1];
+      if(!next.collides(ball)) break;
+
+      next.index = ball.inext;
+    }
+
+    while(ball.iprev !== null){
+      ball = newBall(ball.iprev);
+      balls.unshift(ball);
+    }
+  }
+
   render();
   O.raf(frame);
 };
 
+const newBall = index => {
+  const type = O.rand(ballTypes);
+  return new Ball(traj, index, type);
+};
+
 const render = () => {
+  const {ps, adjs} = traj;
+
   const scaleCtx = s => {
     g.scale(s, s);
   };
@@ -170,10 +189,10 @@ const render = () => {
   g.strokeStyle = '#08f';
   g.beginPath();
   for(let i = 0;;){
-    const [x, y] = trajectory[i];
+    const [x, y] = ps[i];
     g.lineTo(x, y);
 
-    const j = trajAdjs[i][1];
+    const j = adjs[i][1];
     if(j === null) break;
 
     i = ceil((i + j) / 2);
@@ -182,18 +201,14 @@ const render = () => {
   g.lineWidth = 1 / scale;
   g.strokeStyle = 'black';
 
-  for(const chain of chains){
-    let ball = chain;
+  for(const ball of balls){
+    const {x, y, type} = ball;
 
-    while(ball !== null){
-      const {x, y} = vall;
-
-      g.beginPath();
-      drawCirc(x, y, rad);
-      g.stroke();
-
-      ball = ball.next;
-    }
+    g.fillStyle = ballCols[type];
+    g.beginPath();
+    drawCirc(x, y, rad);
+    g.fill();
+    g.stroke();
   }
 
   const dir = atan2(cy - playerY, cx - playerX);
