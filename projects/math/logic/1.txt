@@ -1538,6 +1538,7 @@ lemma not_in_emp: ∀a. ¬(a ∈ ∅)
   - notI %
   - psub in_def 1
   - psub emp_def1 1 %
+
 def univ: λa. True
 
 lemma univ_def1: ∀a. univ a = True
