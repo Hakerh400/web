@@ -5,10 +5,10 @@ const assert = require('assert');
 const {pi, pih, pi2} = O;
 
 const {
-  abs,
+  abs, sign,
   min, max,
   floor, ceil, round,
-  sin, cos, atan2,
+  sin, cos, atan2, acos,
 } = Math;
 
 const {g} = O.ceCanvas();
@@ -62,7 +62,8 @@ const render = () => {
   const dir1 = t % pi2;
   const dir2 = atan2(cy - hh, cx - wh);
 
-  const rad = min(wh, hh) * .8;
+  const s = min(w, h);
+  const rad = s * .4;
 
   const ax1 = wh;
   const ay1 = hh;
@@ -74,27 +75,42 @@ const render = () => {
   const bx2 = wh + cos(dir2) * rad;
   const by2 = hh + sin(dir2) * rad;
 
-  g.beginPath();
-  g.moveTo(ax1, ay1);
-  g.lineTo(ax2, ay2);
-  g.moveTo(bx1, by1);
-  g.lineTo(bx2, by2);
-  g.stroke();
+  const ax = ax2 - ax1;
+  const ay = ay2 - ay1;
+  const bx = bx2 - bx1;
+  const by = by2 - by1;
 
-  const adx = ax2 - ax1;
-  const ady = ay2 - ay1;
-  const bdx = bx2 - bx1;
-  const bdy = by2 - by1;
-
-  const len1 = O.hypot(adx, ady);
-  const len2 = O.hypot(bdx, bdy);
-  const prod = adx * bdx + ady * bdy;
+  const len1 = O.hypot(ax, ay);
+  const len2 = O.hypot(bx, by);
+  const prod = ax * bx + ay * by;
   const cs = prod / (len1 * len2);
 
   const acute = cs > 0;
 
   g.fillStyle = 'black';
   g.fillText(acute ? 'Acute' : 'Obtuse', 10, 10);
+
+  const sgn = sign(ax * by - ay * bx);
+  const dir = sgn !== 0 ? acos(cs) * sgn :
+    ax === bx && ay === by ? 0 : pi;
+
+  g.fillStyle = 'black';
+  g.fillText(round(abs(dir / pi * 180)), 10, 42);
+
+  g.beginPath();
+  g.moveTo(ax2, ay2);
+  g.lineTo(ax1, ay1);
+  g.lineTo(bx2, by2);
+  g.stroke();
+
+  g.save();
+  O.drawArc(g, ax2, ay2, bx2, by2, sgn);
+  g.clip();
+
+  g.beginPath();
+  g.arc(wh, hh, s * .1, 0, pi2);
+  g.stroke();
+  g.restore();
 
   O.raf(render);
 };
