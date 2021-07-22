@@ -11,6 +11,7 @@ if(1){
   // O.enhanceRNG();
   // O.randSeed(206759635);
   // O.randSeed(304804426);
+  // O.randSeed(951814851);
   // O.randSeed(log(O.rand(1e9)));
 }
 
@@ -33,7 +34,7 @@ const rad = 30;
 const diam = rad * 2;
 const playerRad = 100;
 const ballTypes = 6;
-const fwdSpeed = 10;
+const fwdSpeed = 15//12;
 const bckSpeed = 100;
 const projSpeed = 20;
 const explDur = .25;
@@ -162,6 +163,11 @@ const aels = () => {
 
 const onMouseMove = evt => {
   updateCur(evt);
+
+  // if(evt.button === 0){
+  //   projs.add(newProj());
+  //   return;
+  // }
 };
 
 const onMouseDown = evt => {
@@ -253,6 +259,7 @@ const frame = () => {
 
     for(let i = 0; i !== balls.length; i++){
       const ball = balls[i];
+      if(!ball.isIn) continue;
 
       const bx = ball.x;
       const by = ball.y;
@@ -276,8 +283,11 @@ const frame = () => {
       const cs = prod / (len1 * len2);
       const acute = cs > 0;
 
+      const {iprev, inext} = ball;
+      if(iprev === null || inext === null) continue;
+
       const j = acute ? i : i + 1;
-      const indexNew = acute ? index : ball.inext;
+      const indexNew = index + (acute ? iprev : inext) >> 1;
       const indexNew1 = indexNew !== null ? indexNew : 0;
 
       projs.delete(proj);
@@ -304,11 +314,17 @@ const frame = () => {
         break;
       }
 
+      if(i !== 0 && ball.index < balls[i - 1].inext){
+        ball.index = balls[i - 1].inext;
+        break;
+      }
+
       const {index, type} = ball;
 
       if(ball.marked){
         const bs = new Set([ball]);
         let n1 = 0;
+        let n2 = 0;
 
         for(let j = i - 1; j !== -1; j--){
           const b = balls[j];
@@ -327,11 +343,12 @@ const frame = () => {
           if(b.type !== type) break;
 
           bs.add(b);
+          n2++;
         }
 
         const n = bs.size;
 
-        if(n >= 3){
+        if(n >= 3 && (!ball.markedRight || n2 !== 0)){
           explode(bs);
           balls.splice(i - n1, n);
           i -= n1// + 1;
@@ -340,12 +357,18 @@ const frame = () => {
         }
 
         ball.marked = 0;
+        ball.markedRight = 0;
       }
 
       if(i === balls.length - 1)
         break;
 
       const next = balls[i + 1];
+
+      if(!next.isIn){
+        balls.length = i + 1;
+        continue;
+      }
 
       if(ball.collides(next)){
         next.index = ball.inext;
@@ -359,14 +382,13 @@ const frame = () => {
 
       for(let j = i + 2; j !== balls.length; j++){
         const b = balls[j];
-        if(!b.touches(balls[j - 1])) break;
+        if(!b.collides(balls[j - 1])) break;
         n++;
       }
 
       next.index = max(ball.inext, next.index - bckSpeed);
-
-      if(next.index === ball.inext)
-        next.marked = 1;
+      ball.marked = 1;
+      ball.markedRight = 1;
 
       for(let j = 1; j !== n; j++)
         balls[i + j + 1].index = balls[i + j].inext;
