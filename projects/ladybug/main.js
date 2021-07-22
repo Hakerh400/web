@@ -4,7 +4,15 @@ const assert = require('assert');
 const Trajectory = require('./trajectory');
 const Ball = require('./ball');
 const Projectile = require('./projectile');
+const Explosion = require('./explosion');
 const ladybugPatternData = require('./ladybug-pattern.json');
+
+if(1){
+  // O.enhanceRNG();
+  // O.randSeed(206759635);
+  // O.randSeed(304804426);
+  // O.randSeed(log(O.rand(1e9)));
+}
 
 const {pi, pih, pi2} = O;
 
@@ -25,8 +33,12 @@ const rad = 30;
 const diam = rad * 2;
 const playerRad = 100;
 const ballTypes = 6;
-const ballSpeed = 100;
+const fwdSpeed = 10;
+const bckSpeed = 100;
 const projSpeed = 20;
+const explDur = .25;
+const explsize = 2;
+const initBallIndex = 3e3;
 
 const ballCols = [
   [30, 131, 242],
@@ -37,7 +49,22 @@ const ballCols = [
   [53, 249, 239],
 ].map(a => O.Color.from(a).toString());
 
-assert(ballCols.length === ballTypes);
+// assert(ballCols.length === ballTypes);
+
+await O.addStyle('style.css');
+
+const bgImg = await new Promise((res, rej) => {
+  const img = new Image();
+
+  img.onload = () => res(img);
+  img.onerror = rej;
+
+  img.src = O.localPath('bg.png');
+});
+
+const bgCanvas = O.ce(O.body, 'canvas');
+const bg = bgCanvas.getContext('2d');
+bgCanvas.classList.add('bg');
 
 const {g} = O.ceCanvas();
 const {canvas} = g;
@@ -57,6 +84,7 @@ let ladybugPattern;
 
 const balls = [];
 const projs = new Set();
+const expls = new Set();
 
 let playerBall = null;
 
@@ -156,38 +184,52 @@ const onResize = evt => {
   canvas.width = iw;
   canvas.height = ih;
 
+  bgCanvas.width = iw;
+  bgCanvas.height = ih;
+
   g.lineCap = 'round';
   g.lineJoin = 'bevel';
+
+  bg.lineCap = 'round';
+  bg.lineJoin = 'bevel';
+
+  bg.save();
+  bg.translate(iwh, ihh);
+  bg.scale(scale, scale);
+  bg.translate(-wh, -hh);
+
+  bg.clearRect(0, 0, w, h);
+  bg.drawImage(bgImg, 0, 0);
+
+  bg.beginPath();
+  bg.rect(0, 0, w, h);
+  bg.clip();
+
+  bg.lineWidth = diam * 1.25;
+  bg.strokeStyle = '#eb9';
+  bg.beginPath();
+
+  for(const [x, y] of traj.ps)
+    bg.lineTo(x, y);
+
+  bg.stroke();
+  bg.restore();
 };
 
 const frame = () => {
-  if(balls.length === 0){
-    balls.push(newBall(0));
-  }else{
-    let ball = balls[0];
+  const t = O.now / 1e3;
 
-    ball.index += ballSpeed;
-
-    for(let i = 0; i !== balls.length; i++){
-      const ball = balls[i];
-
-      if(!ball.isIn){
-        balls.length = i;
-        break;
-      }
-
-      if(i === balls.length - 1)
-        break;
-
-      const next = balls[i + 1];
-      if(!next.collides(ball)) break;
-
-      next.index = ball.inext;
+  const explode = bs => {
+    for(const ball of bs){
+      const {x, y, type} = ball;
+      expls.add(new Explosion(type, x, y, t));
     }
+  };
 
-    while(ball.iprev !== null){
-      ball = newBall(ball.iprev);
-      balls.unshift(ball);
+  explsLoop: for(const expl of expls){
+    if(t - expl.t > explDur){
+      expls.delete(expl);
+      continue;
     }
   }
 
@@ -208,13 +250,125 @@ const frame = () => {
       if(O.dist(x, y, bx, by) > diam)
         continue;
 
-      
+      const {traj, index} = ball;
+      const {ps} = traj;
+      const index1 = min(index + 1, ps.length - 1);
+      const [bx1, by1] = ps[index1];
+
+      const x1 = bx1 - bx;
+      const y1 = by1 - by;
+      const x2 = bx - x;
+      const y2 = by - y;
+
+      const len1 = O.hypot(x1, y1);
+      const len2 = O.hypot(x2, y2);
+      const prod = x1 * x2 + y1 * y2;
+      const cs = prod / (len1 * len2);
+      const acute = cs > 0;
+
+      const j = acute ? i : i + 1;
+      const indexNew = acute ? index : ball.inext;
+      const indexNew1 = indexNew !== null ? indexNew : 0;
+
+      projs.delete(proj);
+      balls.splice(j, 0, new Ball(traj, indexNew, type, 1));
+
+      continue projsLoop;
     }
 
     proj.move();
   }
 
-  render();
+  if(balls.length === 0){
+    balls.push(newBall(initBallIndex));
+  }else{
+    let ball = balls[0];
+
+    ball.index += fwdSpeed;
+
+    for(let i = 0; i < balls.length; i++){
+      const ball = balls[i];
+
+      if(!ball.isIn){
+        balls.length = i;
+        break;
+      }
+
+      const {index, type} = ball;
+
+      if(ball.marked){
+        const bs = new Set([ball]);
+        let n1 = 0;
+
+        for(let j = i - 1; j !== -1; j--){
+          const b = balls[j];
+
+          if(!b.collides(balls[j + 1])) break;
+          if(b.type !== type) break;
+
+          bs.add(b);
+          n1++;
+        }
+
+        for(let j = i + 1; j !== balls.length; j++){
+          const b = balls[j];
+
+          if(!b.collides(balls[j - 1])) break;
+          if(b.type !== type) break;
+
+          bs.add(b);
+        }
+
+        const n = bs.size;
+
+        if(n >= 3){
+          explode(bs);
+          balls.splice(i - n1, n);
+          i -= n1// + 1;
+
+          continue;
+        }
+
+        ball.marked = 0;
+      }
+
+      if(i === balls.length - 1)
+        break;
+
+      const next = balls[i + 1];
+
+      if(ball.collides(next)){
+        next.index = ball.inext;
+        continue;
+      }
+
+      if(next.type !== type)
+        continue;
+
+      let n = 1;
+
+      for(let j = i + 2; j !== balls.length; j++){
+        const b = balls[j];
+        if(!b.touches(balls[j - 1])) break;
+        n++;
+      }
+
+      next.index = max(ball.inext, next.index - bckSpeed);
+
+      if(next.index === ball.inext)
+        next.marked = 1;
+
+      for(let j = 1; j !== n; j++)
+        balls[i + j + 1].index = balls[i + j].inext;
+    }
+
+    while(ball.iprev !== null){
+      ball = newBall(ball.iprev);
+      balls.unshift(ball);
+    }
+  }
+
+  render(t);
   O.raf(frame);
 };
 
@@ -255,7 +409,7 @@ const getPlayerDir = () => {
   return atan2(cy - playerY, cx - playerX);
 };
 
-const render = () => {
+const render = t => {
   const {ps, adjs} = traj;
 
   const scaleCtx = s => {
@@ -266,34 +420,22 @@ const render = () => {
     g.arc(x, y, rad, 0, pi2);
   };
 
-  g.fillStyle = 'white';
+  g.save();
+
+  g.fillStyle = 'darkgray';
   g.fillRect(0, 0, iw, ih);
 
   g.translate(iwh, ihh);
   scaleCtx(scale);
   g.translate(-wh, -hh);
 
+  g.clearRect(0, 0, w, h);
+
   g.beginPath();
   g.rect(0, 0, w, h);
-  g.fill();
-  g.stroke();
   g.clip();
 
-  g.lineWidth = diam * 1.25;
-  g.strokeStyle = '#aaa';
-  g.beginPath();
-  for(let i = 0;;){
-    const [x, y] = ps[i];
-    g.lineTo(x, y);
-
-    const j = adjs[i][1];
-    if(j === null) break;
-
-    i = ceil((i + j) / 2);
-  }
-  g.stroke();
   g.lineWidth = 1 / scale;
-  g.strokeStyle = 'black';
 
   for(const ball of balls){
     const {x, y, type} = ball;
@@ -355,6 +497,7 @@ const render = () => {
   g.stroke();
 
   g.fillStyle = 'black';
+
   for(const [x, y, r] of ladybugPattern){
     g.beginPath();
     drawCirc(x, y, r);
@@ -368,6 +511,28 @@ const render = () => {
   g.restore();
   g.lineWidth = 1 / scale;
 
+  // g.globalCompositeOperation = 'xor';
+
+  for(const expl of expls){
+    const {x, y, type} = expl;
+
+    const k2 = (t - expl.t) / explDur;
+    const k1 = 1 - k2;
+
+    const alpha = k1;
+    const r = rad * (k1 + explsize * k2);
+
+    g.globalAlpha = alpha;
+    g.fillStyle = ballCols[type];
+    g.beginPath();
+    drawCirc(x, y, r);
+    g.fill();
+    g.stroke();
+  }
+
+  // g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+
   for(const proj of projs){
     const {x, y, type} = proj;
 
@@ -378,7 +543,7 @@ const render = () => {
     g.stroke();
   }
 
-  g.resetTransform();
+  g.restore();
 };
 
 main();

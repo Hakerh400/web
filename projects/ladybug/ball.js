@@ -3,10 +3,11 @@
 const assert = require('assert');
 
 class Ball{
-  constructor(traj, index, type){
+  constructor(traj, index, type, marked=0){
     this.traj = traj;
     this.index = index;
     this.type = type;
+    this.marked = marked;
   }
 
   get xy(){
@@ -34,24 +35,28 @@ class Ball{
     return 1;
   }
 
-  touches(ball){
+  touches(ball, rec=1){
     const {index} = ball;
     const [iprev, inext] = this.adjs;
 
     if(index === iprev) return 1;
     if(index === inext) return 1;
 
-    return 0;
+    if(!rec) return 0;
+    return ball.touches(this, 0);
   }
 
-  collides(ball){
+  collides(ball, rec=1){
     const {index} = ball;
     const [iprev, inext] = this.adjs;
 
-    if(iprev !== null && index < iprev) return 0;
-    if(inext !== null && index > inext) return 0;
+    let b = 1;
+    if(iprev !== null && index < iprev) b = 0;
+    if(inext !== null && index > inext) b = 0;
 
-    return 1;
+    if(b) return 1;
+    if(!rec) return 0;
+    return ball.collides(this, 0);
   }
 }
 
