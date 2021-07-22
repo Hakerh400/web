@@ -451,9 +451,15 @@ lemma dmrg_nu: ∀P. ¬(∀a. P a)  ⟶  ∃a. ¬P a
 lemma dmrg_pe: ∀P. (∃a. P a)  ⟶  ¬∀a. ¬P a
   - psub exi_def 1 %
 
-lemma dmrg_ne: ∀P. ¬(∃a. P a)  ⟶  ∀a. ¬P a
-  - sub[(¬)] exi_def 1
-  - notE 1 [b] %
+lemma dmrg_ne: ∀P. ¬(∃) P  ⟶  ∀a. ¬P a
+  - imp_swap cpos_pp 1 %
+  show [a = λx. a x]
+  sub 2
+  - prsub exi_def %
+  - notI %
+  - falI 1 2 %
+  - ext %
+  - refl %
 
 lemma eq_not2: ∀P. ¬¬P = P
   - not2_eq %
@@ -1506,6 +1512,71 @@ lemma suc_neq_0: ∀a. ¬(Suc a = 0)
   - eq_com 1
   - falI 1 nat_dif %
 
+lemma not_all_exi_dif: ¬(∀a. ∃b. ¬(b = a))
+  - notI %
+  - 1[Unit]
+  - dmrg_pe1[λx. x = Unit] 1
+  - imp_swap cpos_np 1 %
+  del 1
+  - unit_ind[#..a] refl %
+
+def (∈) [infixl 50]: λx S. (λx y. y) (S = λx. True) S x
+
+lemma in_def: ∀S a. (a ∈ S) = (S a)
+  - ∈_def
+  - fun_cong2 1 %
+
+def ∅: λa. False
+
+lemma emp_def: ∅ = λa. False
+  - ∅_def %
+
+lemma emp_def1: ∀a. ∅ a = False
+  - rsub[#..∅] emp_def refl %
+
+lemma not_in_emp: ∀a. ¬(a ∈ ∅)
+  - notI %
+  - psub in_def 1
+  - psub emp_def1 1 %
+def univ: λa. True
+
+lemma univ_def1: ∀a. univ a = True
+  - rsub[#..univ] univ_def refl %
+
+lemma emp_neq_univ: ¬(∅ = univ)
+  - notI %
+  - fun_cong 1 [undefined]
+  - eq_tran2 emp_def1 1
+  - eq_com 1
+  - eq_tran2 univ_def1 1
+  - bool_dif 1 %
+
+lemma all_in_univ: ∀a. a ∈ univ
+  - prsub in_def %
+  - prsub univ_def1 true %
+
+lemma emp_in_univ: ∅ ∈ univ
+  - all_in_univ %
+
+lemma not_univ_in_emp: ¬(univ ∈ ∅)
+  - not_in_emp %
+
+lemma nemp_exi_in: ∀S. ¬(S = ∅) = (∃a. a ∈ S)
+  - iffI %
+  - imp_swap cpos_np 1 %
+  - dmrg_ne 1
+  - imp_swap eq_tran1 emp_def %
+  - ext %
+  - 1[b]
+  - eq_falI %
+  - imp_swap cpos_pp 1 %
+  - prsub in_def 1 %
+  - notI %
+  sub 2
+  - exiE 1 %
+  - falI 1 not_in_emp %
+
+.
 lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (nat_map z f n)
   - nat_map_def
   - theE 1 %
