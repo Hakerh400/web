@@ -98,7 +98,7 @@ let points = 0;
 let playerBall = null;
 let gameOver = 0;
 
-const scoresTable = [];
+const scoreTable = [];
 
 let newScoreboard = null;
 let newScoreIndex = null;
@@ -152,14 +152,14 @@ const initModalDiv = () => {
     td.innerText = str;
 
     if(!isHeader)
-      O.last(scoresTable).push(td);
+      O.last(scoreTable).push(td);
 
     return td;
   };
 
   const tds = (parent, strs, isHeader=0) => {
     if(!isHeader)
-      scoresTable.push([]);
+      scoreTable.push([]);
 
     for(const str of strs)
       td(parent, str, isHeader);
@@ -704,21 +704,23 @@ const endGame = () => {
     return points > scoreboard[i][1];
   });
 
+  const updateScoreTable = () => {
+    for(let i = 0; i !== scoreboardSize; i++){
+      const [name, points] = scoreboard[i];
+      const row = scoreTable[i];
+
+      row[1].innerText = name;
+      row[2].innerText = points;
+    }
+  };
+
   if(index === scoreboardSize)
-    return;
+    return updateScoreTable();
 
   scoreboard.splice(index, 0, ['', points]);
   scoreboard.length = scoreboardSize;
 
-  for(let i = 0; i !== scoreboardSize; i++){
-    const [name, points] = scoreboard[i];
-    const row = scoresTable[i];
-
-    row[1].innerText = name;
-    row[2].innerText = points;
-  }
-
-  const row = scoresTable[index];
+  const row = scoreTable[index];
   const cell = row[1];
 
   cell.contentEditable = 'plaintext-only';
@@ -727,6 +729,8 @@ const endGame = () => {
   newScoreboard = scoreboard;
   newScoreIndex = index;
   newScoreEntry = cell;
+
+  updateScoreTable();
 };
 
 const restart = () => {
