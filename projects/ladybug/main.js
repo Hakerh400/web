@@ -175,7 +175,7 @@ const initModalDiv = () => {
   const tr = O.ce(thead, 'tr');
   mkCells(tr, ['#', 'Name', 'Points'], 1);
 
-  tr.children[1].classList.add('name-col');
+  // tr.children[1].classList.add('name-col');
 
   const tbody = O.ce(table, 'tbody');
 
