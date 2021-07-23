@@ -2,8 +2,12 @@
 
 const assert = require('assert');
 
+const psDist = .1;
+
 class Trajectory{
   constructor(ps, rad){
+    ps = normalizePoints(ps);
+
     const diam = rad * 2;
     const len = this.len = ps.length;
 
@@ -91,5 +95,32 @@ class Trajectory{
     return i >= 0 && i < this.len;
   }
 }
+
+const normalizePoints = ps => {
+  const psLen = ps.length;
+  const psNew = [];
+
+  for(let i = 0; i !== psLen; i){
+    const p = ps[i];
+
+    psNew.push(p);
+    if(i === psLen - 1) break;
+
+    const [x, y] = p;
+
+    i += O.bisect(n => {
+      const j = i + n;
+
+      if(j === i) return 0;
+      if(j >= psLen - 1) return 1;
+
+      const [x1, y1] = ps[j];
+
+      return O.dist(x, y, x1, y1) > psDist;
+    });
+  }
+
+  return psNew;
+};
 
 module.exports = Trajectory;

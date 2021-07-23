@@ -36,13 +36,13 @@ const rad = 30;
 const diam = rad * 2;
 const playerRad = 100;
 const ballTypes = 6;
-const fwdSpeed = 15;
-const bckSpeed = 150;
-const endSpeed = 200;
+const fwdSpeed = 7;
+const bckSpeed = 75;
+const endSpeed = 100;
 const projSpeed = 20;
 const explDur = .25;
 const explsize = 2;
-const initBallIndex = 3e3;
+const initBallIndex = 1.5e3;
 const fontFamily = 'arial';
 const fontSize = 32;
 const textOffset = 10;
@@ -146,29 +146,34 @@ const initModalDiv = () => {
   table.classList.add('scoreboard');
   table.cellSpacing = 0;
 
-  const td = (parent, str='', isHeader=0) => {
+  const mkCell = (parent, str='', isHeader=0) => {
     const tag = isHeader ? 'th' : 'td';
-    const td = O.ce(parent, tag);
-    td.innerText = str;
+    const cell = O.ce(parent, tag);
+    cell.innerText = str;
 
     if(!isHeader)
-      O.last(scoreTable).push(td);
+      O.last(scoreTable).push(cell);
 
-    return td;
+    return cell;
   };
 
-  const tds = (parent, strs, isHeader=0) => {
+  const mkCells = (parent, strs, isHeader=0) => {
     if(!isHeader)
       scoreTable.push([]);
 
-    for(const str of strs)
-      td(parent, str, isHeader);
+    for(let i = 0; i !== strs.length; i++){
+      const str = strs[i];
+      const cell = mkCell(parent, str, isHeader);
+
+      if(i === 1)
+        cell.classList.add('name-cell');
+    }
   };
 
   const thead = O.ce(table, 'thead');
 
   const tr = O.ce(thead, 'tr');
-  tds(tr, ['#', 'Name', 'Points'], 1);
+  mkCells(tr, ['#', 'Name', 'Points'], 1);
 
   tr.children[1].classList.add('name-col');
 
@@ -176,12 +181,12 @@ const initModalDiv = () => {
 
   for(let i = 0; i !== scoreboardSize; i++){
     const tr = O.ce(tbody, 'tr');
-    tds(tr, [i + 1, '', 0]);
+    mkCells(tr, [i + 1, '', 0]);
   }
 };
 
 const createTrajectory = () => {
-  const d = .05;
+  const d = .01;
 
   const ps = [];
   let x1, y1;
