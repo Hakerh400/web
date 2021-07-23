@@ -1642,6 +1642,57 @@ lemma if_eq: ∀P a b c. (P  ⟶  a = c)  ⟶  (¬P  ⟶  b = c)  ⟶  if P a b 
   - 1* 2+
   - if_fal_t1 2 1 %
 
+lemma ext1: ∀P f. P (λx. f x) = P f
+  - arg_cong %
+  - ext %
+  - refl %
+
+lemma uniq_def1: ∀P. (∃!) P = ((∃) P ∧ (∀ a b. P a  ⟶  P b  ⟶  a = b))
+  - sub[#..a] eta uniq_def %
+
+lemma if_tru_eq: ∀P a b c. if P a b = c  ⟶  P  ⟶  a = c
+  - if_tru[λx. x = d] 1 2 %
+
+lemma if_fal_eq: ∀P a b c. if P a b = c  ⟶  ¬P  ⟶  b = c
+  - if_fal[λx. x = d] 1 2 %
+
+lemma if_tru_eq1: ∀P a b c. if P a b = c  ⟶  P  ⟶  c = a
+  - if_tru_eq 1 2
+  - eq_com 1 %
+
+lemma if_fal_eq1: ∀P a b c. if P a b = c  ⟶  ¬P  ⟶  c = b
+  - if_fal_eq 1 2
+  - eq_com 1 %
+
+lemma eq_tran3: ∀a b c d. a = b  ⟶  c = d  ⟶  b = d  ⟶  a = c
+  sub 1
+  sub 2
+  - eq_com 1 %
+
+lemma disjE1: ∀P Q. P ∨ Q  ⟶  ¬P  ⟶  Q
+  - disjE 1 %
+  - falE2 2 1 %
+  - 2 %
+
+lemma disjE2: ∀P Q. P ∨ Q  ⟶  ¬Q  ⟶  P
+  - disjE 1 %
+  - 2 %
+  - falE2 2 1 %
+
+lemma neq0: ∀P a. ¬(a = 0)  ⟶  (∀b. a = Suc b  ⟶  P)  ⟶  P
+  - psub neq_0_exi_suc 1*
+  - exiE 1* %
+  sub 1
+  - 1 refl %
+
+lemma cmp: ∀a b P. (a < b  ⟶  P)  ⟶  (b < a  ⟶  P)  ⟶  (a = b  ⟶  P)  ⟶  P
+  - lt_or_gt_or_eq [a, b]
+  - disjE 4 %
+  - disjE 4 %
+  - 1 4 %
+  - 2 4 %
+  - 3 4 %
+
 lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (nat_map z f n)
   let C: λF. ∀z f n. F z f 0 = z ∧ F z f (Suc n) = f (F z f n)
   - sub[λP. P nat_map] 1+ %
@@ -1654,35 +1705,142 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   sub 4
   del 1
   let P': λN F. ∀z f n. F z f n = if (n <= N) (K F z f n) undefined
+  - 
+  let FF: λN. (THE) (P' N)
   show [∀N. (∃!) (P' N)]
-  - uniq2fun {1}4
-  let FP: #4.10.n
-  - rsub 5+ 4
-  let FF: (THE) FP
-  - uniqE 5+
-  - rsub 6+ 7
+  show [∀N. P' N (FF N)]
+  - 
+  - psub uniq_def1 5+
+  - conjE1 7+
+  - conjE2 7
   - 
   - uniqI %
+  - 
   - exiI[λz f n. FF n z f n] %
   sub 2
   ren a z
   ren b f
   ren c N
   - 
-  show [∀N. FF (Suc N) = λz f n. if (n = Suc N) (f (FF N z f (pred n))) (FF N z f n)]
-  - 
-  - nat_ind[#..N] %
   sub 1
+  - nat_ind[#..N] %
   - eq_com %
   - if_tru_t2 refl %
-  show [∀z f. FF 0 z f 0 = z]
+  - 4+[0]
+  sub 1
+  - eq_tran1 6 %
+  - eq_com %
+  - if_tru_t1 lte_refl %
+  - if_tru_t1 refl refl %
+  ren a N
+  - rsub[λx. FF (Suc N) z f (Suc N) = if (Suc N = 0) z (f (FF x z f x))] pred_suc %
+  - eq_com %
+  - if_fal_t2 suc_neq_0 %
+  show [∀N z f. FF (Suc N) z f N = FF N z f N]
+  - 8[N, z, f]
+  - 4+[Suc N]
+  sub 1
+  - 8[z, f, Suc N]
+  - eq_tran 8 %
+  - if_tru_t1 lte_refl %
+  - if_fal_t1 suc_neq_0 %
+  - arg_cong %
+  - rsub[λx. FF (Suc N) z f x = FF N z f N] pred_suc  7 %
+  del 7
+  ren a N
+  ren b z
+  ren c f
+  - 
+  show[∀N z f n. n <= N  ⟶  FF N z f n = FF n z f n]
+  - 7+ lte_suc %
+  - 
+  ren a N
+  ren b z
+  ren c f
+  ren d n
+  - nat_ind[λn. ∀N z f. n <= N  ⟶  FF N z f n = FF n z f n] %
+  del 7
+  del 7
+  ren a N
+  ren b z
+  ren c f
+  sub 1
+  - eq_tran 3+ %
+  - if_tru_t1 gte_0 %
+  - if_tru_t2 refl %
+  - eq_tran 3+ %
+  - if_tru_t1 lte_refl %
+  - if_tru_t1 refl refl %
+  del 7
+  ren a n
+  ren b N
+  ren c z
+  ren d f
+  sub 1
+  - eq_tran 3+ %
+  - if_tru_t1 7+ %
+  - if_fal_t2 suc_neq_0 %
+  - eq_tran 3+ %
+  - if_tru_t1 lte_refl %
+  - if_fal_t1 suc_neq_0 %
+  - arg_cong %
+  - rsub[λx. FF (Suc n) z f x = FF N z f x] pred_suc %
+  - suc_lte_neq_0 7+
+  - psub neq_0_exi_suc  8
+  - exiE 8 %
+  sub 8
+  ren a N
+  - psub lte_suc2 7
+  - lte_lte_suc 7
+  - 6+ lte_suc [z, f]
+  - 6+ 7 [z, f]
+  - eq_tran1 7 8 %
   - 7 %
   sub 2
-  show [FF 0 = λz f n. if (n = 0) z undefined]
-  - rsub[λx. x a b 0 = a] 6 %
-  - if_tru_t refl %
-  - prsub 4 %
+  - ext %
+  - ext %
+  - ext %
+  ren a F₁
+  ren b F₂
+  ren c z
+  ren d f
+  ren e n
+  - 
+  - nat_ind[#..n] %
+  - 8*[z, f, 0]
+  - 9*[z, f, 0]
   sub 1
+  - eq_com 7*
+  - eq_com 8*
+  - if_tru_eq1 7* refl
+  - if_tru_eq1 8* refl
+  - eq_tran1 7 8 %
+  ren a n
+  - 8*[z, f, Suc n]
+  - 9*[z, f, Suc n]
+  sub 1
+  - eq_com 7*
+  - eq_com 8*
+  - if_fal_eq1 7* suc_neq_0
+  - if_fal_eq1 8* suc_neq_0
+  - eq_tran3 7 8 %
+  - arg_cong %
+  - rsub[λx. F₁ z f x = F₂ z f x] pred_suc 7 %
+  - 
+  ren a N
+  sub 3
+  ren a z
+  ren b f
+  ren c n
+  - 4[N]
+  - fun_cong 3* [N]
+  - theE 3 4 %
+  - 
+  ren a N
+  - nat_ind[#..N] %
+  - uniqI %
+  - exiI[λz f n. if (n = 0) z undefined] %
+  sub 3
   ren a z
   ren b f
   ren c n
@@ -1690,66 +1848,123 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   sub 4
   - if_tru_t2 refl %
   - if_tru_t1 lte_refl %
+  sub 1
   - if_tru_t1 refl refl %
   - exiE 4 %
   sub 4
   ren a n
   - if_fal_t2 suc_neq_0 %
-  - if_fal_t2 not_suc_lte_0 refl %
-  ren a N
-  - rsub[λx. x z f (Suc N) = K (λz f n. FF n z f n) z f (Suc N)] 7+ %
-  - if_tru_t2 refl %
-  sub 1
-  - if_fal_t1 suc_neq_0 %
-  - arg_cong %
-  - rsub[λx. FF x z f x = FF N z f x] pred_suc refl %
-  ren a N
+  - if_fal_t1 not_suc_lte_0 refl %
+  ren a F₁
+  ren b F₂
   - ext %
   - ext %
   - ext %
   ren a z
   ren b f
   ren c n
-  - eq_com %
-  - split[n = Suc N] %
-  sub 7
-  - if_tru_t2 refl %
-  - rsub[λx. FF (Suc N) z f (Suc N) = f (FF N z f x)] pred_suc %
   sub 3
-  let F₁: λz f n. if (n <= Suc N) (K (FF N) z f n) undefined
-  - 5+[Suc N, F₁]
-  - prsub 7
-  show [P' (Suc N) F₁]
-  - 7 8
-  - rsub[λx. x z f (Suc N) = f (FF N z f N)] 7 %
-  sub 6
+  - 4*[z, f, n]
+  - 5*[z, f, n]
+  - eq_tran3 4 5 %
+  - nat_exh[n] %
+  sub 4
+  - if_eq_if %
+  del 4
+  sub 1
+  - if_eq_if %
+  - refl %
+  - falE2 refl 3 %
+  - refl %
+  - exiE 4 %
+  sub 4
+  ren a n
+  - if_eq_if %
+  - falE2 4 not_suc_lte_0 %
+  - refl %
+  - 
+  ren a N
+  - uniqI %
+  - exiI[λz f n. if (n = Suc N) (f (FF N z f (pred n))) (FF N z f n)] %
+  sub 3
+  ren a z
+  ren b f
+  ren c n
+  - split[n = Suc N] %
+  sub 5
+  - if_tru_t2 refl %
   - if_tru_t1 lte_refl %
   sub 1
   - if_fal_t1 suc_neq_0 %
   - arg_cong %
-  - rsub[λx. FF N z f x = FF N z f N] pred_suc refl %
-  sub 2
-  ren a z
-  ren b f
-  ren c n
-  sub 5
-  - if_eq_if %
-  sub 1
-  - if_eq_if %
+  - if_fal_t2 %
+  - rsub[λx. ¬(x = Suc N)] pred_suc neq_suc %
   - refl %
-  - arg_cong %
-  - eq_com %
-  - psub neq_0_exi_suc 6
+  - if_fal_t2 5+ %
+  - split[n <= Suc N] %
+  - if_tru_t1 6+ %
+  sub 1
+  - nat_exh[n] %
+  sub 6
+  - if_tru_t2 refl %
+  del 4
+  del 4
+  - fun_cong 2* [N]
+  - theE 2 3
+  - eq_tran 2 %
+  - if_tru_t1 gte_0 %
+  - if_tru_t1 refl refl %
   - exiE 6 %
   sub 6
   ren a n
-  - psub lte_suc2 5
+  - if_fal_t2 suc_neq_0 %
+  - fun_cong 2+ [N]
+  - theE 6 3+
+  - eq_tran 6 %
   - if_tru_t1 %
-  - rsub[λx. x <= Suc N] pred_suc %
-  - lte_lte_suc 5 %
-  - if_eq %
-  - eq_tran2 pred_suc 6
-  sub 6
-  - eq_com %
-  - rsub[λx. FF N z f x = z] pred_suc %
+  - psub lte_def 5
+  - disjE2 5 4
+  - psub lt_simp3 4
+  - lt_suc_lte 4 %
+  - if_fal_t2 suc_neq_0 %
+  - arg_cong %
+  - if_fal_t2 %
+  - rsub[λx. ¬(x = Suc N)] pred_suc %
+  - cposr_nn 4 %
+  sub 5
+  - psub lte_suc2 4
+  - falE2 4 not_suc_lte %
+  - refl %
+  show [Suc N < n]
+  - if_fal_t2 6+ %
+  - fun_cong 3+ [N]
+  - theE 8 4+
+  - eq_tran 8 %
+  show [¬(n <= N)]
+  - if_fal_t1 8 refl %
+  - notI %
+  - lt_or_gt_or_eq [n, N]
+  - disjE 9 %
+  - disjE 9 %
+  - lt_lt_suc 9
+  - lt_gt_fal 7 9 %
+  - psub lte_def 8*
+  - disjE 8 %
+  - lt_gt_fal 8 9 %
+  sub 9
+  - falI 8 not_lt_refl %
+  sub 9
+  - falI 7 not_suc_lt %
+  - sub lte_def 6
+  - dmrg_nd 6
+  - conjE1 6
+  - lt_or_gt_or_eq [n, Suc N]
+  - disjE 7 %
+  - disjE 7 %
+  - falE2 7 6 %
+  - 7 %
+  - falE2 7 5 %
+  - 
+  ren a F₁
+  ren b F₂
   - 
