@@ -723,7 +723,7 @@ const endGame = () => {
   const row = scoreTable[index];
   const cell = row[1];
 
-  cell.contentEditable = 'plaintext-only';
+  cell.contentEditable = 'true';
   cell.focus();
 
   newScoreboard = scoreboard;
