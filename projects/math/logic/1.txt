@@ -559,14 +559,14 @@ lemma eq_equiv_com: (=) = (λx y. y = x)
   - ext %
   - eq_com_eq %
 
-lemma uniqE: ∀P. (∃!) P  ⟶  P (THE a. P a)
+lemma uniqE: ∀P. (∃!) P  ⟶  P ((THE) P)
   - psub eta1 1
   - psub uniq_def 1
   - conjE1 1+
   - conjE2 1
   - exiE 1 %
   - uniqE' 2+ {2}1+
-  - rsub[λx. x (THE y. x y), λx. b = x, a] %
+  - rsub[λx. x ((THE) x), λx. b = x, a] %
   - 3 %
   - eq_com %
   - rsub[λx. (THE y. x b y) = b] eq_equiv_com %
@@ -1286,10 +1286,14 @@ lemma uni_eq_fun_true: (∀) = (=) (λx. True)
   - sub[#..a] 1 %
   - true %
 
-lemma uniqE2: ∀P a b. (∃!c. P c)  ⟶  P a  ⟶  P b  ⟶  a = b
+lemma uniqE2: ∀P a b. (∃!) P  ⟶  P a  ⟶  P b  ⟶  a = b
+  show [a = λx. a x]
+  sub 4
   - psub uniq_def 1*
   - conjE2 1*
   - 1 2 3 %
+  - ext %
+  - refl %
 
 lemma uniq2fun: ∀P. (∀a. ∃!b. P a b)  ⟶  ∃!f. ∀a b. (f a = b) = (P a b)
   - uniqI[#.10.d] %
@@ -1610,6 +1614,13 @@ lemma if_args_eq: ∀P a. if P a a = a
   - if_tru_t 1 %
   - if_fal_t 1 %
 
+lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (nat_map z f n)
+  let C₁: λF. ∀z f. F z f 0 = z
+  let C₂: λF. ∀z f n. F z f (Suc n) = f (F z f n)
+  let C: λF. C₁ F ∧ C₂ F
+  - 
+
+.
 lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (nat_map z f n)
   - nat_map_def
   - theE 1 %
