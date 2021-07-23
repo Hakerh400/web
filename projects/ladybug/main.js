@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const modal = require('../modal');
 const Trajectory = require('./trajectory');
 const Ball = require('./ball');
 const Projectile = require('./projectile');
@@ -15,6 +16,7 @@ if(1){
   // O.randSeed(log(O.rand(1e9)));
 }
 
+const {project} = O;
 const {pi, pih, pi2} = O;
 
 const {
@@ -36,6 +38,7 @@ const playerRad = 100;
 const ballTypes = 6;
 const fwdSpeed = 15;
 const bckSpeed = 150;
+const endSpeed = 200;
 const projSpeed = 20;
 const explDur = .25;
 const explsize = 2;
@@ -43,6 +46,7 @@ const initBallIndex = 3e3;
 const fontFamily = 'arial';
 const fontSize = 32;
 const textOffset = 10;
+const scoreboardSize = 10;
 
 const ballCols = [
   [30, 131, 242],
@@ -92,8 +96,17 @@ const expls = new Set();
 
 let points = 0;
 let playerBall = null;
+let gameOver = 0;
+
+const scoresTable = [];
+
+let newScoreboard = null;
+let newScoreIndex = null;
+let newScoreEntry = null;
 
 const main = () => {
+  initModalDiv();
+
   traj = createTrajectory();
 
   playerX = wh + w * .05;
@@ -126,6 +139,47 @@ const main = () => {
   frame();
 };
 
+const initModalDiv = () => {
+  const {div} = modal;
+
+  const table = O.ce(div, 'table');
+  table.classList.add('scoreboard');
+  table.cellSpacing = 0;
+
+  const td = (parent, str='', isHeader=0) => {
+    const tag = isHeader ? 'th' : 'td';
+    const td = O.ce(parent, tag);
+    td.innerText = str;
+
+    if(!isHeader)
+      O.last(scoresTable).push(td);
+
+    return td;
+  };
+
+  const tds = (parent, strs, isHeader=0) => {
+    if(!isHeader)
+      scoresTable.push([]);
+
+    for(const str of strs)
+      td(parent, str, isHeader);
+  };
+
+  const thead = O.ce(table, 'thead');
+
+  const tr = O.ce(thead, 'tr');
+  tds(tr, ['#', 'Name', 'Points'], 1);
+
+  tr.children[1].classList.add('name-col');
+
+  const tbody = O.ce(table, 'tbody');
+
+  for(let i = 0; i !== scoreboardSize; i++){
+    const tr = O.ce(tbody, 'tr');
+    tds(tr, [i + 1, '', 0]);
+  }
+};
+
 const createTrajectory = () => {
   const d = .05;
 
@@ -156,12 +210,53 @@ const createTrajectory = () => {
 };
 
 const aels = () => {
+  O.ael('keydown', onKeyDown);
   O.ael('mousemove', onMouseMove);
   O.ael('mousedown', onMouseDown);
+  O.ael('contextmenu', onContextMenu);
   O.ael('resize', onResize);
 };
 
+const onKeyDown = evt => {
+  const {ctrlKey, shiftKey, altKey, code} = evt;
+  const flags = (ctrlKey << 2) | (shiftKey << 1) | altKey;
+
+  if(flags === 0){
+    if(gameOver){
+      if(code === 'Escape' || code === 'Enter' || code === 'NumpadEnter'){
+        modal.close();
+        gameOver = 0;
+
+        if(newScoreboard !== null){
+          const name = newScoreEntry.innerText.trim().slice(0, 100);
+
+          newScoreEntry.contentEditable = 'false';
+          newScoreboard[newScoreIndex][0] = name;
+          saveScoreboard(newScoreboard);
+
+          newScoreboard = null;
+          newScoreIndex = null;
+          newScoreEntry = null;
+        }
+
+        restart();
+      }
+
+      return;
+    }
+
+    if(code === 'KeyR'){
+      restart();
+      return;
+    }
+
+    return;
+  }
+};
+
 const onMouseMove = evt => {
+  if(gameOver) return;
+
   updateCur(evt);
 
   // if(evt.button === 0){
@@ -171,6 +266,8 @@ const onMouseMove = evt => {
 };
 
 const onMouseDown = evt => {
+  if(gameOver) return;
+
   updateCur(evt);
 
   if(evt.button === 0){
@@ -179,9 +276,8 @@ const onMouseDown = evt => {
   }
 };
 
-const updateCur = evt => {
-  cx = (evt.clientX - iwh) / scale + wh;
-  cy = (evt.clientY - ihh) / scale + hh;
+const onContextMenu = evt => {
+  O.pd(evt);
 };
 
 const onResize = evt => {
@@ -228,6 +324,11 @@ const onResize = evt => {
 
   bg.stroke();
   bg.restore();
+};
+
+const updateCur = evt => {
+  cx = (evt.clientX - iwh) / scale + wh;
+  cy = (evt.clientY - ihh) / scale + hh;
 };
 
 const frame = () => {
@@ -299,109 +400,113 @@ const frame = () => {
     proj.move();
   }
 
-  if(balls.length === 0){
-    balls.push(newBall(initBallIndex));
-  }else{
-    let ball = balls[0];
+  processBalls: {
+    if(balls.length === 0){
+      if(gameOver) break processBalls;
+      balls.push(newBall(initBallIndex));
+    }else{
+      let ball = balls[0];
 
-    ball.index += fwdSpeed;
+      const speed = !gameOver ? fwdSpeed : endSpeed;
+      ball.index += speed;
 
-    for(let i = 0; i < balls.length; i++){
-      const ball = balls[i];
+      for(let i = 0; i < balls.length; i++){
+        const ball = balls[i];
 
-      if(!ball.isIn){
-        balls.length = i;
-
-        alert('Game over!');
-        location.reload();
-        return;
-
-        break;
-      }
-
-      if(i !== 0 && ball.index < balls[i - 1].inext){
-        ball.index = balls[i - 1].inext;
-        break;
-      }
-
-      const {index, type} = ball;
-
-      if(ball.marked){
-        const bs = new Set([ball]);
-        let n1 = 0;
-        let n2 = 0;
-
-        for(let j = i - 1; j !== -1; j--){
-          const b = balls[j];
-
-          if(!b.collides(balls[j + 1])) break;
-          if(b.type !== type) break;
-
-          bs.add(b);
-          n1++;
+        if(!ball.isIn){
+          balls.length = i;
+          endGame();
+          break;
         }
 
-        for(let j = i + 1; j !== balls.length; j++){
-          const b = balls[j];
-
-          if(!b.collides(balls[j - 1])) break;
-          if(b.type !== type) break;
-
-          bs.add(b);
-          n2++;
+        if(i !== 0 && ball.index < balls[i - 1].inext){
+          ball.index = balls[i - 1].inext;
+          break;
         }
 
-        const n = bs.size;
+        const {index, type} = ball;
 
-        if(n >= 3 && (!ball.markedRight || n2 !== 0)){
-          explode(bs);
-          balls.splice(i - n1, n);
-          i -= n1// + 1;
+        if(ball.marked){
+          const bs = new Set([ball]);
+          let n1 = 0;
+          let n2 = 0;
 
+          for(let j = i - 1; j !== -1; j--){
+            const b = balls[j];
+
+            if(!b.collides(balls[j + 1])) break;
+            if(b.type !== type) break;
+
+            bs.add(b);
+            n1++;
+          }
+
+          for(let j = i + 1; j !== balls.length; j++){
+            const b = balls[j];
+
+            if(!b.collides(balls[j - 1])) break;
+            if(b.type !== type) break;
+
+            bs.add(b);
+            n2++;
+          }
+
+          const n = bs.size;
+
+          if(n >= 3 && (!ball.markedRight || n2 !== 0)){
+            explode(bs);
+            balls.splice(i - n1, n);
+            i -= n1// + 1;
+
+            continue;
+          }
+
+          ball.marked = 0;
+          ball.markedRight = 0;
+        }
+
+        if(i === balls.length - 1)
+          break;
+
+        const next = balls[i + 1];
+
+        if(!next.isIn){
+          balls.length = i + 1;
           continue;
         }
 
-        ball.marked = 0;
-        ball.markedRight = 0;
+        if(ball.collides(next)){
+          next.index = ball.inext;
+          continue;
+        }
+
+        if(next.type !== type)
+          continue;
+
+        let n = 1;
+
+        for(let j = i + 2; j !== balls.length; j++){
+          const b = balls[j];
+          if(!b.collides(balls[j - 1])) break;
+          n++;
+        }
+
+        next.index = max(ball.inext, next.index - bckSpeed);
+        ball.marked = 1;
+        ball.markedRight = 1;
+
+        for(let j = 1; j !== n; j++)
+          balls[i + j + 1].index = balls[i + j].inext;
       }
 
-      if(i === balls.length - 1)
-        break;
 
-      const next = balls[i + 1];
+      if(gameOver)
+        break processBalls;
 
-      if(!next.isIn){
-        balls.length = i + 1;
-        continue;
+      while(ball.iprev !== null){
+        ball = newBall(ball.iprev);
+        balls.unshift(ball);
       }
-
-      if(ball.collides(next)){
-        next.index = ball.inext;
-        continue;
-      }
-
-      if(next.type !== type)
-        continue;
-
-      let n = 1;
-
-      for(let j = i + 2; j !== balls.length; j++){
-        const b = balls[j];
-        if(!b.collides(balls[j - 1])) break;
-        n++;
-      }
-
-      next.index = max(ball.inext, next.index - bckSpeed);
-      ball.marked = 1;
-      ball.markedRight = 1;
-
-      for(let j = 1; j !== n; j++)
-        balls[i + j + 1].index = balls[i + j].inext;
-    }
-
-    while(ball.iprev !== null){
-      ball = newBall(ball.iprev);
-      balls.unshift(ball);
     }
   }
 
@@ -584,6 +689,72 @@ const render = t => {
   g.fillText(`Points: ${points}`, textOffset, textOffset);
 
   g.restore();
+};
+
+const endGame = () => {
+  if(gameOver) return;
+
+  gameOver = 1;
+  modal.open();
+
+  const scoreboard = loadScoreboard();
+
+  const index = O.bisect(i => {
+    if(i >= scoreboardSize) return 1;
+    return points > scoreboard[i][1];
+  });
+
+  if(index === scoreboardSize)
+    return;
+
+  scoreboard.splice(index, 0, ['', points]);
+  scoreboard.length = scoreboardSize;
+
+  for(let i = 0; i !== scoreboardSize; i++){
+    const [name, points] = scoreboard[i];
+    const row = scoresTable[i];
+
+    row[1].innerText = name;
+    row[2].innerText = points;
+  }
+
+  const row = scoresTable[index];
+  const cell = row[1];
+
+  cell.contentEditable = 'plaintext-only';
+  cell.focus();
+
+  newScoreboard = scoreboard;
+  newScoreIndex = index;
+  newScoreEntry = cell;
+};
+
+const restart = () => {
+  balls.length = 0;
+  projs.clear();
+  expls.clear();
+
+  points = 0;
+  newPlayerBall();
+};
+
+const initScoreboard = () => {
+  return O.ca(scoreboardSize, () => ['', 0]);
+};
+
+const loadScoreboard = () => {
+  if(!O.has(localStorage, project)){
+    const scoreboard = initScoreboard();
+    saveScoreboard(scoreboard);
+
+    return scoreboard;
+  }
+
+  return JSON.parse(localStorage[project]);
+};
+
+const saveScoreboard = scoreboard => {
+  localStorage[project] = JSON.stringify(scoreboard);
 };
 
 main();
