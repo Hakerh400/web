@@ -35,7 +35,7 @@ const diam = rad * 2;
 const playerRad = 100;
 const ballTypes = 6;
 const fwdSpeed = 15;
-const bckSpeed = 100;
+const bckSpeed = 150;
 const projSpeed = 20;
 const explDur = .25;
 const explsize = 2;
@@ -311,6 +311,11 @@ const frame = () => {
 
       if(!ball.isIn){
         balls.length = i;
+
+        alert('Game over!');
+        location.reload();
+        return;
+
         break;
       }
 
