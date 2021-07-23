@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const assert = require('assert');
 const parser = require('./parser');
 const Expr = require('./expr');
@@ -17,6 +19,7 @@ const {Ident, Call, Lambda} = Expr;
 
 const displayLineProcess = 0;
 const lineProcessSpeed = 50;
+const loadLogic = 1;
 
 const {g} = O.ceCanvas(1);
 
@@ -37,11 +40,14 @@ let dataPrev = null;
 let iw, ih;
 let w, h;
 
+const cwd = __dirname;
+const logicFile = path.join(cwd, './logic/1.txt');
+const logicStr = loadLogic ? await O.rfs(logicFile, 1) : null;
+
 const main = () => {
   mainEditor.selected = 1;
 
-  if(O.has(localStorage, project))
-    load();
+  load();
 
   mainEditor.updateLine(0);
 
@@ -1454,6 +1460,25 @@ const save = () => {
 
 // const str1 = await \u0072equire('./logic/1.txt');
 const load = () => {
+  if(!O.has(localStorage, project)){
+    if(!loadLogic) return;
+
+    assert(logicStr !== null);
+
+    const lines = O.sanl(logicStr);
+    const cx = O.last(lines).length;
+    const cy = lines.length - 1;
+
+    localStorage[project] = JSON.stringify({
+      str: logicStr,
+      cx: cx,
+      cy: cy,
+      cxPrev: cx,
+      scrollX: 0,
+      scrollY: cy - 15,
+    });
+  }
+
   const {
     str,
     cx,
