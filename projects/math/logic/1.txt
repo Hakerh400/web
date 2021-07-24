@@ -2622,23 +2622,22 @@ lemma uniq_least: ∀P. (∃) P  ⟶  (∃!n. P n ∧ (∀k. k < n  ⟶  ¬P k))
   - 3 %
   - 4 5 %
 
-lemma muE: ∀P n. (μ) P = n  ⟶  (∃) P  ⟶  ∀k. k < n  ⟶  ¬P k
+lemma muE: ∀P n. (μ) P = n  ⟶  (∃) P  ⟶  P n ∧ (∀k. k < n  ⟶  ¬P k)
   ren a P
   ren b n
-  ren c k
   - uniq_least 2*
   let N: THE a. P a ∧ (∀b. b < a  ⟶  ¬P b)
   - uniqE 2+
-  - conjE 5 %
-  - rsub 4+ 5*
-  - rsub[λx. ∀a. a < x  ⟶  ¬P a] 4+ {1}6
+  - conjE 4 %
+  - rsub 3+ 4*
+  - rsub[λx. ∀a. a < x  ⟶  ¬P a] 3+ {1}5
   show [(μ) P = N]
-  - eq_tran2 1 7
-  sub 6
-  - 5 2 %
+  - eq_tran2 1+ 6+
+  sub 7
+  - conjI 4 {1}5 %
   - muI %
-  - 5 %
-  - 6 7 %
+  - 4 %
+  - 5 6 %
 
 lemma suc_least_gt: ∀a. (μb. a < b) = Suc a
   - muI %
@@ -2683,6 +2682,36 @@ lemma nul_iff_nil: ∀a. nul a = (a = Nil)
   - neq_com %
   - list_dif %
 
+lemma nexi_gt_all: ¬∃a. ∀b. b < a
+  - notI %
+  - exiE 1 %
+  - falI 1 not_lt_refl %
+
+lemma lt_not_gte: ∀a b. (a < b) = ¬(b <= a)
+  - iffI %
+  - notI %
+  - lte_exh 2 %
+  - lt_gt_fal 1 2 %
+  sub 2
+  - falI 1 not_lt_refl %
+  - sub lte_def 1
+  - dmrg_nd 1
+  - conjE 1 %
+  - cmp[a, b] %
+  - 3 %
+  - falE2 3 1 %
+  sub 3
+  - falE2 refl 2 %
+
+lemma nexi_gte_all: ¬∃a. ∀b. b <= a
+  - notI %
+  - exiE 1 %
+  - nat_inf[a]
+  - exiE 2 %
+  - 1*[b]
+  - psub lt_not_gte 2
+  - falI 1 2 %
+
 def length: λa. μn. nat_map a tail n = Nil
 
 lemma length_simps: ∀a b. length Nil = 0 ∧ length (Cons a b) = Suc (length b)
@@ -2694,6 +2723,13 @@ lemma length_simps: ∀a b. length Nil = 0 ∧ length (Cons a b) = Suc (length b
   - rsub[λx. x length] 1 %
   - fun_cong length_def
   - 
+  show [∀a. ∃n. nat_map a tail n = Nil]
+  - 
+  - com 1+
+  - muE 3 2+
+  - conjE1 3+
+  - conjE2 3
+  - 
   - list_ind[#..c] %
   - 
   - com %
@@ -2701,6 +2737,29 @@ lemma length_simps: ∀a b. length Nil = 0 ∧ length (Cons a b) = Suc (length b
   - tranr 1+ %
   - muI %
   - nat_map_simp1 %
-  - falE2 2 not_lt_0 %
+  - falE2 5 not_lt_0 %
   - 
+  - com %
+  - if_tru_t2 nnul_simp2p %
+  - rsub[λx. length (Cons a b) = Suc (length x)] tail_simp %
+  - 
+  - tranr 1+ %
+  - muI %
+  - tranr nat_map_simp2 %
+  - 
+  - com 5*
+  - split[nul b] %
+  - psub nul_iff_nil 6+
+  sub 7
+  - nul_not_nnul 6
+  - eq_falI 6
+  - sub [λx. if x (Suc (length (tail Nil))) 0 = length Nil] 6 5
+  - tran1 if_simp2 5
+  - rsub[λx. tail (nat_map (Cons a Nil) tail x) = Nil] 5 %
+  - rsub[λx. tail x = Nil] nat_map_simp1 tail_simp %
+  - not_nul_nnul 6
+  - psub nnul_exi_cons 6
+  - exiE 6 %
+  - exiE 6 %
+  sub 6
   - 
