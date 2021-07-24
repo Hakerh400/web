@@ -2650,8 +2650,6 @@ lemma suc_least_gt: ∀a. (μb. a < b) = Suc a
   - lt_imp_neq1 1*
   - falI 2 1 %
 
-def length: λa. μn. nat_map a (λb. if (nnul b) (tail b) Nil) n = Nil
-
 lemma nul_not_nnul: ∀a. nul a  ⟶  ¬(nnul a)
   - notI %
   - psub nnul_exi_cons 2
@@ -2684,6 +2682,8 @@ lemma nul_iff_nil: ∀a. nul a = (a = Nil)
   - eq_falI %
   - neq_com %
   - list_dif %
+
+def length: λa. μn. nat_map a tail n = Nil
 
 lemma length_simps: ∀a b. length Nil = 0 ∧ length (Cons a b) = Suc (length b)
   let C: λF. ∀ a b. F Nil = 0 ∧ F (Cons a b) = Suc (length b)
