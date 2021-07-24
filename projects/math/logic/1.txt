@@ -2411,3 +2411,47 @@ lemma tail_simp: ∀a b. tail (Cons a b) = b
   - list_inj 1
   - conjE2 1
   - com 1 %
+
+def inc: Suc
+
+lemma inc_simp: ∀a. inc a = Suc a
+  - fun_cong inc_def %
+
+def dec: λa. THE b. a = Suc b
+
+lemma dec_simp: ∀a. dec (Suc a) = a
+  - fun_cong dec_def
+  - tranr 1 %
+  - theI %
+  - refl %
+  - nat_inj 1
+  - com 1 %
+
+def sub: λa b. THE c. a = b + c
+
+lemma sub_simps: ∀a b. sub a 0 = a ∧ sub (Suc a) (Suc b) = sub a b
+  - fun_cong2 sub_def
+  - psub lte_uniq_add
+  - theE 1+
+  - rsub[#..sub] sub_def %
+  - conjI %
+  - 2+[0, a] gte_0
+  - uniqE 4
+  - com 4
+  - tran add0r 4 %
+  - arg_cong %
+  - ext %
+  - iffI %
+  - com 4
+  - tran suc_add 4
+  - nat_inj 4
+  - com 4 %
+  sub 4
+  - com %
+  - tranr suc_add refl %
+
+lemma sub_simp1: ∀a. sub a 0 = a
+  - conjE1 sub_simps %
+
+lemma sub_simp2: ∀a b. sub (Suc a) (Suc b) = sub a b
+  - conjE2 sub_simps %
