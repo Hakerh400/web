@@ -2262,3 +2262,152 @@ lemma lte_uniq_add: ∀a b. (a <= b) = (∃!c. b = a + c)
   - rsub add_simp2 %
   - lte_lte_suc lte_add %
   - 1 %
+
+type list 1
+
+const Nil  :: list 'a
+const Cons :: 'a  ⟹  list 'a  ⟹  list 'a
+
+axiom list_dif: ∀a b. ¬(Nil = Cons a b)
+axiom list_inj: ∀a b c d. Cons a b = Cons c d  ⟶  a = c ∧ b = d
+axiom list_ind: ∀P. P Nil  ⟶  (∀a b. P b  ⟶  P (Cons a b))  ⟶  (∀) P
+
+def nul: λa. a = Nil
+def nnul: λa. ¬(nul a)
+
+lemma nul_def1: ∀a. nul a = (a = Nil)
+  - fun_cong nul_def %
+
+lemma nnul_def1': ∀a. nnul a = ¬(nul a)
+  - fun_cong nnul_def %
+
+lemma nnul_def1: ∀a. nnul a = ¬(a = Nil)
+  - iffI %
+  - fun_cong nnul_def
+  - psub 2 1
+  - cposr_nn 1 %
+  sub 1
+  - prsub nul_def1 refl %
+  - fun_cong nnul_def
+  - prsub 2 %
+  - rsub nul_def1 1 %
+
+lemma nul_simp1: nul Nil = True
+  - eq_truI %
+  - prsub nul_def1 refl %
+
+lemma nul_simp2: ∀a b. nul (Cons a b) = False
+  - eq_falI %
+  - notI %
+  - psub nul_def1 1
+  - com 1
+  - falI 1 list_dif %
+
+lemma nnul_simp1: nnul Nil = False
+  - eq_falI %
+  - rsub nnul_def1 %
+  - notI2 refl %
+
+lemma nnul_simp2: ∀a b. nnul (Cons a b) = True
+  - eq_truI %
+  - prsub nnul_def1 %
+  - neq_com list_dif %
+
+lemma nnul_exi_cons: ∀a. nnul a = (∃b c. a = Cons b c)
+  - list_ind[#..a] %
+  - tranr1 nnul_simp1 %
+  - eq_falI %
+  - notI %
+  - exiE 1 %
+  - exiE 1 %
+  - falI 1 list_dif %
+  - tranr1 nnul_simp2 %
+  - eq_truI %
+  - exiI[b] %
+  - exiI[c] %
+  - refl %
+
+lemma nnul_imp_uniq_cons: ∀a. nnul a = (∃!b c. a = Cons b c)
+  - iffI %
+  - psub nnul_exi_cons 1
+  - exiE 1 %
+  - exiE 1 %
+  sub 1
+  - uniqI1[b] %
+  - uniqI1[c] %
+  - refl %
+  - iffI %
+  - eq_tran2 1 2
+  - list_inj 1
+  - conjE2 1
+  - com 1 %
+  sub 2
+  - 1 %
+  - iffI %
+  - uniqE 1*
+  - uniqE 2*
+  - eq_tran2 1 2
+  - list_inj 1
+  - conjE1 1
+  - com 1 %
+  sub 2
+  - uniqI1[c] %
+  - refl %
+  del 2
+  - iffI %
+  - list_inj 2
+  - conjE2 2
+  - com 2 %
+  sub 2
+  - refl %
+  - uniqE 1
+  - uniqE 1
+  sub 1
+  - prsub nnul_simp2 true %
+
+lemma nul_simp1p: nul Nil
+  - eq_truE %
+  - nul_simp1 %
+
+lemma nul_simp2p: ∀a b. ¬(nul (Cons a b))
+  - eq_falE %
+  - nul_simp2 %
+
+lemma nnul_simp1p: ¬(nnul Nil)
+  - eq_falE %
+  - nnul_simp1 %
+
+lemma nnul_simp2p: ∀a b. nnul (Cons a b)
+  - eq_truE %
+  - nnul_simp2 %
+
+def head: λa. if (nnul a) (THE b. ∃c. a = Cons b c) undefined
+def tail: λa. if (nnul a) (THE c. ∃b. a = Cons b c) undefined
+
+lemma head_def1: ∀a. head a = if (nnul a) (THE b. ∃c. a = Cons b c) undefined
+  - fun_cong head_def %
+
+lemma tail_def1: ∀a. tail a = if (nnul a) (THE c. ∃b. a = Cons b c) undefined
+  - fun_cong tail_def %
+
+lemma head_simp: ∀a b. head (Cons a b) = a
+  - tranr head_def1 %
+  - if_tru_t1 nnul_simp2p %
+  - theI %
+  - exiI[b] %
+  - refl %
+  - exiE 1 %
+  - list_inj 1
+  - conjE1 1
+  - com 1 %
+
+lemma tail_simp: ∀a b. tail (Cons a b) = b
+  - tranr tail_def1 %
+  - if_tru_t1 nnul_simp2p %
+  - theI %
+  - exiI[a] %
+  - refl %
+  - exiE 1 %
+  - list_inj 1
+  - conjE2 1
+  - com 1 %
