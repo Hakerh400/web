@@ -442,7 +442,8 @@ lemma dmrg_pu: ∀P. (∀a. P a)  ⟶  ¬∃a. ¬P a
   - 1 [b]
   - prsub not2_eq 1 %
 
-lemma dmrg_nu: ∀P. ¬(∀a. P a)  ⟶  ∃a. ¬P a
+lemma dmrg_nu: ∀P. ¬(∀) P  ⟶  ∃a. ¬P a
+  - rsub[λx. ¬(∀) x] eta 1
   - prsub exi_def [λx. ¬a x] %
   - imp_swap cpos_pp 1 %
   - 1 [b]
@@ -2455,3 +2456,228 @@ lemma sub_simp1: ∀a. sub a 0 = a
 
 lemma sub_simp2: ∀a b. sub (Suc a) (Suc b) = sub a b
   - conjE2 sub_simps %
+
+def μ [binder]: λP. THE n. P n ∧ (∀k. k < n  ⟶  ¬P k)
+
+lemma mu_def: ∀P. (μ) P = (THE n. P n ∧ (∀k. k < n  ⟶  ¬P k))
+  - fun_cong μ_def %
+
+lemma muI: ∀P n. P n  ⟶  (∀k. k < n  ⟶  ¬P k)  ⟶  (μ) P = n
+  - tranr mu_def %
+  - theI %
+  - conjI %
+  - 1 %
+  - 2 3 %
+  - conjE1 3+
+  - conjE2 3
+  - cmp[c, b] %
+  - 2 5
+  - falE2 2 4 %
+  - 4 5
+  - falE2 1 4 %
+  - 5 %
+
+lemma muE1: ∀Q P n. Q ((μ) P)  ⟶  P n  ⟶  (∀k. k < n  ⟶  ¬P k)  ⟶  Q n
+  - imp_swap prsub 1 %
+  - arg_cong %
+  - com %
+  - muI 1 {1}2 %
+
+lemma not_lt_0: ∀a. ¬(a < 0)
+  - notI %
+  - gt_neq_0 1
+  - falI refl 1 %
+
+lemma conjE: ∀P Q R. P ∧ Q  ⟶  (P  ⟶  Q  ⟶  R)  ⟶  R
+  - conjE1 1+
+  - conjE2 1
+  - 1 2 3 %
+
+lemma lte_exh: ∀P a b. a <= b  ⟶  (a < b  ⟶  P)  ⟶  (a  = b  ⟶  P)  ⟶  P
+  - psub lte_def 1*
+  - disjE 1 %
+  - 1 3 %
+  - 2 3 %
+
+lemma lte_tran: ∀ a b c. a <= b  ⟶  b <= c  ⟶  a <= c
+  - lte_exh 1 %
+  - lte_exh 1 %
+  - lt_tran 1 2
+  - lt_imp_lte 1 %
+  sub 2
+  - lt_imp_lte 1 %
+  sub 2
+  - 1 %
+
+lemma lt_lte_tran: ∀a b c. a < b  ⟶  b <= c  ⟶  a < c
+  - lte_exh 2 %
+  - lt_tran 1 2 %
+  sub 2
+  - 1 %
+
+lemma lte_lt_tran: ∀a b c. a <= b  ⟶  b < c  ⟶  a < c
+  - lte_exh 1 %
+  - lt_tran 2 1 %
+  sub 2
+  - 1 %
+
+lemma exi_least: ∀P. (∃) P  ⟶  (∃n. P n ∧ (∀k. k < n  ⟶  ¬P k))
+  ren a P
+  - exiE 1 %
+  ren a N
+  - split[∃n. n < N ∧ P n ∧ (∀k. k < n  ⟶  ¬P k)] %
+  - exiE 2 %
+  ren a n
+  - conjE2 2*+
+  - conjE1 2*
+  - conjE2 2*+
+  - conjE1 2*
+  show [(μn. P n ∧ (∀k. k < n  ⟶  ¬P k)) = n]
+  - exiI[n] %
+  - conjI %
+  - 3 %
+  ren a k
+  - 4 6 %
+  - muI %
+  - conjI %
+  - 3 %
+  - 4 5 %
+  ren a k
+  - notI %
+  - conjE1 6
+  - 4*+ 5
+  - falE2 6 5 %
+  - dmrg_ne 2
+  - exiI[N] %
+  - conjI %
+  - 1 %
+  ren a n
+  show [∀n. n < N  ⟶  P n  ⟶  ∃k. k < n ∧ P k]
+  del 2
+  - nat_ind_lte[λn. n < N  ⟶  ¬P n] %
+  - notI %
+  - 3 4 5
+  - exiE 3 %
+  del 2
+  ren a n
+  - conjE 2 %
+  - falI 2 not_lt_0 %
+  del 2
+  ren a n
+  - notI %
+  - 2+ 4+ 5+
+  - exiE 6 %
+  ren a k
+  - conjE 6 %
+  - lt_suc_lte 6*
+  - psub lte_suc2 6*
+  - lte_lte_suc 6+
+  - lte_lt_tran 8 4+
+  - 3 6 8
+  - falI 5 6 %
+  - 2 %
+  ren a k
+  - 2*[k]
+  - dmrg_nc 2*
+  - conjI 4 5
+  - notI2 4
+  - disjE1 2* 4
+  - dmrg_nu 2*
+  - imp_swap rsub 2 %
+  - ext %
+  - iffI %
+  - conjE 3 %
+  - notI %
+  - 5 3
+  - falI 3 4 %
+  - cposr_np 3 %
+  - dmrg_nc 3*
+  - disjE 3 %
+  - falE2 3 4 %
+  - 4 %
+
+lemma uniq_least: ∀P. (∃) P  ⟶  (∃!n. P n ∧ (∀k. k < n  ⟶  ¬P k))
+  - exi_least 1
+  - exiE 1 %
+  - conjE 1 %
+  ren a P
+  ren b n₀
+  - uniqI1[n₀] %
+  - conjI %
+  - 1 %
+  ren a n₁
+  - 2 3 %
+  ren a n₁
+  - conjE 3 %
+  - iffI %
+  - conjE 5 %
+  - cmp[n₁, n₀] %
+  - 4 7
+  - falE2 4 6 %
+  - 6 7
+  - falE2 3 6 %
+  - 7 %
+  sub 5
+  - conjI %
+  - 3 %
+  - 4 5 %
+
+lemma muE: ∀P n. (μ) P = n  ⟶  (∃) P  ⟶  ∀k. k < n  ⟶  ¬P k
+  ren a P
+  ren b n
+  ren c k
+  - uniq_least 2*
+  let N: THE a. P a ∧ (∀b. b < a  ⟶  ¬P b)
+  - uniqE 2+
+  - conjE 5 %
+  - rsub 4+ 5*
+  - rsub[λx. ∀a. a < x  ⟶  ¬P a] 4+ {1}6
+  show [(μ) P = N]
+  - eq_tran2 1 7
+  sub 6
+  - 5 2 %
+  - muI %
+  - 5 %
+  - 6 7 %
+
+lemma suc_least_gt: ∀a. (μb. a < b) = Suc a
+  - muI %
+  - lt_suc %
+  - notI %
+  - lt_suc_lte 2
+  - lte_exh 2 %
+  - lt_gt_fal 1 2 %
+  - lt_imp_neq1 1*
+  - falI 2 1 %
+
+def len_aux1: λa. if (nnul a) (tail a) a
+def len_aux2: λa. nat_map a len_aux1
+def length: λa. μb. len_aux2 a b = Nil
+
+lemma length_simps: ∀a b. length Nil = 0 ∧ length (Cons a b) = Suc (length b)
+  show [len_aux1 Nil = Nil]
+  show [∀a b. len_aux1 (Cons a b) = b]
+  - fun_cong2 len_aux2_def
+- fun_cong length_def
+  show [∀a. length a = if (nnul a) (Suc (length (tail a))) 0]
+  - conjI %
+  - tranr 5 %
+  - if_fal_t1 nnul_simp1p refl %
+  - tranr 5 %
+  - if_tru_t1 nnul_simp2p %
+  - arg_cong %
+  - arg_cong tail_simp %
+  - 
+  - list_ind[#..c] %
+  - 
+  - tranr1 4+ %
+  - if_fal_t2 nnul_simp1p %
+  - muI %
+  - tranr 3+ nat_map_simp1 %
+  - falE2 5 not_lt_0 %
+  - 
+  - com %
+  - if_tru_t1 nnul_simp2p %
+  - rsub[λx. Suc (length x) = length (Cons a b)] tail_simp %
+  - eq_tran2 4+ 5
+  - 
