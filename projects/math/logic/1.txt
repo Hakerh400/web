@@ -2083,3 +2083,182 @@ lemma nat_map_simp1: ∀z f. nat_map z f 0 = z
 
 lemma nat_map_simp2: ∀z f n. nat_map z f (Suc n) = f (nat_map z f n)
   - conjE2 nat_map_simps %
+
+lemma com: ∀a b. a = b  ⟶  b = a
+  - eq_com 1 %
+
+lemma tran: ∀a b c. a = b  ⟶  a = c  ⟶  b = c
+  - eq_tran2 1 2 %
+
+lemma tran1: ∀a b c. a = b  ⟶  a = c  ⟶  c = b
+  - tran 1 2
+  - com 1 %
+
+lemma tranr: ∀a b c. a = b  ⟶  b = c  ⟶  a = c
+  - eq_tran 1 2 %
+
+lemma tranr1: ∀a b c. a = b  ⟶  c = b  ⟶  a = c
+  - com 2
+  - tranr 1 2 %
+
+def (+) [infixl 55]: λa b. nat_map a Suc b
+
+lemma add_def: ∀a b. a + b = nat_map a Suc b
+  - fun_cong2 +_def %
+
+lemma add_simp1: ∀a b. a + 0 = a
+  - tranr add_def %
+  - tranr nat_map_simp1 refl %
+
+lemma add_simp2: ∀a b. a + Suc b = Suc (a + b)
+  - tranr add_def %
+  - tranr nat_map_simp2 %
+  - arg_cong %
+  - com %
+  - tranr add_def refl %
+
+lemma add0: ∀a. a + 0 = a
+  - add_simp1 %
+
+lemma add0r: ∀a. 0 + a = a
+  - nat_ind[#..a] %
+  - add0 %
+  ren b a
+  - tranr add_simp2 %
+  - arg_cong 1 %
+
+lemma suc_add: ∀a b. Suc a + b = Suc (a + b)
+  - nat_ind[λb. ∀a. Suc a + b = Suc (a + b)] %
+  - tranr1 add0 %
+  - arg_cong %
+  - add0 %
+  ren c a
+  ren d b
+  - tranr1 add_simp2 %
+  - arg_cong %
+  - tranr1 add_simp2 %
+  - 1 %
+
+lemma add_com: ∀a b. a + b = b + a
+  - nat_ind[λa. ∀b. a + b = b + a] %
+  - tranr1 add0r %
+  - add0 %
+  ren c a
+  ren d b
+  - com %
+  - tranr1 add_simp2 %
+  - tranr suc_add %
+  - arg_cong 1 %
+
+lemma injI: ∀f. (∀a b. f a = f b  ⟶  a = b)  ⟶  inj f
+  - prsub inj_def1 {2}1 %
+
+lemma injE: ∀f a b. inj f  ⟶  f a = f b  ⟶  a = b
+  - psub inj_def1 1 2 %
+
+lemma add_inj1: ∀a b c. a + b = a + c  ⟶  b = c
+  - nat_ind[λa. ∀b c. a + b = a + c  ⟶  b = c, a, b, c] %
+  del 1
+  - tran1 add0r 1
+  - tran1 add0r 1 %
+  del 1
+  ren d a
+  ren e b
+  ren f c
+  - tran1 suc_add 2
+  - tran1 suc_add 2
+  - nat_inj 2
+  - 1 2 %
+  - 1 %
+
+lemma add_inj: ∀a. inj ((+) a)
+  - injI {2}add_inj1 %
+
+lemma add_assoc: ∀a b c. (a + b) + c = a + (b + c)
+  - nat_ind[λc. ∀a b. a + b + c = a + (b + c)] %
+  ren d a
+  ren e b
+  - tranr add0 %
+  - arg_cong %
+  - com add0 %
+  ren d a
+  ren e b
+  ren f c
+  - tranr1 add_simp2 %
+  - rsub[λx. b + x = Suc (b + c + a)] add_simp2 %
+  - tranr1 add_simp2 %
+  - arg_cong 1 %
+
+lemma lte_add: ∀a b. a <= a + b
+  - nat_ind[λb. ∀a. a <= a + b] %
+  - rsub add0 lte_refl %
+  - rsub add_simp2 %
+  - lte_lte_suc 1 %
+
+lemma uniqE1: ∀P Q. (∃!) P  ⟶  (∀a. P a  ⟶  (∀b. P b = (b = a))  ⟶  Q)  ⟶  Q
+  - psub uniq_def1 1*
+  - conjE1 1+
+  - conjE2 1
+  - exiE 2* %
+  - 1+ 2+ %
+  - iffI %
+  - 3 4 2 %
+  sub 4
+  - 2 %
+
+lemma lte_uniq_add: ∀a b. (a <= b) = (∃!c. b = a + c)
+  - iffI %
+  - nat_ind[λa. ∀b. a <= b  ⟶  ∃!c. b = a + c] %
+  del 1
+  del 1
+  ren c a
+  - uniqI1[a] %
+  - com add0r %
+  sub 1
+  - iffI %
+  - com 1
+  - tran add0r 1 %
+  sub 1
+  - arg_cong %
+  - com add0r %
+  del 1
+  ren c a
+  ren d b
+  - gte_suc_neq_0 2+
+  - neq0 3 %
+  sub 3
+  ren c b
+  - psub lte_suc2 2
+  - 1 2
+  - uniqE 1+
+  - uniqI1[THE c. b = a + c] %
+  - com %
+  - tranr suc_add %
+  - arg_cong %
+  - com 2 %
+  - iffI %
+  - com 4
+  - tran suc_add 4
+  - nat_inj 4
+  - com 4
+  sub 4
+  - uniqE 1+
+  - add_inj1 4 %
+  - com %
+  - tranr suc_add %
+  - arg_cong %
+  sub 4
+  - com %
+  - uniqE 1 %
+  - 1 %
+  - uniqE1 1 %
+  sub 1
+  ren c b
+  - nat_ind[λb. (∀c. (a + b = a + c) = (c = b))  ⟶  a <= a + b] %
+  del 1
+  - rsub add0 lte_refl %
+  del 1
+  ren c b
+  - rsub add_simp2 %
+  - lte_lte_suc lte_add %
+  - 1 %
