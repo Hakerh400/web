@@ -1602,21 +1602,39 @@ lemma cposr_np: ∀P Q. ¬P  ⟶  (¬Q  ⟶  P)  ⟶  Q
 lemma cposr_nn: ∀P Q. ¬P  ⟶  (Q  ⟶  P)  ⟶  ¬Q
   - cpos_pp 2 1 %
 
-lemma if_tru_t1: ∀P a b c. P  ⟶  a = c  ⟶  if P a b = c
+lemma if_tru_t1: ∀P a b c. if P a b = c  ⟶  P  ⟶  a = c
+  - eq_truI 2
+  sub 2
+  - eq_tran2 if_simp1 1 %
+
+lemma if_fal_t1: ∀P a b c. if P a b = c  ⟶  ¬P  ⟶  b = c
+  - eq_falI 2
+  sub 2
+  - eq_tran2 if_simp2 1 %
+
+lemma if_tru_t2: ∀P a b c. if P a b = c  ⟶  P  ⟶  c = a
+  - if_tru_t1 1 2
+  - eq_com 1 %
+
+lemma if_fal_t2: ∀P a b c. if P a b = c  ⟶  ¬P  ⟶  c = b
+  - if_fal_t1 1 2
+  - eq_com 1 %
+
+lemma if_tru_r1: ∀P a b c. P  ⟶  a = c  ⟶  if P a b = c
   sub 2
   - if_tru_t 1 %
 
-lemma if_fal_t1: ∀P a b c. ¬P  ⟶  b = c  ⟶  if P a b = c
+lemma if_fal_r1: ∀P a b c. ¬P  ⟶  b = c  ⟶  if P a b = c
   sub 2
   - if_fal_t 1 %
 
-lemma if_tru_t2: ∀P a b c. P  ⟶  c = a  ⟶  if P a b = c
+lemma if_tru_r2: ∀P a b c. P  ⟶  c = a  ⟶  if P a b = c
   - eq_com  2
-  - if_tru_t1 1 2 %
+  - if_tru_r1 1 2 %
 
-lemma if_fal_t2: ∀P a b c. ¬P  ⟶  c = b  ⟶  if P a b = c
+lemma if_fal_r2: ∀P a b c. ¬P  ⟶  c = b  ⟶  if P a b = c
   - eq_com 2
-  - if_fal_t1 1 2 %
+  - if_fal_r1 1 2 %
 
 lemma if_args_eq: ∀P a. if P a a = a
   - split[a] %
@@ -1627,21 +1645,21 @@ lemma if_eq_if: ∀P a b c d. (P  ⟶  a = c)  ⟶  (¬P  ⟶  b = d)  ⟶  if P
   - split[a] %
   del 2
   - 1* 2+
-  - if_tru_t2 2+ %
-  - if_tru_t2 2 1 %
+  - if_tru_r2 2+ %
+  - if_tru_r2 2 1 %
   del 1
   - 1* 2+
-  - if_fal_t2 2+ %
-  - if_fal_t2 2 1 %
+  - if_fal_r2 2+ %
+  - if_fal_r2 2 1 %
 
 lemma if_eq: ∀P a b c. (P  ⟶  a = c)  ⟶  (¬P  ⟶  b = c)  ⟶  if P a b = c
   - split[a] %
   del 2
   - 1* 2+
-  - if_tru_t1 2 1 %
+  - if_tru_r1 2 1 %
   del 1
   - 1* 2+
-  - if_fal_t1 2 1 %
+  - if_fal_r1 2 1 %
 
 lemma ext1: ∀P f. P (λx. f x) = P f
   - arg_cong %
@@ -1761,25 +1779,25 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   sub 1
   - nat_ind[#..N] %
   - eq_com %
-  - if_tru_t2 refl %
+  - if_tru_r2 refl %
   - 4+[0]
   sub 1
   - eq_tran1 7 %
   - eq_com %
-  - if_tru_t1 lte_refl %
-  - if_tru_t1 refl refl %
+  - if_tru_r1 lte_refl %
+  - if_tru_r1 refl refl %
   ren a N
   - rsub[λx. FF (Suc N) z f (Suc N) = if (Suc N = 0) z (f (FF x z f x))] pred_suc %
   - eq_com %
-  - if_fal_t2 suc_neq_0 %
+  - if_fal_r2 suc_neq_0 %
   show [∀N z f. FF (Suc N) z f N = FF N z f N]
   - 9[N, z, f]
   - 4+[Suc N]
   sub 1
   - 9[z, f, Suc N]
   - eq_tran 9 %
-  - if_tru_t1 lte_refl %
-  - if_fal_t1 suc_neq_0 %
+  - if_tru_r1 lte_refl %
+  - if_fal_r1 suc_neq_0 %
   - arg_cong %
   - rsub[λx. FF (Suc N) z f x = FF N z f N] pred_suc 8 %
   del 8
@@ -1808,9 +1826,9 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   sub 2
   - eq_tran 4+ %
   sub 1
-  - if_tru_t1 gte_0 %
-  - if_tru_t2 refl %
-  - if_tru_t1 refl refl %
+  - if_tru_r1 gte_0 %
+  - if_tru_r2 refl %
+  - if_tru_r1 refl refl %
   - 
   ren a n
   ren b N
@@ -1819,11 +1837,11 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   sub 2
   - eq_tran 11+ %
   sub 1
-  - if_fal_t2 suc_neq_0 %
+  - if_fal_r2 suc_neq_0 %
   sub 1
   - eq_tran 3+ %
-  - if_tru_t1 11+ %
-  - if_fal_t2 suc_neq_0 %
+  - if_tru_r1 11+ %
+  - if_fal_r2 suc_neq_0 %
   - arg_cong %
   - rsub[λx. F₁ z f x = FF N z f x] pred_suc %
   - lte_lte_suc 11
@@ -1838,7 +1856,7 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   ren c N
   sub 2
   - eq_tran 4+ %
-  - if_tru_t1 lte_refl %
+  - if_tru_r1 lte_refl %
   sub 1
   - if_eq_if %
   - refl %
@@ -1861,12 +1879,12 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   ren c f
   sub 3
   - eq_tran 5+ %
-  - if_tru_t1 gte_0 %
+  - if_tru_r1 gte_0 %
   sub 1
-  - if_tru_t2 refl %
+  - if_tru_r2 refl %
   - eq_tran 4+ %
-  - if_tru_t1 lte_refl %
-  - if_tru_t1 refl refl %
+  - if_tru_r1 lte_refl %
+  - if_tru_r1 refl refl %
   del 7
   ren a n
   ren b N
@@ -1874,12 +1892,12 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   ren d f
   sub 3
   - eq_tran 5+ %
-  - if_tru_t1 7+ %
+  - if_tru_r1 7+ %
   sub 1
-  - if_fal_t2 suc_neq_0 %
+  - if_fal_r2 suc_neq_0 %
   - eq_tran 4+ %
-  - if_tru_t1 lte_refl %
-  - if_fal_t1 suc_neq_0 %
+  - if_tru_r1 lte_refl %
+  - if_fal_r1 suc_neq_0 %
   - arg_cong %
   - rsub[λx. FF (Suc n) z f x = FF N z f x] pred_suc %
   - suc_lte_neq_0 6+
@@ -1909,15 +1927,15 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   ren c n
   - split[n = 0] %
   sub 4
-  - if_tru_t2 refl %
-  - if_tru_t1 lte_refl %
+  - if_tru_r2 refl %
+  - if_tru_r1 lte_refl %
   sub 1
-  - if_tru_t1 refl  refl %
+  - if_tru_r1 refl  refl %
   - neq0 4 %
   sub 4
   ren a n
-  - if_fal_t2 suc_neq_0 %
-  - if_fal_t1 suc_not_lte_0 refl %
+  - if_fal_r2 suc_neq_0 %
+  - if_fal_r1 suc_not_lte_0 refl %
   - 
   ren a F
   - iffI %
@@ -1957,14 +1975,14 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   - 
   - cmp[n, Suc N] %
   - lt_imp_neq 7+
-  - if_fal_t2 8+ %
+  - if_fal_r2 8+ %
   - lt_imp_lte 7+
-  - if_tru_t2 9+ %
+  - if_tru_r2 9+ %
   sub 1
   - eq_tran 5+ %
   - lt_suc_lte 6+
   - psub lte_suc2 9+
-  - if_tru_t1 10+ %
+  - if_tru_r1 10+ %
   - if_eq_if %
   - refl %
   - arg_cong %
@@ -1972,14 +1990,14 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   sub 11
   ren a n
   - eq_com %
-  - if_fal_t2 %
+  - if_fal_r2 %
   - rsub[λx. ¬(x = Suc N)] pred_suc %
   - suc_lt_lt 6+
   - lt_imp_neq 11 %
   - refl %
   - lt_imp_neq1 7+
-  - if_fal_t2 8+ %
-  - if_fal_t2 %
+  - if_fal_r2 8+ %
+  - if_fal_r2 %
   - cposr_nn 8 %
   - psub lte_def 8
   - lt_imp_not_gt 7*
@@ -1987,14 +2005,14 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   - eq_tran 6+ %
   - suc_lt_lt 7+
   - lt_imp_not_gte 9+
-  - if_fal_t1 10 refl %
+  - if_fal_r1 10 refl %
   sub 7
-  - if_tru_t2 refl %
-  - if_tru_t1 lte_refl %
+  - if_tru_r2 refl %
+  - if_tru_r1 lte_refl %
   sub 1
-  - if_fal_t1 suc_neq_0 %
+  - if_fal_r1 suc_neq_0 %
   - arg_cong %
-  - if_fal_t2 %
+  - if_fal_r2 %
   - rsub[λx. ¬(x = Suc N)] pred_suc %
   - neq_suc %
   - rsub[λx. F₀ z f N = F₀ z f x] pred_suc refl %
@@ -2013,9 +2031,9 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   - 
   sub 3
   - eq_tran 9+ %
-  - if_tru_t2 gte_0 %
+  - if_tru_r2 gte_0 %
   - eq_tran 8+ %
-  - if_tru_t2 gte_0 %
+  - if_tru_r2 gte_0 %
   sub 1
   - if_eq_if %
   - refl %
@@ -2054,7 +2072,7 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   - eq_tran 2 %
   - eq_com %
   sub 1
-  - if_tru_t1 refl refl %
+  - if_tru_r1 refl refl %
   - neq0 3 %
   sub 3
   ren a n
@@ -2062,7 +2080,7 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   - eq_tran 2 %
   - eq_com %
   sub 1
-  - if_fal_t1 suc_neq_0 %
+  - if_fal_r1 suc_neq_0 %
   - arg_cong %
   - rsub[λx. F z f x = F z f n] pred_suc  refl %
   - 
@@ -2072,10 +2090,10 @@ lemma nat_map_simps: ∀z f n. nat_map z f 0 = z ∧ nat_map z f (Suc n) = f (na
   - conjI %
   - eq_tran 2 %
   sub 1
-  - if_tru_t1 refl refl %
+  - if_tru_r1 refl refl %
   - eq_tran 2 %
   sub 1
-  - if_fal_t1 suc_neq_0 %
+  - if_fal_r1 suc_neq_0 %
   - arg_cong %
   - rsub[λx. F z f x = F z f n] pred_suc refl %
 
@@ -2393,7 +2411,7 @@ lemma tail_def1: ∀a. tail a = if (nnul a) (THE c. ∃b. a = Cons b c) undefine
 
 lemma head_simp: ∀a b. head (Cons a b) = a
   - tranr head_def1 %
-  - if_tru_t1 nnul_simp2p %
+  - if_tru_r1 nnul_simp2p %
   - theI %
   - exiI[b] %
   - refl %
@@ -2404,7 +2422,7 @@ lemma head_simp: ∀a b. head (Cons a b) = a
 
 lemma tail_simp: ∀a b. tail (Cons a b) = b
   - tranr tail_def1 %
-  - if_tru_t1 nnul_simp2p %
+  - if_tru_r1 nnul_simp2p %
   - theI %
   - exiI[a] %
   - refl %
@@ -2733,33 +2751,31 @@ lemma length_simps: ∀a b. length Nil = 0 ∧ length (Cons a b) = Suc (length b
   - list_ind[#..c] %
   - 
   - com %
-  - if_fal_t2 nnul_simp1p %
+  - if_fal_r2 nnul_simp1p %
   - tranr 1+ %
   - muI %
   - nat_map_simp1 %
   - falE2 5 not_lt_0 %
   - 
   - com %
-  - if_tru_t2 nnul_simp2p %
+  - if_tru_r2 nnul_simp2p %
   - rsub[λx. length (Cons a b) = Suc (length x)] tail_simp %
   - 
   - tranr 1+ %
   - muI %
   - tranr nat_map_simp2 %
   - 
-  - com 5*
-  - split[nul b] %
-  - psub nul_iff_nil 6+
-  sub 7
-  - nul_not_nnul 6
-  - eq_falI 6
-  - sub [λx. if x (Suc (length (tail Nil))) 0 = length Nil] 6 5
-  - tran1 if_simp2 5
-  - rsub[λx. tail (nat_map (Cons a Nil) tail x) = Nil] 5 %
-  - rsub[λx. tail x = Nil] nat_map_simp1 tail_simp %
-  - not_nul_nnul 6
-  - psub nnul_exi_cons 6
-  - exiE 6 %
-  - exiE 6 %
-  sub 6
+  show [∀a b. ¬(length b = length (Cons a b)), False]
+  - falE 7 %
+  - notI %
+  show [∀n. ¬(length d = n)]
+  - falI refl 7 %
+  - nat_ind_lte[#..a] %
+  - notI %
+  - tran1 7 6
+  - tran 1+ 6
+  - muE 6 2+
+  - conjE1 6
+  - tran1 nat_map_simp1 6
+  - falI 6 list_dif %
   - 
