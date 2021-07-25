@@ -42,7 +42,7 @@ const endSpeed = 100;
 const projSpeed = 20;
 const explDur = .25;
 const explsize = 2;
-const initBallIndex = 1.5e3;
+const initBallIndex = 0//1.5e3;
 const fontFamily = 'arial';
 const fontSize = 32;
 const textOffset = 10;
@@ -212,6 +212,39 @@ const createTrajectory = () => {
   }
 
   return new Trajectory(ps, rad);
+
+  /*const d = .01;
+  const ps = [];
+
+  let x = -diam;
+  let y = -diam;
+  let dx = O.randf(1, 2);
+  let dy = O.randf(1, 2);
+
+  const s = 1 / 200;
+  const s1 = s / 100;
+
+  for(let i = 0; i !== 2e6; i++){
+    ps.push([x, y]);
+
+    const dLen = O.hypot(dx, dy);
+    dx /= dLen;
+    dy /= dLen;
+
+    x += dx * d;
+    y += dy * d;
+
+    if(x < w * .25) dx += s1;
+    if(x > w * .75) dx -= s1;
+
+    if(y < h * .25) dy += s1;
+    if(y > h * .75) dy -= s1;
+
+    dx += O.randf(-1, 1) * s;
+    dy += O.randf(-1, 1) * s;
+  }
+
+  return new Trajectory(ps, rad);*/
 };
 
 const aels = () => {
@@ -320,14 +353,19 @@ const onResize = evt => {
   bg.rect(0, 0, w, h);
   bg.clip();
 
-  bg.lineWidth = diam * 1.25;
-  bg.strokeStyle = '#eb9';
   bg.beginPath();
 
   for(const [x, y] of traj.ps)
     bg.lineTo(x, y);
 
+  bg.lineWidth = diam * 1.3;
+  bg.strokeStyle = 'black';
   bg.stroke();
+
+  bg.lineWidth = diam * 1.25;
+  bg.strokeStyle = '#eb9';
+  bg.stroke();
+
   bg.restore();
 };
 
@@ -431,7 +469,7 @@ const frame = () => {
 
         const {index, type} = ball;
 
-        if(ball.marked){
+        if(!gameOver && ball.marked){
           const bs = new Set([ball]);
           let n1 = 0;
           let n2 = 0;
