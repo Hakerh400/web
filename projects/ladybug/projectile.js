@@ -13,11 +13,11 @@ class Projectile{
     this.speed = speed;
   }
 
-  move(){
-    const {dir, speed} = this;
+  move(speed){
+    const {dir, speed: sp} = this;
 
-    this.x += cos(dir) * speed;
-    this.y += sin(dir) * speed;
+    this.x += cos(dir) * sp * speed;
+    this.y += sin(dir) * sp * speed;
   }
 }
 
