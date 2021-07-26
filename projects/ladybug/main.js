@@ -37,9 +37,6 @@ const diam = rad * 2;
 const playerRad = 100;
 const ballTypes = 6;
 
-const speedNormal = 1;
-const speedSlow = .25;
-
 const fwdSpeed = 7;
 const bckSpeed = 75;
 const endSpeed = 100;
@@ -99,8 +96,8 @@ const balls = [];
 const projs = new Set();
 const expls = new Set();
 
-let speed = speedNormal;
-let slow = 0;
+let speedFacExp = 1;
+let speedFac = 1;
 
 const speedChanges = [O.now];
 
@@ -298,10 +295,16 @@ const onKeyDown = evt => {
       return;
     }
 
-    if(code === 'KeyS'){
-      if(slow) speed = speedNormal;
-      else speed = speedSlow;
-      slow ^= 1;
+    if(code === 'ArrowUp'){
+      speedFacExp++;
+      speedFac = 2 ** speedFacExp;
+      // speedChanges.push(O.now);
+      return;
+    }
+
+    if(code === 'ArrowDown'){
+      speedFacExp--;
+      speedFac = 2 ** speedFacExp;
       // speedChanges.push(O.now);
       return;
     }
@@ -410,7 +413,7 @@ const frame = () => {
   };
 
   explsLoop: for(const expl of expls){
-    if(t - expl.t > explDur / speed){
+    if(t - expl.t > explDur / speedFac){
       expls.delete(expl);
       continue;
     }
@@ -463,7 +466,7 @@ const frame = () => {
       continue projsLoop;
     }
 
-    proj.move(speed);
+    proj.move(speedFac);
   }
 
   processBalls: {
@@ -473,7 +476,7 @@ const frame = () => {
     }else{
       let ball = balls[0];
 
-      ball.index += round((!gameOver ? fwdSpeed : endSpeed) * speed);
+      ball.index += round((!gameOver ? fwdSpeed : endSpeed) * speedFac);
 
       for(let i = 0; i < balls.length; i++){
         const ball = balls[i];
@@ -556,7 +559,7 @@ const frame = () => {
           n++;
         }
 
-        next.index = round(max(ball.inext, next.index - bckSpeed * speed));
+        next.index = round(max(ball.inext, next.index - bckSpeed * speedFac));
         ball.marked = 1;
         ball.markedRight = 1;
 
@@ -723,7 +726,7 @@ const render = t => {
   for(const expl of expls){
     const {x, y, type} = expl;
 
-    const k2 = (t - expl.t) / (explDur / speed);
+    const k2 = (t - expl.t) / (explDur / speedFac);
     const k1 = 1 - k2;
 
     const alpha = k1;
