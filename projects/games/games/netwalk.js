@@ -190,9 +190,36 @@ game.generate = () => {
     }
   }
 
-  game.iterate((x, y, d) => {  
-    const n = O.rand(4);
-    d[0] = ((d[0] << n) | (d[0] >> 4 - n)) & 15;
+  game.iterate((x, y, d1) => {
+    const n = d1[0];
+
+    if(1){
+      const r = O.rand(4);
+      d1[0] = ((n << r) | (n >> 4 - r)) & 15;
+      return;
+    }
+
+    const a = !(n & 1) ^ 1;
+    const b = !(n & 2) ^ 1;
+    const c = !(n & 4) ^ 1;
+    const d = !(n & 8) ^ 1;
+
+    const s =  a + b + c + d;
+
+    const calc = () => {
+      if(s === 1)
+        return 1;
+
+      if(s === 2){
+        if(a === c) return 1 | 4;
+        return 1 | 2;
+      }
+
+      if(s === 3)
+        return 1 | 2 | 8;
+    };
+
+    d1[0] = calc();
   });
 };
 
