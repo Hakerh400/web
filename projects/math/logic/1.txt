@@ -2784,6 +2784,34 @@ lemma length_simp1: length Nil = 0
 lemma length_simp2: ∀a b. length (Cons a b) = Suc (length b)
   - conjE2 length_simps %
 
+lemma exi_exi: (∃) (∃)
+  - exiI[univ] %
+  - exiI[undefined] %
+  - psub in_def all_in_univ %
+
+lemma etaI: ∀P f. P f  ⟶  P (λa. f a)
+  - com eta
+  - arg_cong 2
+  - psub 2 1 %
+
+lemma not_all_all: ¬((∀) (∀))
+  - notI %
+  - etaI 1
+  - 1[∅]
+  - etaI 1
+  - prsub in_def 1
+  - falI 1 not_in_emp %
+
+lemma all_eq_unit: ∀a. a = Unit
+  - unit_ind[#..a] refl %
+
+lemma unit_eq_all: ∀a. Unit = a
+  - com all_eq_unit %
+
+lemma exi_func_fst_snd: ∃f. ∀a b. f (Pair a b) = a ∧ f (Pair a b) = b
+  - exiI[λx. (λx y. y) (fst x = Unit) Unit] %
+  - conjI unit_eq_all unit_eq_all %
+
 lemma length_least_fold_tail: ∀a. length a = μn. nat_fold a tail n = Nil
   - com %
   - muI %
