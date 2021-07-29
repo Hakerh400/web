@@ -2812,5 +2812,63 @@ lemma exi_func_fst_snd: ∃f. ∀a b. f (Pair a b) = a ∧ f (Pair a b) = b
   - exiI[λx. (λx y. y) (fst x = Unit) Unit] %
   - conjI unit_eq_all unit_eq_all %
 
+spacing (FIX) 0 1 0
+def FIX [binder]: λf. THE x. f x = x
+
+lemma fix_def: ∀f. (FIX) f = THE x. f x = x
+  - fun_cong FIX_def %
+
+def id₁: FIX f. λx. if (x = 0) 0 (Suc (f (pred x)))
+
+lemma id₁_eq_id: id₁ = id
+  - tranr id₁_def %
+  - tranr fix_def %
+  - theI %
+  - ext %
+  - com %
+  - tranr1 id_def1 %
+  - if_eq %
+  - com 1 %
+  - psub neq_0_exi_suc 1
+  - exiE 1 %
+  sub 1
+  - arg_cong %
+  - tranr id_def1 pred_suc %
+  ren a f
+  - fun_cong 1
+  - ext %
+  - com %
+  - tranr1 id_def1 %
+  ren a n
+  - nat_ind[#..n] %
+  - if_tru_t1 1 refl
+  - com 1 %
+  ren a n
+  - if_fal_t1 1* suc_neq_0 [n]
+  - sub[λx. Suc (f x) = f (Suc n)] pred_suc 1*
+  - sub[λx. Suc x = f (Suc n)] 2+ 1*
+  - com 1 %
+
+def pred₁: λn. if (n = 0) 0 (pred n)
+
+lemma pred1_def: ∀n. pred₁ n = if (n = 0) 0 (pred n)
+  - fun_cong pred₁_def %
+
+lemma fix_pred₁_eq_0: (FIX) pred₁ = 0
+  - tranr fix_def %
+  - theI %
+  - tranr pred1_def %
+  - if_tru_t refl %
+  ren a n
+  - notE2 %
+  - psub neq_0_exi_suc 2
+  - exiE 2 %
+  sub 2
+  ren a n
+  - tran pred1_def 1
+  - if_fal_t1 1 suc_neq_0
+  - eq_tran2 pred_suc 1
+  - falI 1 neq_suc %
+
 lemma length_least_fold_tail: ∀a. length a = μn. nat_fold a tail n = Nil
   - 
