@@ -2813,15 +2813,4 @@ lemma exi_func_fst_snd: ∃f. ∀a b. f (Pair a b) = a ∧ f (Pair a b) = b
   - conjI unit_eq_all unit_eq_all %
 
 lemma length_least_fold_tail: ∀a. length a = μn. nat_fold a tail n = Nil
-  - com %
-  - list_ind[#..a] %
-  - muI %
-  - rsub[λx. nat_fold Nil tail x = Nil] length_simp1 %
-  - nat_fold_simp1 %
-  - sub length_simp1 1
-  - falE2 1 not_lt_0 %
-  - com %
-  - tranr1 length_simp2 %
-  - muI %
-  - tranr nat_fold_simp2 %
   - 
