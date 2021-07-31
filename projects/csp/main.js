@@ -1,7 +1,6 @@
 'use strict';
 
 const CSP = require('./csp');
-const Placeholder = require('./placeholder');
 const TileBase = require('./tile');
 
 const tileSize = 40;
@@ -37,6 +36,18 @@ class Tile extends TileBase{
     super(grid, x, y);
     this.n = n;
   }
+
+  render(g){
+    const {n} = this;
+
+    g.fillStyle = 'white';
+    g.fillRect(0, 0, 1, 1);
+
+    if(n !== null){
+      g.fillStyle = 'black';
+      g.fillText(n, .5, .5);
+    }
+  }
 }
 
 const aels = () => {
@@ -65,15 +76,7 @@ const render = () => {
   grid.iter((x, y, d) => {
     g.save();
     g.translate(x, y);
-
-    g.fillStyle = 'white';
-    g.fillRect(0, 0, 1, 1);
-
-    if(d.n !== null){
-      g.fillStyle = 'black';
-      g.fillText(d.n, .5, .5);
-    }
-
+    d.render(g);
     g.restore();
   });
 

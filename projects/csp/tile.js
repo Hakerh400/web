@@ -6,6 +6,8 @@ class Tile{
     this.x = x;
     this.y = y;
   }
+
+  render(g){ O.virtual('render'); }
 }
 
 module.exports = Tile;
