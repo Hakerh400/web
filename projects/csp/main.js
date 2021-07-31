@@ -73,6 +73,8 @@ const render = () => {
   g.scale(tileSize);
   g.translate(-w / 2, -h / 2);
 
+  const {gs} = g;
+
   grid.iter((x, y, d) => {
     g.save();
     g.translate(x, y);
@@ -84,12 +86,12 @@ const render = () => {
 
   for(let i = 0; i <= w; i++){
     g.moveTo(i, 0);
-    g.lineTo(i, h);
+    g.lineTo(i, h + gs);
   }
 
   for(let i = 0; i <= h; i++){
     g.moveTo(0, i);
-    g.lineTo(w, i);
+    g.lineTo(w + gs, i);
   }
 
   g.stroke();
