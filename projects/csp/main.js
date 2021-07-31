@@ -2,6 +2,7 @@
 
 const CSP = require('./csp');
 const Placeholder = require('./placeholder');
+const TileBase = require('./tile');
 
 const tileSize = 40;
 const fontSize = tileSize * .6;
@@ -9,7 +10,7 @@ const fontSize = tileSize * .6;
 const w = 5;
 const h = 1;
 
-const grid = new O.Grid(w, h, () => O.obj());
+const grid = new O.Grid(w, h);
 
 const {g} = O.ceCanvas(1);
 
@@ -17,13 +18,26 @@ let iw, ih;
 let iwh, ihh;
 
 const main = () => {
-  grid.iter((x, y, d) => {
-    d.n = x + 1;
+  const phs = new Map();
+
+  grid.iter((x, y) => {
+    const d = new Tile(grid, x, y);
+    const vals = new Set(O.ca(5, i => i + 1));
+
+    grid.set(x, y, d);
+    phs.set(d, vals);
   });
 
   aels();
   onResize();
 };
+
+class Tile extends TileBase{
+  constructor(grid, x, y, n=null){
+    super(grid, x, y);
+    this.n = n;
+  }
+}
 
 const aels = () => {
   O.ael('resize', onResize);
@@ -48,7 +62,6 @@ const render = () => {
   g.scale(tileSize);
   g.translate(-w / 2, -h / 2);
 
-
   grid.iter((x, y, d) => {
     g.save();
     g.translate(x, y);
@@ -56,8 +69,10 @@ const render = () => {
     g.fillStyle = 'white';
     g.fillRect(0, 0, 1, 1);
 
-    g.fillStyle = 'black';
-    g.fillText(d.n, .5, .5);
+    if(d.n !== null){
+      g.fillStyle = 'black';
+      g.fillText(d.n, .5, .5);
+    }
 
     g.restore();
   });

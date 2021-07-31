@@ -1,8 +1,9 @@
 'use strict';
 
 class Placeholder{
-  constructor(tile){
+  constructor(tile, vals){
     this.tile = tile;
+    this.vals = vals;
   }
 }
 
