@@ -5,3 +5,5 @@ class CSP{
     this.phs = phs;
   }
 }
+
+module.exports = CSP;

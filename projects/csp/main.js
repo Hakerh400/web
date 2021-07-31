@@ -1,6 +1,7 @@
 'use strict';
 
 const CSP = require('./csp');
+const Placeholder = require('./placeholder');
 
 const tileSize = 40;
 const fontSize = tileSize * .6;
