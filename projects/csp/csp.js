@@ -26,21 +26,20 @@ class CSP{
 
     const {stack} = this;
     const frame = O.last(stack);
-    const {solved, unsolved, depth, rec, firstTile} = frame;
-    const [tile, vals] = O.fst(unsolved);
+    const [tile, vals] = O.fst(frame.unsolved);
     const valsNum = vals.size;
 
     assert(valsNum !== 0);
 
-    if(tile === firstTile){
+    if(tile === frame.firstTile){
       __TODO__
     }
 
     if(valsNum === 1){
       const val = O.uni(vals);
 
-      unsolved.delete(tile);
-      solved.set(tile, val);
+      frame.unsolved.delete(tile);
+      frame.solved.set(tile, val);
       frame.firstTile = null;
 
       if(!this.check(tile))
