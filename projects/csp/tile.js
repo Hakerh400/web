@@ -1,13 +1,25 @@
 'use strict';
 
-class Tile{
-  constructor(grid, x, y){
-    this.grid = grid;
-    this.x = x;
-    this.y = y;
+const assert = require('assert');
+const TileBase = require('./tile-base');
+
+class Tile extends TileBase{
+  constructor(grid, x, y, n=null){
+    super(grid, x, y);
+    this.n = n;
   }
 
-  render(g){ O.virtual('render'); }
+  render(g){
+    const {n} = this;
+
+    g.fillStyle = 'white';
+    g.fillRect(0, 0, 1, 1);
+
+    if(n !== null){
+      g.fillStyle = 'black';
+      g.fillText(n, .5, .5);
+    }
+  }
 }
 
 module.exports = Tile;

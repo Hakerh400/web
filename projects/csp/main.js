@@ -1,7 +1,7 @@
 'use strict';
 
+const Tile = require('./tile');
 const CSP = require('./csp');
-const TileBase = require('./tile');
 
 const tileSize = 40;
 const fontSize = tileSize * .6;
@@ -9,7 +9,8 @@ const fontSize = tileSize * .6;
 const w = 5;
 const h = 1;
 
-const grid = new O.Grid(w, h);
+let grid;
+let csp;
 
 const {g} = O.ceCanvas(1);
 
@@ -17,38 +18,22 @@ let iw, ih;
 let iwh, ihh;
 
 const main = () => {
-  const phs = new Map();
+  const unsolved = new Map();
 
-  grid.iter((x, y) => {
+  grid = new O.Grid(w, h, (x, y) => {
     const d = new Tile(grid, x, y);
     const vals = new Set(O.ca(5, i => i + 1));
 
-    grid.set(x, y, d);
-    phs.set(d, vals);
+    unsolved.set(d, vals);
+    
+    return d;
   });
+
+  csp = new CSP(grid, unsolved);
 
   aels();
   onResize();
 };
-
-class Tile extends TileBase{
-  constructor(grid, x, y, n=null){
-    super(grid, x, y);
-    this.n = n;
-  }
-
-  render(g){
-    const {n} = this;
-
-    g.fillStyle = 'white';
-    g.fillRect(0, 0, 1, 1);
-
-    if(n !== null){
-      g.fillStyle = 'black';
-      g.fillText(n, .5, .5);
-    }
-  }
-}
 
 const aels = () => {
   O.ael('resize', onResize);
