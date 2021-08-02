@@ -5,7 +5,7 @@ const assert = require('assert');
 class CSPBase{
   constructor(grid, unsolved){
     this.grid = grid;
-    
+
     this.stack = [new StackFrame(
       new Map(),
       unsolved,
@@ -37,7 +37,7 @@ class CSPBase{
       __TODO__
     }
 
-    if(valsNum === 1){
+    if(frame.valIndex === valsNum - 1){
       const val = O.uni(vals);
 
       frame.unsolved.delete(tile);
@@ -50,7 +50,7 @@ class CSPBase{
       return;
     }
     
-    __TODO__
+    const val = [...vals][frame.valIndex];
   }
 
   rollback(){
@@ -61,7 +61,6 @@ class CSPBase{
 
     const frame = stack.pop();
     const prev = O.last(stack);
-    const {solved, unsolved, depth, rec, firstTile} = frame;
   }
 }
 

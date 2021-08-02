@@ -36,7 +36,22 @@ const main = () => {
 };
 
 const aels = () => {
+  O.ael('keydown', onKeyDown);
   O.ael('resize', onResize);
+};
+
+const onKeyDown = evt => {
+  const {ctrlKey, shiftKey, altKey, code} = evt;
+  const flags = (ctrlKey << 2) | (shiftKey << 1) | altKey;
+
+  if(flags === 0){
+    if(code === 'Enter'){
+      csp.tick();
+      return;
+    }
+
+    return;
+  }
 };
 
 const onResize = evt => {
