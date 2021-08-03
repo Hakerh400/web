@@ -18,7 +18,7 @@ let iw, ih;
 let iwh, ihh;
 
 const main = () => {
-  const tiles = [];
+  const tiles = new Set();
 
   const a = O.sanl(O.ftext(`
     |  3   169|
@@ -40,7 +40,7 @@ const main = () => {
     const d = new Tile(grid, x, y, vals);
 
     grid.set(x, y, d);
-    tiles.push(d);
+    tiles.add(d);
   });
 
   csp = new CSP(grid, tiles);
