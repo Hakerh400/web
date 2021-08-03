@@ -3,11 +3,11 @@
 const Tile = require('./tile');
 const CSP = require('./csp');
 
-const tileSize = 40;
+const tileSize = 50;
 const fontSize = tileSize * .6;
 
-const w = 5;
-const h = 1;
+const w = 9;
+const h = 9;
 
 let grid;
 let csp;
@@ -18,18 +18,33 @@ let iw, ih;
 let iwh, ihh;
 
 const main = () => {
-  const unsolved = new Map();
+  const tiles = [];
 
-  grid = new O.Grid(w, h, (x, y) => {
-    const d = new Tile(grid, x, y);
-    const vals = new Set(O.ca(5, i => i + 1));
+  const a = O.sanl(O.ftext(`
+    |  3   169|
+    |12    7  |
+    | 4   5   |
+    | 5  2 9  |
+    |     3 7 |
+    |2  594   |
+    |8   36   |
+    |  4   5  |
+    |6      8 |
+  `));
 
-    unsolved.set(d, vals);
-    
-    return d;
+  grid = new O.Grid(w, h);
+
+  grid.iter((x, y) => {
+    const n = a[y][x + 1] | 0;
+    const vals = new Set(n !== 0 ? [n] : O.ca(w, i => i + 1));
+    const d = new Tile(grid, x, y, vals);
+
+    grid.set(x, y, d);
+    tiles.push(d);
   });
 
-  csp = new CSP(grid, unsolved);
+  csp = new CSP(grid, tiles);
+  grid.csp = csp;
 
   aels();
   onResize();
@@ -46,7 +61,17 @@ const onKeyDown = evt => {
 
   if(flags === 0){
     if(code === 'Enter'){
-      csp.tick();
+      const result = csp.tick();
+
+      if(result === 0){
+        log('No solutions');
+      }else if(result === 1){
+        // log('Solved');
+      }else if(result === 2){
+        log('Multiple solutions');
+      }
+
+      render();
       return;
     }
 
