@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const fnum = require('./fnum');
 
 const STEP_BY_STEP = 0
 const SORT_VALS    = 0
@@ -23,6 +24,8 @@ class CSPBase{
 
     this.unsolvedNum = unsolvedNum;
     this.solutions = [];
+
+    this.stepsNum = 0;
   }
 
   getRels(tile){ O.virtual('getRels'); }
@@ -67,7 +70,8 @@ class CSPBase{
         return 0;
     }
 
-    // log(depth);
+    log(`Depth: ${depth}`);
+    log(`Steps: ${fnum(this.stepsNum)}`);
 
     return 1;
   }
@@ -97,22 +101,10 @@ class CSPBase{
         const relsArr = [];
 
         for(const val of valsArr){
-          const tileElims = newElims();
-
-          for(const v of vals){
-            if(v === val) continue;
-            addElim(tileElims, tile, v);
-          }
-
-          // if(this.getVal(this.grid.get(0, 0)) === 2 && tile.x === 1) debugger;
-          yield [[this, 'applyElims'], tileElims];
           const rels = this.getRels(tile, val);
 
           if(rels === null){
-            yield [[this, 'revertElims'], tileElims];
-
             if(vals.size === 1){
-              // assert(!applyElims);
               yield [[this, 'revertElims'], elimsAll];
               return null;
             }
@@ -121,7 +113,23 @@ class CSPBase{
             continue;
           }
 
-          if(this.solved){
+          const tileElims = newElims();
+
+          for(const v of vals){
+            if(v === val) continue;
+            addElim(tileElims, tile, v);
+          }
+
+          if(this.solved || this.unsolvedNum === 1 && tileElims.size !== 0){
+            const {solved} = this;
+
+            if(!solved){
+              yield [[this, 'applyElims'], tileElims];
+              assert(this.solved);
+              // log(this.stepsNum);
+              // return O.ret(1);
+            }
+
             this.createSolution();
 
             if(solutions.length !== 1){
@@ -135,7 +143,9 @@ class CSPBase{
             }
 
             elimsSet.add(tileElims);
-            yield [[this, 'revertElims'], tileElims];
+
+            if(!solved)
+              yield [[this, 'revertElims'], tileElims];
 
             break;
           }
@@ -143,60 +153,34 @@ class CSPBase{
           if(depth === 0){
             elimsSet.add(tileElims);
             relsArr.push(rels);
-            yield [[this, 'revertElims'], tileElims];
+            // yield [[this, 'revertElims'], tileElims];
             continue;
           }
 
-          // debugger;
-          // const a = JSON.stringify([...thisTiles].map(([a, b]) => [a.x, a.y, [...b]]));
+          yield [[this, 'applyElims'], tileElims];
+
           const elimsNew = yield [[this, 'solveWithDepth'], rels, depth - 1];
-          // const b = JSON.stringify([...thisTiles].map(([a, b]) => [a.x, a.y, [...b]]));
 
-          // if(a !== b){
-          //   log(a);
-          //   log(b);
-          //   assert.fail();
-          // }
-
-          // debugger;
           yield [[this, 'revertElims'], tileElims];
 
           if(elimsNew === null){
-            // log(JSON.stringify([...thisTiles].map(([a, b]) => [a.x, a.y, [...b]])));
-            // log(JSON.stringify([...elimsAll].map(([a, b]) => [a.x, a.y, [...b]])));
-            // log(tile.x, tile.y, val);
-            // log();
-            // debugger;
-            // log(JSON.stringify([...thisTiles].map(([a, b]) => [a.x, a.y, [...b]])));
-            // log(tile.x, tile.y, val);
-
             if(vals.size === 1){
-              // assert(!applyElims);
               yield [[this, 'revertElims'], elimsAll];
               return null;
             }
 
             yield [elimVal, tile, val];
-            // log(JSON.stringify([...thisTiles].map(([a, b]) => [a.x, a.y, [...b]])));
-            // log()
+
             continue;
           }
 
           elimsSet.add(elimsUnion([tileElims, elimsNew]));
-          // relsArr.push(rels);
         }
 
-        if(elimsSet.size === 0){
-          assert.fail();
-          // assert(!applyElims);
-          // yield [[this, 'revertElims'], elimsAll];
-          // return null;
-        }
+        assert(elimsSet.size !== 0);
 
         const elimsFinal = elimsIntersect(elimsSet);
         if(elimsFinal.size === 0) continue;
-
-        if(window.z)debugger;
 
         for(const [tile, vals] of elimsFinal){
           for(const val of vals){
@@ -238,6 +222,8 @@ class CSPBase{
         this.unsolvedNum += size === 1 ? 1 : -1;
     }
 
+    this.stepsNum++;
+
     if(STEP_BY_STEP)
       yield O.yield();
   }
@@ -278,6 +264,8 @@ class CSPBase{
           this.unsolvedNum += size === 1 ? 1 : -1;
       }
     }
+
+    this.stepsNum++;
 
     if(STEP_BY_STEP)
       yield O.yield();
