@@ -17,7 +17,7 @@ class Tile extends TileBase{
       return;
     }
 
-    // return;
+    return;
 
     const {fontSize} = g;
 
