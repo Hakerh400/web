@@ -1,7 +1,7 @@
 'use strict';
 
-const Tile = require('./tile');
-const CSP = require('./csp');
+const TileSudoku = require('./tile-sudoku');
+const CSPSudoku = require('./csp-sudoku');
 
 const tileSize = 50;
 const fontSize = tileSize * .6;
@@ -37,13 +37,13 @@ const main = () => {
   grid.iter((x, y) => {
     const n = a[y][x + 1] | 0;
     const vals = new Set(n !== 0 ? [n] : O.ca(w, i => i + 1));
-    const d = new Tile(grid, x, y, vals);
+    const d = new TileSudoku(grid, x, y, vals);
 
     grid.set(x, y, d);
     tiles.add(d);
   });
 
-  csp = new CSP(grid, tiles);
+  csp = new CSPSudoku(grid, tiles);
   grid.csp = csp;
 
   aels();
