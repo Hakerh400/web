@@ -221,7 +221,7 @@ class CSP{
         }
 
         if(this.solved) break;
-        if(vals.size !== 1) continue;
+        // if(vals.size !== 1) continue;
 
         for(const rels of relsArr)
           for(const tile of rels)

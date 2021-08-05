@@ -3,10 +3,13 @@
 const assert = require('assert');
 const Tile = require('./tile');
 
+const n = 2;
+const n2 = n ** 2;
+
 class TileSudoku extends Tile{
   render(g){
     const {x, y, vals} = this;
-    const p = (x / 3 | 0) + (y / 3 | 0) & 1;
+    const p = (x / n | 0) + (y / n | 0) & 1;
 
     g.fillStyle = p ? '#aaa' : '#fff';
     g.fillRect(0, 0, 1, 1);
@@ -21,18 +24,18 @@ class TileSudoku extends Tile{
 
     const {fontSize} = g;
 
-    g.font(fontSize / 3);
+    g.font(fontSize / n);
     g.fillStyle = 'black';
 
     for(const val of vals){
       const i = val - 1;
-      const x = i % 3;
-      const y = i / 3 | 0;
+      const x = i % n;
+      const y = i / n | 0;
 
       g.fillText(
         val,
-        x / 3 + 1 / 6,
-        y / 3 + 1 / 6,
+        (x + .5) / n,
+        (y + .5) / n,
       );
     }
 

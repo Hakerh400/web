@@ -3,11 +3,14 @@
 const assert = require('assert');
 const CSP = require('./csp');
 
+const n = 2;
+const n2 = n ** 2;
+
 class CSPSudoku extends CSP{
   *getRowTiles(tile){
     const {x, y} = tile;
 
-    for(let i = 0; i !== 9; i++){
+    for(let i = 0; i !== n2; i++){
       if(i === x) continue;
       yield this.get(i, y);
     }
@@ -16,7 +19,7 @@ class CSPSudoku extends CSP{
   *getColTiles(tile){
     const {x, y} = tile;
 
-    for(let i = 0; i !== 9; i++){
+    for(let i = 0; i !== n2; i++){
       if(i === y) continue;
       yield this.get(x, i);
     }
@@ -24,11 +27,11 @@ class CSPSudoku extends CSP{
 
   *getSectTiles(tile){
     const {x, y} = tile;
-    const x1 = x - x % 3;
-    const y1 = y - y % 3;
+    const x1 = x - x % n;
+    const y1 = y - y % n;
 
-    for(let i = 0; i !== 3; i++){
-      for(let j = 0; j !== 3; j++){
+    for(let i = 0; i !== n; i++){
+      for(let j = 0; j !== n; j++){
         const x2 = x1 + i;
         const y2 = y1 + j;
         if(x2 === x && y2 === y) continue;
@@ -68,7 +71,7 @@ class CSPSudoku extends CSP{
           allVals.add(val);
       }
 
-      if(allVals.size !== 9)
+      if(allVals.size !== n2)
         return 0;
     }
 

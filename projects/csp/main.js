@@ -1,13 +1,14 @@
 'use strict';
 
-const TileSudoku = require('./tile-sudoku');
 const CSPSudoku = require('./csp-sudoku');
+const GridSudoku = require('./grid-sudoku');
+const TileSudoku = require('./tile-sudoku');
 
 const tileSize = 50;
 const fontSize = tileSize * .6;
 
-const w = 9;
-const h = 9;
+const w = 4;
+const h = 4;
 
 let grid;
 let csp;
@@ -21,26 +22,20 @@ const main = () => {
   const tiles = new Set();
 
   const a = O.sanl(O.ftext(`
-    |  3   169|
-    |12    7  |
-    | 4   5   |
-    | 5  2 9  |
-    |     3 7 |
-    |2  594   |
-    |8   36   |
-    |  4   5  |
-    |6      8 |
+    |   2|
+    |  3 |
+    | 42 |
+    |1   |
   `));
 
-  grid = new O.Grid(w, h);
-
-  grid.iter((x, y) => {
+  grid = new GridSudoku(w, h, (grid, x, y) => {
     const n = a[y][x + 1] | 0;
     const vals = new Set(n !== 0 ? [n] : O.ca(w, i => i + 1));
     const d = new TileSudoku(grid, x, y, vals);
 
-    grid.set(x, y, d);
     tiles.add(d);
+
+    return d;
   });
 
   csp = new CSPSudoku(grid, tiles);
@@ -100,7 +95,7 @@ const render = () => {
 
   const {gs} = g;
 
-  grid.iter((x, y, d) => {
+  grid.iter((d, x, y) => {
     g.save();
     g.translate(x, y);
     d.render(g);
