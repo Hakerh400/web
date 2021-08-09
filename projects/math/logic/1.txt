@@ -6,6 +6,8 @@ type ( ⟹ ) 2 [infixr 25]
 type bool  0
 
 const True  :: bool
+
+
 const False :: bool
 
 const (∀)   [binder]    :: ('a  ⟹  bool)  ⟹  bool
@@ -1562,7 +1564,7 @@ lemma not_all_exi_dif: ¬(∀a. ∃b. ¬(b = a))
   del 1
   - unit_ind[#..a] refl %
 
-def (∈) [infixl 50]: λx S. (λx y. y) (S = λx. True) S x
+def (∈) [infixl 52]: λx S. (λx y. y) (S = λx. True) S x
 
 lemma in_def: ∀S a. (a ∈ S) = (S a)
   - ∈_def
@@ -2869,6 +2871,24 @@ lemma fix_pred₁_eq_0: (FIX) pred₁ = 0
   - if_fal_t1 1 suc_neq_0
   - eq_tran2 pred_suc 1
   - falI 1 neq_suc %
+
+lemma zfc_ax_ext: ∀a b. (∀c. c ∈ a = c ∈ b)  ⟶  a = b
+  - ext %
+  - 1[c]
+  - tran1 in_def 1
+  - tran1 in_def 1 %
+
+def (⋂) [infixl 55]: λa b c. c ∈ a ∧ c ∈ b
+def (⋃) [infixl 55]: λa b c. c ∈ a ∨ c ∈ b
+
+lemma cap_def: ∀a b. a ⋂ b = λc. c ∈ a ∧ c ∈ b
+  - fun_cong2 ⋂_def %
+
+lemma cup_def: ∀a b. a ⋃ b = λc. c ∈ a ∨ c ∈ b
+  - fun_cong2 ⋃_def %
+
+lemma zfc_ax_reg: ∀a. ¬(a = ∅)  ⟶  ∃b. b ∈ a ∧ b ⋂ a = ∅
+  - 
 
 lemma length_least_fold_tail: ∀a. length a = μn. nat_fold a tail n = Nil
   - 

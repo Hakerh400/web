@@ -23,6 +23,8 @@ const specialChars = [
   ['\\mu', 'μ'],
   ['\\-1', '⁻¹'],
   ...O.ca(10, i => [`\\${i}`, O.sfcc(0x2080 | i)]),
+  ['\\cap', '⋂'],
+  ['\\cup', '⋃'],
 ];
 
 module.exports = specialChars;
