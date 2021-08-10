@@ -4,6 +4,8 @@ const CSPSudoku = require('./csp-sudoku');
 const GridSudoku = require('./grid-sudoku');
 const TileSudoku = require('./tile-sudoku');
 
+await O.addStyle('style.css');
+
 const tileSize = 50;
 const fontSize = tileSize * .6;
 
@@ -19,8 +21,6 @@ let iw, ih;
 let iwh, ihh;
 
 const main = () => {
-  const tiles = new Set();
-
   const a = O.sanl(O.ftext(`
     |   2|
     |  3 |
@@ -28,18 +28,22 @@ const main = () => {
     |1   |
   `));
 
-  grid = new GridSudoku(w, h, (grid, x, y) => {
-    const n = a[y][x + 1] | 0;
-    const vals = new Set(n !== 0 ? [n] : O.ca(w, i => i + 1));
-    const d = new TileSudoku(grid, x, y, vals);
+  grid = new GridSudoku(w, h);
+  csp = new CSPSudoku(grid);
 
-    tiles.add(d);
-
-    return d;
-  });
-
-  csp = new CSPSudoku(grid, tiles);
   grid.csp = csp;
+
+  grid.iter((x, y, d, h, v) => {
+    if(d !== null){
+      const n = a[y][x + 1] | 0;
+      if(n === 0) return;
+
+      d.val = n;
+    }
+
+    if(h !== null && O.rand(3) !== 0) h.val = O.rand(2);
+    if(v !== null && O.rand(3) !== 0) v.val = O.rand(2);
+  });
 
   aels();
   onResize();
@@ -83,38 +87,19 @@ const onResize = evt => {
   g.resize(iw, ih);
   g.font(fontSize);
 
+  g.lineCap = 'square';
+
   render();
 };
 
 const render = () => {
-  g.clearCanvas('darkgray');
+  g.clearRect(0, 0, w, h);
 
   g.translate(iwh, ihh);
   g.scale(tileSize);
   g.translate(-w / 2, -h / 2);
 
-  const {gs} = g;
-
-  grid.iter((d, x, y) => {
-    g.save();
-    g.translate(x, y);
-    d.render(g);
-    g.restore();
-  });
-
-  g.beginPath();
-
-  for(let i = 0; i <= w; i++){
-    g.moveTo(i, 0);
-    g.lineTo(i, h + gs);
-  }
-
-  for(let i = 0; i <= h; i++){
-    g.moveTo(0, i);
-    g.lineTo(w + gs, i);
-  }
-
-  g.stroke();
+  grid.render(g);
 
   g.resetTransform();
 };

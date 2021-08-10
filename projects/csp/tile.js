@@ -23,6 +23,14 @@ class Tile{
   get val(){
     return O.the(this.vals);
   }
+
+  set val(val){
+    const {vals} = this;
+    assert(vals.has(val));
+
+    vals.clear();
+    vals.add(val);
+  }
 }
 
 module.exports = Tile;

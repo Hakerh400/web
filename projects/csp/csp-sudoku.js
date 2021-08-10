@@ -8,24 +8,27 @@ const n2 = n ** 2;
 
 class CSPSudoku extends CSP{
   *getRowTiles(tile){
+    const {grid} = this;
     const {x, y} = tile;
 
     for(let i = 0; i !== n2; i++){
       if(i === x) continue;
-      yield this.get(i, y);
+      yield grid.getSquare(i, y);
     }
   }
 
   *getColTiles(tile){
+    const {grid} = this;
     const {x, y} = tile;
 
     for(let i = 0; i !== n2; i++){
       if(i === y) continue;
-      yield this.get(x, i);
+      yield grid.getSquare(x, i);
     }
   }
 
   *getSectTiles(tile){
+    const {grid} = this;
     const {x, y} = tile;
     const x1 = x - x % n;
     const y1 = y - y % n;
@@ -36,7 +39,7 @@ class CSPSudoku extends CSP{
         const y2 = y1 + j;
         if(x2 === x && y2 === y) continue;
 
-        yield this.get(x2, y2);
+        yield grid.getSquare(x2, y2);
       }
     }
   }
@@ -58,30 +61,34 @@ class CSPSudoku extends CSP{
   }
 
   check(tile, vals){
-    const {x, y} = tile;
-    const val = O.the(vals);
+    if(tile.isSquare){
+      const {x, y} = tile;
+      const val = O.the(vals);
 
-    for(const iter of this.getRelTileIters(tile)){
-      const allVals = new Set(vals);
+      for(const iter of this.getRelTileIters(tile)){
+        const allVals = new Set(vals);
 
-      for(const d of iter){
-        assert(d !== tile);
+        for(const d of iter){
+          assert(d !== tile);
 
-        for(const val of d.vals)
-          allVals.add(val);
-      }
+          for(const val of d.vals)
+            allVals.add(val);
+        }
 
-      if(allVals.size !== n2)
-        return 0;
-    }
-
-    if(val !== null){
-      for(const d of this.getRelTiles(tile)){
-        assert(d !== tile);
-
-        if(val !== null && d.val === val)
+        if(allVals.size !== n2)
           return 0;
       }
+
+      if(val !== null){
+        for(const d of this.getRelTiles(tile)){
+          assert(d !== tile);
+
+          if(val !== null && d.val === val)
+            return 0;
+        }
+      }
+
+      return 1;
     }
 
     return 1;

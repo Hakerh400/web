@@ -10,7 +10,9 @@ const SORT_VALS = STEP_BY_STEP;
 class CSP{
   relsTemp = null;
 
-  constructor(grid, tiles){
+  constructor(grid){
+    const {tiles} = grid;
+
     this.grid = grid;
     this.tiles = tiles;
 
@@ -44,17 +46,6 @@ class CSP{
 
     rels.delete(tile);
     return rels;
-  }
-
-  get(x, y){
-    const {grid, relsTemp} = this;
-    const tile = grid.get(x, y);
-    if(tile === null) return null;
-
-    if(relsTemp !== null)
-      relsTemp.add(tile);
-
-    return tile;
   }
 
   get solved(){
