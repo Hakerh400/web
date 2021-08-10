@@ -20,6 +20,10 @@ class Tile{
     return this.grid.nav1(x, y, dir, wrap);
   }
 
+  get isSolved(){
+    return this.vals.size === 1;
+  }
+
   get val(){
     return O.the(this.vals);
   }
@@ -27,9 +31,12 @@ class Tile{
   set val(val){
     const {vals} = this;
     assert(vals.has(val));
+    if(vals.size === 1) return;
 
     vals.clear();
     vals.add(val);
+
+    this.grid.unsolvedNum--;
   }
 }
 

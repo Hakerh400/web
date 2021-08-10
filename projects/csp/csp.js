@@ -17,23 +17,20 @@ class CSP{
     this.tiles = tiles;
 
     this.solver = O.recg([this, 'solve'], tiles);
-
-    let unsolvedNum = 0;
-
-    for(const {vals} of tiles){
-      const valsNum = vals.size;
-      assert(valsNum !== 0);
-
-      if(valsNum !== 1) unsolvedNum++;
-    }
-
-    this.unsolvedNum = unsolvedNum;
     this.solutions = [];
 
     this.stepsNum = 0;
   }
 
   check(tile, vals){ O.virtual('check'); }
+
+  get unsolvedNum(){
+    return this.grid.unsolvedNum;
+  }
+
+  set unsolvedNum(n){
+    this.grid.unsolvedNum = n;
+  }
 
   getRels(tile, vals){
     const rels = new Set();

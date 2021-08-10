@@ -36,13 +36,16 @@ const main = () => {
   grid.iter((x, y, d, h, v) => {
     if(d !== null){
       const n = a[y][x + 1] | 0;
-      if(n === 0) return;
 
-      d.val = n;
+      if(n !== 0)
+        d.val = n;
     }
 
-    if(h !== null && O.rand(3) !== 0) h.val = O.rand(2);
-    if(v !== null && O.rand(3) !== 0) v.val = O.rand(2);
+    if(h !== null)
+      h.val = y % 2 === 0 ? 1 : 0;
+
+    if(v !== null)
+      v.val = x % 2 === 0 ? 1 : 0;
   });
 
   aels();

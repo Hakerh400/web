@@ -4,6 +4,7 @@ const assert = require('assert');
 
 class Grid{
   tiles = new Set();
+  unsolvedNum = 0;
 
   constructor(csp=null){
     this.csp = csp;
@@ -11,6 +12,9 @@ class Grid{
 
   addTile(tile){
     this.tiles.add(tile);
+
+    if(!tile.isSolved)
+      this.unsolvedNum++;
   }
 
   getTile(tile){
