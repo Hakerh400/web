@@ -3,7 +3,7 @@
 const assert = require('assert');
 const fnum = require('./fnum');
 
-const STEP_BY_STEP = 0;
+const STEP_BY_STEP = 1;
 
 const SORT_VALS = STEP_BY_STEP;
 

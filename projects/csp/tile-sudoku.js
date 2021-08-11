@@ -3,7 +3,7 @@
 const assert = require('assert');
 const TileBase = require('./tile');
 
-const RENDER_SMALL_VALS = 0;
+const RENDER_SMALL_VALS = 1;
 
 const n = 2;
 const n2 = n ** 2;

@@ -41,11 +41,11 @@ const main = () => {
         d.val = n;
     }
 
-    if(h !== null)
+    /*if(h !== null)
       h.val = y % 2 === 0 ? 1 : 0;
 
     if(v !== null)
-      v.val = x % 2 === 0 ? 1 : 0;
+      v.val = x % 2 === 0 ? 1 : 0;*/
   });
 
   aels();
@@ -96,7 +96,7 @@ const onResize = evt => {
 };
 
 const render = () => {
-  g.clearRect(0, 0, w, h);
+  g.clearRect(0, 0, iw, ih);
 
   g.translate(iwh, ihh);
   g.scale(tileSize);

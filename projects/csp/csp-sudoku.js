@@ -27,19 +27,43 @@ class CSPSudoku extends CSP{
     }
   }
 
-  *getSectTiles(tile){
+  *getShapeTiles(tile){
     const {grid} = this;
-    const {x, y} = tile;
-    const x1 = x - x % n;
-    const y1 = y - y % n;
+    const stack = [tile];
+    const seen = new Set(stack);
 
-    for(let i = 0; i !== n; i++){
-      for(let j = 0; j !== n; j++){
-        const x2 = x1 + i;
-        const y2 = y1 + j;
-        if(x2 === x && y2 === y) continue;
+    let first = 1;
 
-        yield grid.getSquare(x2, y2);
+    while(stack.length !== 0){
+      const tile = stack.pop();
+      const {x, y} = tile;
+
+      if(first){
+        first = 0;
+      }else{
+        yield tile;
+      }
+
+      for(let dir = 0; dir !== 4; dir++){
+        let x1 = x;
+        let y1 = y;
+
+        const line =
+          dir === 0 ? grid.getHLine(x1, y1--) :
+          dir === 1 ? grid.getVLine(++x1, y1) :
+          dir === 2 ? grid.getHLine(x1, ++y1) :
+                      grid.getVLine(x1--, y1);
+
+        assert(line !== null);
+
+        const {val} = line;
+        if(val !== 1) continue;
+
+        const tile = grid.getSquare(x1, y1);
+        if(tile === null || seen.has(tile)) continue;
+
+        seen.add(tile);
+        stack.push(tile);
       }
     }
   }
@@ -47,7 +71,7 @@ class CSPSudoku extends CSP{
   *getRelTileIters(tile){
     yield this.getRowTiles(tile);
     yield this.getColTiles(tile);
-    yield this.getSectTiles(tile);
+    yield this.getShapeTiles(tile);
   }
 
   *getRelTilesRaw(tile){
@@ -61,10 +85,10 @@ class CSPSudoku extends CSP{
   }
 
   check(tile, vals){
-    if(tile.isSquare){
-      const {x, y} = tile;
-      const val = O.the(vals);
+    const {x, y} = tile;
+    const val = O.the(vals);
 
+    if(tile.isSquare){
       for(const iter of this.getRelTileIters(tile)){
         const allVals = new Set(vals);
 
@@ -75,7 +99,7 @@ class CSPSudoku extends CSP{
             allVals.add(val);
         }
 
-        if(allVals.size !== n2)
+        if(allVals.size > n2)
           return 0;
       }
 
@@ -91,7 +115,15 @@ class CSPSudoku extends CSP{
       return 1;
     }
 
-    return 1;
+    if(tile.isHLine){
+      return val === (y % 2 === 0 ? 1 : 0);
+    }
+
+    if(tile.isVLine){
+      return val === (x % 2 === 0 ? 1 : 0);
+    }
+
+    assert.fail();
   }
 }
 
