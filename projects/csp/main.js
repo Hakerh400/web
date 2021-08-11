@@ -3,14 +3,16 @@
 const CSPSudoku = require('./csp-sudoku');
 const GridSudoku = require('./grid-sudoku');
 const TileSudoku = require('./tile-sudoku');
+const flags = require('./flags');
 
 await O.addStyle('style.css');
 
 const tileSize = 50;
 const fontSize = tileSize * .6;
 
-const w = 4;
-const h = 4;
+const size = 5;
+const w = size;
+const h = size;
 
 let grid;
 let csp;
@@ -22,10 +24,11 @@ let iwh, ihh;
 
 const main = () => {
   const a = O.sanl(O.ftext(`
-    |   2|
-    |  3 |
-    | 42 |
-    |1   |
+    |12345|
+    |23451|
+    |34512|
+    |     |
+    |     |
   `));
 
   grid = new GridSudoku(w, h);
@@ -41,11 +44,11 @@ const main = () => {
         d.val = n;
     }
 
-    /*if(h !== null)
-      h.val = y % 2 === 0 ? 1 : 0;
+    grid.getHLine(0, 1).val = 1;
+    grid.getHLine(2, 1).val = 1;
+    grid.getHLine(4, 3).val = 1;
 
-    if(v !== null)
-      v.val = x % 2 === 0 ? 1 : 0;*/
+    grid.getVLine(2, 0).val = 1;
   });
 
   aels();

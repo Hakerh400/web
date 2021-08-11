@@ -2,8 +2,9 @@
 
 const assert = require('assert');
 const fnum = require('./fnum');
+const flags = require('./flags');
 
-const STEP_BY_STEP = 1;
+const STEP_BY_STEP = flags.debug;
 
 const SORT_VALS = STEP_BY_STEP;
 
@@ -22,7 +23,7 @@ class CSP{
     this.stepsNum = 0;
   }
 
-  check(tile, vals){ O.virtual('check'); }
+  check(tile){ O.virtual('check'); }
 
   get unsolvedNum(){
     return this.grid.unsolvedNum;
@@ -32,11 +33,11 @@ class CSP{
     this.grid.unsolvedNum = n;
   }
 
-  getRels(tile, vals){
+  getRels(tile){
     const rels = new Set();
     this.relsTemp = rels;
 
-    const ok = this.check(tile, vals);
+    const ok = this.check(tile);
     this.relsTemp = null;
 
     if(!ok) return null;
@@ -105,11 +106,17 @@ class CSP{
         if(vals.size === 1) continue;
 
         const valsArr = [...vals];
+
+        if(SORT_VALS)
+          O.sortAsc(valsArr);
+
         const elimsSet = new Set();
         const relsArr = [];
 
         for(const val of valsArr){
-          const rels = this.getRels(tile, new Set([val]));
+          tile.vals = new Set([val]);
+          const rels = this.getRels(tile);
+          tile.vals = vals;
 
           if(rels === null){
             if(vals.size === 1){
@@ -122,7 +129,11 @@ class CSP{
             const valsNew = new Set(vals);
             valsNew.delete(val);
 
-            if(!this.check(tile, valsNew)){
+            this.vals = valsNew;
+            const result = this.check(tile);
+            this.vals = vals;
+
+            if(!result){
               yield [[this, 'revertElims'], elimsAll];
               return null;
             }
@@ -246,7 +257,7 @@ class CSP{
   }
 
   *revertElims(elims){
-    if(SORT_VALS){
+    /*if(SORT_VALS){
       for(const [tile, vals] of elims){
         const {vals: valsSet} = tile;
         const valsArr = [...valsSet];
@@ -266,7 +277,7 @@ class CSP{
         if((size === 1) !== (valsSet.size === 1))
           this.unsolvedNum += size === 1 ? 1 : -1;
       }
-    }else{
+    }else{*/
       for(const [tile, vals] of elims){
         const {vals: valsSet} = tile;
         const size = valsSet.size;
@@ -280,7 +291,7 @@ class CSP{
         if((size === 1) !== (valsSet.size === 1))
           this.unsolvedNum += size === 1 ? 1 : -1;
       }
-    }
+    /*}*/
 
     this.stepsNum++;
 

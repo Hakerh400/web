@@ -2,8 +2,9 @@
 
 const assert = require('assert');
 const TileBase = require('./tile');
+const flags = require('./flags');
 
-const RENDER_SMALL_VALS = 1;
+const RENDER_SMALL_VALS = flags.debug;
 
 const n = 2;
 const n2 = n ** 2;
@@ -79,14 +80,34 @@ class Line extends Tile{
       h + s,
     );
   }
+
+  getAdjSquares(){ O.virtual('getAdjSquares'); }
 }
 
 class HLine extends Line{
   get isHLine(){ return 1; }
+
+  getAdjSquares(){
+    const {grid, x, y} = this;
+
+    return [
+      grid.getSquare(x, y - 1),
+      grid.getSquare(x, y),
+    ];
+  }
 }
 
 class VLine extends Line{
   get isVLine(){ return 1; }
+
+  getAdjSquares(){
+    const {grid, x, y} = this;
+
+    return [
+      grid.getSquare(x - 1, y),
+      grid.getSquare(x, y),
+    ];
+  }
 }
 
 module.exports = Object.assign(Tile, {
