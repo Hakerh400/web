@@ -15,7 +15,7 @@ class CSP{
     const {tiles} = grid;
 
     this.grid = grid;
-    this.tiles = tiles;
+    this.tiles = O.shuffle([...tiles]);
 
     this.solver = O.recg([this, 'solve'], tiles);
     this.solutions = [];
@@ -66,9 +66,7 @@ class CSP{
   }
 
   *solve(tiles){
-    const {solutions} = this;
-
-    let depth = -1;
+    let depth = 1e5//-1;
 
     while(!this.solved){
       depth++;

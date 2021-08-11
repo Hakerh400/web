@@ -5,14 +5,27 @@ const GridSudoku = require('./grid-sudoku');
 const TileSudoku = require('./tile-sudoku');
 const flags = require('./flags');
 
+const seed = O.urlParam('seed', 0) | 0;
+O.enhanceRNG();
+O.randSeed(seed);
+O.ael('keydown', evt => {
+  if(evt.code === 'ArrowRight')
+    location.href = location.href.replace(/&seed=.*|$/, `&seed=${seed + 1}`);
+
+  if(evt.code === 'ArrowLeft'){
+    if(seed === 0) return;
+    location.href = location.href.replace(/&seed=.*|$/, `&seed=${seed - 1}`);
+  }
+});
+
 await O.addStyle('style.css');
+
+const size = 7;
+const w = size;
+const h = size;
 
 const tileSize = 50;
 const fontSize = tileSize * .6;
-
-const size = 5;
-const w = size;
-const h = size;
 
 let grid;
 let csp;
@@ -24,9 +37,9 @@ let iwh, ihh;
 
 const main = () => {
   const a = O.sanl(O.ftext(`
-    |12345|
-    |23451|
-    |34512|
+    |     |
+    |     |
+    |     |
     |     |
     |     |
   `));
@@ -37,6 +50,8 @@ const main = () => {
   grid.csp = csp;
 
   grid.iter((x, y, d, h, v) => {
+    return;
+
     if(d !== null){
       const n = a[y][x + 1] | 0;
 
@@ -44,12 +59,14 @@ const main = () => {
         d.val = n;
     }
 
-    grid.getHLine(0, 1).val = 1;
-    grid.getHLine(2, 1).val = 1;
-    grid.getHLine(4, 3).val = 1;
+    // grid.getHLine(0, 1).val = 1;
+    // grid.getHLine(2, 1).val = 1;
+    // grid.getHLine(4, 3).val = 1;
 
-    grid.getVLine(2, 0).val = 1;
+    // grid.getVLine(2, 0).val = 1;
   });
+
+  csp.tick();
 
   aels();
   onResize();

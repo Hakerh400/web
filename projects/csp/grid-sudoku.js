@@ -31,19 +31,19 @@ class GridSudoku extends Grid{
 
       for(let x = 0; x <= w; x++){
         if(x < w && y < h){
-          const tile = new Tile.Square(this, x, y, new Set(squareVals));
+          const tile = new Tile.Square(this, x, y, new Set(O.shuffle(squareVals)));
           squaresRow.push(tile);
           this.addTile(tile);
         }
 
         if(x < w){
-          const tile = new Tile.HLine(this, x, y, new Set(lineVals));
+          const tile = new Tile.HLine(this, x, y, new Set(O.shuffle(lineVals)));
           hlinesRow.push(tile);
           this.addTile(tile);
         }
 
         if(y < h){
-          const tile = new Tile.VLine(this, x, y, new Set(lineVals));
+          const tile = new Tile.VLine(this, x, y, new Set(O.shuffle(lineVals)));
           vlinesRow.push(tile);
           this.addTile(tile);
         }

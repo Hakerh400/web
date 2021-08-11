@@ -234,8 +234,10 @@ class CSPSudoku extends CSP{
         }
 
         const d = d1;
-        const dVal = d.val;
+        const dVals = d.vals;
+        const dVal = O.the(dVals);
         const vals = new Set();
+        const allVals = new Set(dVals);
 
         if(dVal !== null)
           vals.add(dVal);
@@ -243,7 +245,12 @@ class CSPSudoku extends CSP{
         for(const d1 of this.getShapeTiles(d)){
           assert(d1 !== d);
 
-          const {val} = d1;
+          const vals1 = d1.vals;
+
+          for(const val of vals)
+            allVals.add(val);
+
+          const val = O.the(vals1);
           if(val === null) continue;
 
           if(vals.has(val))
@@ -253,6 +260,14 @@ class CSPSudoku extends CSP{
         }
 
         if(this.#shapeSize > size)
+          return 0;
+
+        if(!this.#isShapeComplete) return 1;
+
+        if(this.#shapeSize !== size)
+          return 0;
+
+        if(allVals.size !== size)
           return 0;
 
         return 1;
