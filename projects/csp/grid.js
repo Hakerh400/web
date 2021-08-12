@@ -5,6 +5,7 @@ const assert = require('assert');
 class Grid{
   tiles = new Set();
   unsolvedNum = 0;
+  error = null;
 
   constructor(csp=null){
     this.csp = csp;
