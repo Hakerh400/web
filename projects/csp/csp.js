@@ -337,7 +337,7 @@ class CSP{
 
   setErr(cnstrIndex, tiles=null){
     const {ctor, grid} = this;
-    
+
     assert(grid.err === null);
 
     grid.err = cnstrIndex;
