@@ -3,7 +3,19 @@
 const assert = require('assert');
 const CSP = require('./csp');
 
+const exactlyOnceStr = type => {
+  return `Each ${type} must contain every number exactly once`;
+};
+
 class CSPSudoku extends CSP{
+  static cnstrs = [
+    exactlyOnceStr('row'),
+    exactlyOnceStr('column'),
+    exactlyOnceStr('shape'),
+    `All shapes must be closed`,
+    `There must be no dangling lines`,
+  ];
+
   #shapeSize;
   #isShapeComplete;
 
@@ -99,12 +111,34 @@ class CSPSudoku extends CSP{
     return O.undupeIter(iter);
   }
 
-  check(tile){
+  check(tile, addInfo=0){
     const {grid, size} = this
     const {x, y, vals} = tile;
     const val = O.the(vals);
 
+    if(addInfo)
+      assert(val !== null);
+
     if(tile.isSquare){
+      if(val !== null){
+        let i = -1;
+
+        for(const iter of this.getRelTileIters(tile)){
+          i++;
+
+          for(const d of iter){
+            assert(d !== tile);
+
+            if(d.val === val){
+              if(addInfo)
+                this.setErr(i, [tile, d]);
+
+              return 0;
+            }
+          }
+        }
+      }
+
       let i = -1;
 
       for(const iter of this.getRelTileIters(tile)){
@@ -124,19 +158,14 @@ class CSPSudoku extends CSP{
 
           if(!(this.#shapeSize === size || this.#isShapeComplete))
             continue;
-
-          if(allVals.size === size) continue;
-          return 0;
         }
-      }
 
-      if(val !== null){
-        for(const d of this.getRelTiles(tile)){
-          assert(d !== tile);
+        if(allVals.size === size) continue;
 
-          if(val !== null && d.val === val)
-            return 0;
-        }
+        if(addInfo)
+          this.setErr(i, [tile]);
+
+        return 0;
       }
 
       return 1;
@@ -158,8 +187,12 @@ class CSPSudoku extends CSP{
           for(const d3 of this.getShapeTiles(d)){
             assert(d3 !== d);
 
-            if(i === 0 && d3 === d2)
+            if(i === 0 && d3 === d2){
+              if(addInfo)
+                this.setErr(4, [tile]);
+
               return 0;
+            }
 
             for(const val of d3.vals)
               allVals.add(val);
@@ -170,22 +203,35 @@ class CSPSudoku extends CSP{
           if(!(this.#shapeSize === size || this.#isShapeComplete))
             continue;
 
-          if(this.#shapeSize !== size)
-            return 0;
+          if(this.#shapeSize !== size){
+            if(addInfo)
+              this.setErr(2, [tile]);
 
-          if(allVals.size !== size)
             return 0;
+          }
+
+          if(allVals.size !== size){
+            if(addInfo)
+              this.setErr(2, [tile]);
+
+            return 0;
+          }
         }
 
         return 1;
       }
 
       if(val === 0){
-        if(d1 === null || d2 === null)
+        if(d1 === null || d2 === null){
+          if(addInfo)
+            this.setErr(3);
+
           return 0;
+        }
 
         const checkDangling = coords => {
           let fullLinesNum = 0;
+          let fullLine = null;
 
           for(let i = 0; i !== coords.length; i += 3){
             const x = coords[i];
@@ -202,9 +248,15 @@ class CSPSudoku extends CSP{
             if(val === 0) continue;
 
             fullLinesNum++;
+            fullLine = line;
           }
 
-          return fullLinesNum !== 1;
+          const result = fullLinesNum !== 1;
+
+          if(!result && addInfo)
+            this.setErr(4, [fullLine]);
+
+          return result;
         };
 
         if(tile.isHLine){
@@ -236,39 +288,55 @@ class CSPSudoku extends CSP{
         const d = d1;
         const dVals = d.vals;
         const dVal = O.the(dVals);
-        const vals = new Set();
+        const vals = new Map();
         const allVals = new Set(dVals);
 
         if(dVal !== null)
-          vals.add(dVal);
+          vals.set(dVal, d);
 
         for(const d1 of this.getShapeTiles(d)){
           assert(d1 !== d);
 
           const vals1 = d1.vals;
 
-          for(const val of vals)
+          for(const val of vals1)
             allVals.add(val);
 
           const val = O.the(vals1);
           if(val === null) continue;
 
-          if(vals.has(val))
-            return 0;
+          if(vals.has(val)){
+            if(addInfo)
+              this.setErr(2, [vals.get(val), d1]);
 
-          vals.add(val);
+            return 0;
+          }
+
+          vals.set(val, d1);
         }
 
-        if(this.#shapeSize > size)
+        if(this.#shapeSize > size){
+          if(addInfo)
+            this.setErr(2);
+
           return 0;
+        }
 
         if(!this.#isShapeComplete) return 1;
 
-        if(this.#shapeSize !== size)
-          return 0;
+        if(this.#shapeSize !== size){
+          if(addInfo)
+            this.setErr(2);
 
-        if(allVals.size !== size)
           return 0;
+        }
+
+        if(allVals.size !== size){
+          if(addInfo)
+            this.setErr(2);
+
+          return 0;
+        }
 
         return 1;
       }

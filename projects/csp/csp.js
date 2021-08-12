@@ -5,25 +5,25 @@ const fnum = require('./fnum');
 const flags = require('./flags');
 
 const STEP_BY_STEP = flags.debug;
-
 const SORT_VALS = STEP_BY_STEP;
 
 class CSP{
+  static cnstrs = null;
+
   relsTemp = null;
+  solutions = null;
+  stepsNum = 0;
+  gen = 0;
 
   constructor(grid){
     const {tiles} = grid;
-
     this.grid = grid;
-    this.tiles = O.shuffle([...tiles]);
-
-    this.solver = O.recg([this, 'solve'], tiles);
-    this.solutions = [];
-
-    this.stepsNum = 0;
   }
 
-  check(tile){ O.virtual('check'); }
+  check(tile, addInfo=0){ O.virtual('check'); }
+
+  get ctor(){ return this.constructor; }
+  get cnstrs(){ return this.ctor.cnstrs; }
 
   get unsolvedNum(){
     return this.grid.unsolvedNum;
@@ -55,7 +55,7 @@ class CSP{
     this.solutions.push(sol);
   }
 
-  tick(){
+  /*tick(){
     const {solver} = this;
     const result = solver.next();
 
@@ -63,27 +63,56 @@ class CSP{
       return result.value;
 
     return null;
+  }*/
+
+  solve(gen=0){
+    const {grid} = this;
+    const depth = gen ? O.N : 0;
+
+    this.solutions = [];
+    this.stepsNum = 0;
+    this.gen = gen;
+
+    if(gen) grid.shuffle();
+    grid.updateUnsolvedNum();
+
+    const tiles = new Set(grid.tiles);
+    const solver = O.recg([this, 'solveIter'], tiles, depth);
+
+    while(1){
+      const {value, done} = solver.next();
+      if(!done) continue;
+
+      this.solutions = null;
+      return value;
+    }
   }
 
-  *solve(tiles){
-    let depth = 1e5//-1;
+  generate(){
+    return this.solve(1);
+  }
+
+  *solveIter(tiles, depth){
+    this.tiles = tiles;
+
+    depth--;
 
     while(!this.solved){
       depth++;
 
-      const elims = yield [[this, 'solveWithDepth'], tiles, depth, 1];
+      const elims = yield [[this, 'solveIterWithDepth'], tiles, depth, 1];
 
       if(elims === null)
         return 0;
     }
 
-    log(`Depth: ${depth}`);
-    log(`Steps: ${fnum(this.stepsNum)}`);
+    // log(`Depth: ${depth}`);
+    // log(`Steps: ${fnum(this.stepsNum)}`);
 
     return 1;
   }
 
-  *solveWithDepth(tiles, depth, applyElims=0){
+  *solveIterWithDepth(tiles, depth, applyElims=0){
     const {solutions} = this;
     const elimsAll = new Map();
     const csp = this;
@@ -158,6 +187,9 @@ class CSP{
 
             this.createSolution();
 
+            if(this.gen)
+              return O.ret(1);
+
             if(solutions.length !== 1){
               const [sol1, sol2] = solutions;
 
@@ -185,7 +217,7 @@ class CSP{
 
           yield [[this, 'applyElims'], tileElims];
 
-          const elimsNew = yield [[this, 'solveWithDepth'], rels, depth - 1];
+          const elimsNew = yield [[this, 'solveIterWithDepth'], rels, depth - 1];
 
           yield [[this, 'revertElims'], tileElims];
 
@@ -301,6 +333,18 @@ class CSP{
     const elims = newElims();
     addElim(elims, tile, val);
     return O.tco([this, 'applyElims'], elims);
+  }
+
+  setErr(cnstrIndex, tiles=null){
+    const {ctor, grid} = this;
+    
+    assert(grid.err === null);
+
+    grid.err = cnstrIndex;
+
+    if(tiles !== null)
+      for(const tile of O.undupeIter(tiles))
+        tile.err = 1;
   }
 }
 

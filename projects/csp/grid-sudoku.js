@@ -54,14 +54,18 @@ class GridSudoku extends Grid{
   }
 
   render(g){
-    const {w, h} = this;
+    const {csp, w, h, err} = this;
     const {gs} = g;
+
+    g.fillStyle = '#e6e6e6';
+    g.fillRect(0, 0, w, h);
 
     this.iter((x, y, d) => {
       g.save();
       g.translate(x, y);
 
-      if(d !== null) d.render(g);
+      if(d !== null && !d.err)
+        d.render(g);
 
       g.restore();
     });
@@ -72,13 +76,34 @@ class GridSudoku extends Grid{
       g.save();
       g.translate(x, y);
 
-      if(h !== null) h.render(g);
-      if(v !== null) v.render(g);
+      if(h !== null && !h.err)
+        h.render(g);
+
+      if(v !== null && !v.err)
+        v.render(g);
       
       g.restore();
     });
 
     g.globalCompositeOperation = 'source-over';
+
+    if(err !== null){
+      for(const tile of this.errTiles){
+        g.save();
+        g.translate(tile.x, tile.y);
+        tile.render(g);
+        g.restore();
+      }
+
+      const {fontSize} = g;
+      const fontSizeNew = fontSize / 2;
+
+      g.font(fontSizeNew);
+      g.fillStyle = '#800';
+      g.fillText(csp.cnstrs[err], w / 2, -.5);
+
+      g.font(fontSize);
+    }
   }
 
   has(x, y){

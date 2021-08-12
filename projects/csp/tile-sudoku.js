@@ -15,19 +15,16 @@ class Tile extends TileBase{
 }
 
 class Square extends Tile{
-  constructor(grid, x, y){
-    const vals = new Set(O.ca(grid.size, i => i + 1));
-    super(grid, x, y, vals);
+  initVals(){
+    const {grid} = this;
+    return new Set(O.ca(grid.size, i => i + 1))
   }
 
   render(g){
     const {x, y, vals} = this;
 
-    g.fillStyle = '#e6e6e6';
-    g.fillRect(0, 0, 1, 1);
-
     if(vals.size === 1){
-      g.fillStyle = 'black';
+      g.fillStyle = this.err ? 'red' : 'black';
       g.fillText(O.the(vals), .5, .5);
       return;
     }
@@ -38,7 +35,7 @@ class Square extends Tile{
     const {fontSize} = g;
 
     g.font(fontSize / n);
-    g.fillStyle = 'black';
+    g.fillStyle = this.err ? 'red' : 'black';
 
     for(const val of vals){
       const i = val - 1;
@@ -59,14 +56,13 @@ class Square extends Tile{
 }
 
 class Line extends Tile{
-  constructor(grid, x, y){
-    const vals = new Set([0, 1]);
-    super(grid, x, y, vals);
-  }
-
   get isLine(){ return 1; }
   get isHLine(){ return 0; }
   get isVLine(){ return 0; }
+
+  initVals(){
+    return new Set([0, 1]);
+  }
 
   render(g){
     const hor = this.isHLine;
@@ -75,7 +71,8 @@ class Line extends Tile{
     const t = g.gs * (val !== 0 ? 1 : 0);
     const s = t * 2;
 
-    g.fillStyle = val === 0 ? '#cfcfcf' :
+    g.fillStyle = this.err ? 'red' :
+      val === 0 ? '#cfcfcf' :
       val === 1 ? '#000000' : '#cfcf00';
 
     const x = 0;
