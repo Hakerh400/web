@@ -5,7 +5,8 @@ const GridSudoku = require('./grid-sudoku');
 const TileSudoku = require('./tile-sudoku');
 const flags = require('./flags');
 
-const seed = O.urlParam('seed', 0) | 0;
+const seed = O.urlParam('seed', O.rand(1e9)) | 0;
+log(seed);
 O.enhanceRNG();
 O.randSeed(seed);
 O.ael('keydown', evt => {
@@ -20,7 +21,8 @@ O.ael('keydown', evt => {
 
 await O.addStyle('style.css');
 
-const size = 7;
+const n = 4;
+const size = n ** 2;
 const w = size;
 const h = size;
 
@@ -50,20 +52,18 @@ const main = () => {
   grid.csp = csp;
 
   grid.iter((x, y, d, h, v) => {
-    return;
-
-    if(d !== null){
+    /*if(d !== null){
       const n = a[y][x + 1] | 0;
 
       if(n !== 0)
         d.val = n;
-    }
+    }*/
 
-    // grid.getHLine(0, 1).val = 1;
-    // grid.getHLine(2, 1).val = 1;
-    // grid.getHLine(4, 3).val = 1;
+    if(h !== null)
+      h.val = y % n === 0 ? 1 : 0;
 
-    // grid.getVLine(2, 0).val = 1;
+    if(v !== null)
+      v.val = x % n === 0 ? 1 : 0;
   });
 
   csp.tick();
