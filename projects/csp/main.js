@@ -5,8 +5,12 @@ const GridSudoku = require('./grid-sudoku');
 const TileSudoku = require('./tile-sudoku');
 const flags = require('./flags');
 
+const {abs, floor, ceil} = Math;
+
+await O.addStyle('style.css');
+
 const seed = O.urlParam('seed', O.rand(1e9)) | 0;
-log(seed);
+window.seed = seed;
 O.enhanceRNG();
 O.randSeed(seed);
 O.ael('keydown', evt => {
@@ -19,9 +23,7 @@ O.ael('keydown', evt => {
   }
 });
 
-await O.addStyle('style.css');
-
-const n = 4;
+const n = 2;
 const size = n ** 2;
 const w = size;
 const h = size;
@@ -36,6 +38,9 @@ const {g} = O.ceCanvas(1);
 
 let iw, ih;
 let iwh, ihh;
+
+let cx = 0;
+let cy = 0;
 
 const main = () => {
   const a = O.sanl(O.ftext(`
@@ -59,14 +64,14 @@ const main = () => {
         d.val = n;
     }*/
 
-    if(h !== null)
+    /*if(h !== null)
       h.val = y % n === 0 ? 1 : 0;
 
     if(v !== null)
-      v.val = x % n === 0 ? 1 : 0;
+      v.val = x % n === 0 ? 1 : 0;*/
   });
 
-  csp.tick();
+  // csp.tick();
 
   aels();
   onResize();
@@ -74,6 +79,8 @@ const main = () => {
 
 const aels = () => {
   O.ael('keydown', onKeyDown);
+  O.ael('mousemove', onMouseMove);
+  O.ael('mousedown', onMouseDown);
   O.ael('resize', onResize);
 };
 
@@ -99,6 +106,35 @@ const onKeyDown = evt => {
 
     return;
   }
+};
+
+const onMouseMove = evt => {
+  updateCur(evt);
+};
+
+const onMouseDown = evt => {
+  updateCur(evt);
+};
+
+const updateCur = evt => {
+  cx = (evt.clientX - iwh) / tileSize + w / 2;
+  cy = (evt.clientY - ihh) / tileSize + h / 2;
+};
+
+const getSquare = () => {
+  return grid.getSquare(floor(cx), floor(cy));
+};
+
+const getLine = () => {
+  const mx = cx + .5;
+  const my = cy + .5;
+  const ax = abs((mx % 1 + 1) % 1 - .5);
+  const ay = abs((my % 1 + 1) % 1 - .5);
+
+  if(ax < ay)
+    return grid.getVLine(floor(mx), floor(cy));
+
+  return grid.getHLine(floor(cx), floor(my));
 };
 
 const onResize = evt => {

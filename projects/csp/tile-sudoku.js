@@ -15,10 +15,15 @@ class Tile extends TileBase{
 }
 
 class Square extends Tile{
+  constructor(grid, x, y){
+    const vals = new Set(O.ca(grid.size, i => i + 1));
+    super(grid, x, y, vals);
+  }
+
   render(g){
     const {x, y, vals} = this;
 
-    g.fillStyle = '#e6e6e6'
+    g.fillStyle = '#e6e6e6';
     g.fillRect(0, 0, 1, 1);
 
     if(vals.size === 1){
@@ -54,6 +59,11 @@ class Square extends Tile{
 }
 
 class Line extends Tile{
+  constructor(grid, x, y){
+    const vals = new Set([0, 1]);
+    super(grid, x, y, vals);
+  }
+
   get isLine(){ return 1; }
   get isHLine(){ return 0; }
   get isVLine(){ return 0; }
@@ -66,7 +76,7 @@ class Line extends Tile{
     const s = t * 2;
 
     g.fillStyle = val === 0 ? '#cfcfcf' :
-      val === 1 ? '#000000' : '#cfcf00'
+      val === 1 ? '#000000' : '#cfcf00';
 
     const x = 0;
     const y = 0;
@@ -81,33 +91,26 @@ class Line extends Tile{
     );
   }
 
-  getAdjSquares(){ O.virtual('getAdjSquares'); }
+  getAdjSquares(){
+    const {grid, x, y} = this;
+    const hor = this.isHLine;
+
+    const x1 = x - !hor;
+    const y1 = y - hor;
+
+    return [
+      grid.getSquare(x1, y1),
+      grid.getSquare(x, y),
+    ];
+  }
 }
 
 class HLine extends Line{
   get isHLine(){ return 1; }
-
-  getAdjSquares(){
-    const {grid, x, y} = this;
-
-    return [
-      grid.getSquare(x, y - 1),
-      grid.getSquare(x, y),
-    ];
-  }
 }
 
 class VLine extends Line{
   get isVLine(){ return 1; }
-
-  getAdjSquares(){
-    const {grid, x, y} = this;
-
-    return [
-      grid.getSquare(x - 1, y),
-      grid.getSquare(x, y),
-    ];
-  }
 }
 
 module.exports = Object.assign(Tile, {

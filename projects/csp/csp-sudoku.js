@@ -9,7 +9,7 @@ class CSPSudoku extends CSP{
 
   constructor(grid){
     super(grid);
-    this.size = grid.w;
+    this.size = grid.size;
   }
 
   *getRowTiles(tile){
