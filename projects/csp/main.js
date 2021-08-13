@@ -6,7 +6,7 @@ const GridSudoku = require('./grid-sudoku');
 const TileSudoku = require('./tile-sudoku');
 const flags = require('./flags');
 
-const {abs, floor, ceil} = Math;
+const {abs, floor, ceil, round} = Math;
 
 await O.addStyle('style.css');
 
@@ -24,8 +24,8 @@ O.ael('keydown', evt => {
   }
 });
 
-const n = 2;
-const size = n ** 2;
+// const n = 2;
+const size = 6//n ** 2;
 const w = size;
 const h = size;
 
@@ -45,7 +45,7 @@ let iwh, ihh;
 let cx = 0;
 let cy = 0;
 
-const main = () => {
+const main = async () => {
   grid = new GridSudoku(w, h);
   csp = new CSPSudoku(grid);
 
@@ -66,9 +66,13 @@ const main = () => {
       v.val = x % n === 0 ? 1 : 0;*/
   });
 
+  aels();
   onResize();
 
   csp.generate();
+
+  const div = O.ceDiv(O.body);
+  div.style.margin = '8px';
 
   const givenTiles = new Map();
 
@@ -76,8 +80,19 @@ const main = () => {
     givenTiles.set(tile, tile.val);
 
   const blankTiles = new Set();
+  let i = 0;
 
   for(const tile of O.shuffle([...grid.tiles].filter(a => 1))){
+    const percent = round(
+      (i + 1) /
+      (grid.tiles.size + 1) * 100);
+
+    div.innerText = `${percent}%`;
+    render();
+    await new Promise(res => O.raf(res));
+
+    i++;
+
     for(const tile of blankTiles)
       tile.setVal(null);
 
@@ -99,8 +114,9 @@ const main = () => {
   for(const [tile, val] of givenTiles)
     tile.setVal(val);
 
+  div.remove();
+
   render();
-  aels();
 };
 
 const aels = () => {
