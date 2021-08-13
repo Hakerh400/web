@@ -25,7 +25,7 @@ O.ael('keydown', evt => {
 });
 
 // const n = 2;
-const size = 4//n ** 2;
+const size = 5//n ** 2;
 const w = size;
 const h = size;
 
@@ -69,7 +69,7 @@ const main = async () => {
   aels();
   onResize();
 
-  csp.generate();
+  /*csp.generate();
 
   const div = O.ceDiv(O.body);
   div.style.margin = '8px';
@@ -114,7 +114,7 @@ const main = async () => {
   for(const [tile, val] of givenTiles)
     tile.setVal(val);
 
-  div.remove();
+  div.remove();*/
 
   render();
 };

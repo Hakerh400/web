@@ -229,60 +229,13 @@ class CSP extends CSPBase{
           return 0;
         }
 
-        const checkDangling = coords => {
-          let fullLinesNum = 0;
-          let fullLine = null;
+        const danglingLine = tile.getDangling();
 
-          for(let i = 0; i !== coords.length; i += 3){
-            const x = coords[i];
-            const y = coords[i + 1];
-            const vert = coords[i + 2];
+        if(danglingLine !== null){
+          if(addInfo)
+            this.setErr(4, [danglingLine]);
 
-            const line = vert ?
-              grid.getVLine(x, y) : grid.getHLine(x, y);
-
-            if(line === null) continue;
-
-            const {val} = line;
-            if(val === null) return 1;
-            if(val === 0) continue;
-
-            fullLinesNum++;
-            fullLine = line;
-          }
-
-          const result = fullLinesNum !== 1;
-
-          if(!result && addInfo)
-            this.setErr(4, [fullLine]);
-
-          return result;
-        };
-
-        if(tile.hor){
-          if(!checkDangling([
-            x - 1, y, 0,
-            x, y - 1, 1,
-            x, y, 1,
-          ])) return 0;
-
-          if(!checkDangling([
-            x + 1, y, 0,
-            x + 1, y - 1, 1,
-            x + 1, y, 1,
-          ])) return 0;
-        }else{
-          if(!checkDangling([
-            x, y - 1, 1,
-            x - 1, y, 0,
-            x, y, 0,
-          ])) return 0;
-
-          if(!checkDangling([
-            x, y + 1, 1,
-            x - 1, y + 1, 0,
-            x, y + 1, 0,
-          ])) return 0;
+          return 0;
         }
 
         const d = d1;

@@ -108,6 +108,70 @@ class Line extends Tile{
       grid.getSquare(x, y),
     ];
   }
+
+  getDangling(){
+    const {grid, x, y} = this;
+
+    let danglingLine = null;
+
+    const checkDangling = coords => {
+      let fullLinesNum = 0;
+      let fullLine = null;
+
+      for(let i = 0; i !== coords.length; i += 3){
+        const x = coords[i];
+        const y = coords[i + 1];
+        const vert = coords[i + 2];
+
+        const line = vert ?
+          grid.getVLine(x, y) : grid.getHLine(x, y);
+
+        if(line === null) continue;
+
+        const {val} = line;
+        if(val === null) return 0;
+        if(val === 0) continue;
+
+        fullLinesNum++;
+        fullLine = line;
+      }
+
+      if(fullLinesNum === 1){
+        danglingLine = fullLine;
+        return 1;
+      }
+
+      return 0;
+    };
+
+    if(this.hor){
+      if(checkDangling([
+        x - 1, y, 0,
+        x, y - 1, 1,
+        x, y, 1,
+      ])) return danglingLine;
+
+      if(checkDangling([
+        x + 1, y, 0,
+        x + 1, y - 1, 1,
+        x + 1, y, 1,
+      ])) return danglingLine;
+    }else{
+      if(checkDangling([
+        x, y - 1, 1,
+        x - 1, y, 0,
+        x, y, 0,
+      ])) return danglingLine;
+
+      if(checkDangling([
+        x, y + 1, 1,
+        x - 1, y + 1, 0,
+        x, y + 1, 0,
+      ])) return danglingLine;
+    }
+
+    return null;
+  }
 }
 
 module.exports = Object.assign(Tile, {
