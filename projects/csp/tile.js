@@ -15,6 +15,9 @@ class Tile{
   get csp(){ return this.grid.csp; }
   get wrap(){ return 0; }
 
+  get isSquare(){ return 0; }
+  get isLine(){ return 0; }
+
   initVals(g){ O.virtual('initVals'); }
   render(g){ O.virtual('render'); }
 
@@ -75,4 +78,39 @@ class Tile{
   }
 }
 
-module.exports = Tile;
+class Square extends Tile{
+  get isSquare(){ return 1; }
+}
+
+class Line extends Tile{
+  constructor(grid, x, y, type){
+    super(grid, x, y);
+    this.type = type;
+  }
+
+  get isLine(){ return 1; }
+
+  get hor(){ return this.type === 0; }
+  get vert(){ return this.type === 1; }
+
+  initVals(){
+    return new Set([0, 1]);
+  }
+
+  getAdjSquares(){
+    const {grid, x, y, hor} = this;
+
+    const x1 = x - !hor;
+    const y1 = y - hor;
+
+    return [
+      grid.getSquare(x1, y1),
+      grid.getSquare(x, y),
+    ];
+  }
+}
+
+module.exports = Object.assign(Tile, {
+  Square,
+  Line,
+});

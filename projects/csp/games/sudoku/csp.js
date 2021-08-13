@@ -1,13 +1,13 @@
 'use strict';
 
 const assert = require('assert');
-const CSP = require('./csp');
+const CSPBase = require('../../csp');
 
 const exactlyOnceStr = type => {
   return `Each ${type} must contain every number exactly once`;
 };
 
-class CSPSudoku extends CSP{
+class CSP extends CSPBase{
   static cnstrs = [
     exactlyOnceStr('row'),
     exactlyOnceStr('column'),
@@ -259,7 +259,7 @@ class CSPSudoku extends CSP{
           return result;
         };
 
-        if(tile.isHLine){
+        if(tile.hor){
           if(!checkDangling([
             x - 1, y, 0,
             x, y - 1, 1,
@@ -348,4 +348,4 @@ class CSPSudoku extends CSP{
   }
 }
 
-module.exports = CSPSudoku;
+module.exports = CSP;

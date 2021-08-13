@@ -1,10 +1,10 @@
 'use strict';
 
 const assert = require('assert');
-const Grid = require('./grid');
-const Tile = require('./tile-sudoku');
+const GridBase = require('../../grid');
+const Tiles = require('./tiles');
 
-class GridSudoku extends Grid{
+class Grid extends GridBase{
   constructor(w, h){
     super();
 
@@ -29,19 +29,19 @@ class GridSudoku extends Grid{
 
       for(let x = 0; x <= w; x++){
         if(x < w && y < h){
-          const tile = new Tile.Square(this, x, y);
+          const tile = new Tiles.Square(this, x, y);
           squaresRow.push(tile);
           this.addTile(tile);
         }
 
         if(x < w){
-          const tile = new Tile.HLine(this, x, y);
+          const tile = new Tiles.Line(this, x, y, 0);
           hlinesRow.push(tile);
           this.addTile(tile);
         }
 
         if(y < h){
-          const tile = new Tile.VLine(this, x, y);
+          const tile = new Tiles.Line(this, x, y, 1);
           vlinesRow.push(tile);
           this.addTile(tile);
         }
@@ -144,4 +144,4 @@ class GridSudoku extends Grid{
   }
 }
 
-module.exports = GridSudoku;
+module.exports = Grid;

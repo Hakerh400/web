@@ -1,9 +1,9 @@
 'use strict';
 
 const assert = require('assert');
-const CSPSudoku = require('./csp-sudoku');
-const GridSudoku = require('./grid-sudoku');
-const TileSudoku = require('./tile-sudoku');
+const CSP = require('./games/sudoku/csp');
+const Grid = require('./games/sudoku/grid');
+const Tiles = require('./games/sudoku/tiles');
 const flags = require('./flags');
 
 const {abs, floor, ceil, round} = Math;
@@ -25,7 +25,7 @@ O.ael('keydown', evt => {
 });
 
 // const n = 2;
-const size = 6//n ** 2;
+const size = 4//n ** 2;
 const w = size;
 const h = size;
 
@@ -46,8 +46,8 @@ let cx = 0;
 let cy = 0;
 
 const main = async () => {
-  grid = new GridSudoku(w, h);
-  csp = new CSPSudoku(grid);
+  grid = new Grid(w, h);
+  csp = new CSP(grid);
 
   grid.csp = csp;
 
@@ -88,8 +88,8 @@ const main = async () => {
       (grid.tiles.size + 1) * 100);
 
     div.innerText = `${percent}%`;
-    render();
-    await new Promise(res => O.raf(res));
+    // render();
+    await new Promise(res => setTimeout(res, 30));
 
     i++;
 
