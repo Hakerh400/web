@@ -8,6 +8,8 @@ const Grid = await require(`./games/${game}/grid`);
 const Tiles = await require(`./games/${game}/tiles`);
 const flags = require('./flags');
 
+// https://localhost/web/?project=csp&seed=342170598
+
 const {abs, floor, ceil, round} = Math;
 
 await O.addStyle('style.css');
@@ -26,7 +28,7 @@ O.ael('keydown', evt => {
   }
 });
 
-const size = 2;
+const size = 4;
 const w = size;
 const h = size;
 
@@ -59,28 +61,29 @@ const main = async () => {
   window.render=render;
   // csp.generate();
 
-  if(0){
+  if(1){
     csp.generate();
 
     const div = O.ceDiv(O.body);
     div.style.margin = '8px';
 
+    const tilesNum = O.size(grid.iterSquares());
     const givenTiles = new Map();
+    const blankTiles = new Set(grid.iterLines());
 
-    for(const tile of grid.tiles)
+    for(const tile of grid.iterSquares())
       givenTiles.set(tile, tile.val);
 
-    const blankTiles = new Set();
     let i = 0;
 
-    for(const tile of O.shuffle([...grid.tiles].filter(a => 1))){
+    for(const tile of O.shuffleSet(grid.iterSquares())){
       const percent = round(
         (i + 1) /
-        (grid.tiles.size + 1) * 100);
+        (tilesNum + 1) * 100);
 
       div.innerText = `${percent}%`;
       // render();
-      await new Promise(res => setTimeout(res, 30));
+      await new Promise(res => setTimeout(res, 300));
 
       i++;
 

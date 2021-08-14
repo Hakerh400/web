@@ -19,16 +19,6 @@ class Grid{
       this.unsolvedNum++;
   }
 
-  getTile(tile){
-    if(tile === null) return null;
-
-    const {relsTemp} = this.csp;
-    if(relsTemp === null) return tile;
-    
-    relsTemp.add(tile);
-    return tile;
-  }
-
   render(g){ O.virtual('render'); }
 
   addErrTile(tile){
@@ -193,19 +183,19 @@ class SLGrid extends Grid{
 
   getSquare(x, y){
     if(!this.has(x, y)) return null;
-    return this.getTile(this.squares[y][x]);
+    return this.squares[y][x];
   }
 
   getHLine(x, y){
     if(x < 0 || x >= this.w) return null;
     if(y < 0 || y >  this.h) return null;
-    return this.getTile(this.hlines[y][x]);
+    return this.hlines[y][x];
   }
 
   getVLine(x, y){
     if(x < 0 || x >  this.w) return null;
     if(y < 0 || y >= this.h) return null;
-    return this.getTile(this.vlines[y][x]);
+    return this.vlines[y][x];
   }
 
   *iterByCoords(){

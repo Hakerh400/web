@@ -38,7 +38,15 @@ class Tile{
   }
 
   get val(){
-    return O.the(this.vals);
+    const val = O.the(this.vals);
+    if(val !== null) return val;
+
+    const {relsTemp} = this.grid.csp;
+
+    if(relsTemp !== null)
+      relsTemp.add(this);
+
+    return null;
   }
 
   set val(val){

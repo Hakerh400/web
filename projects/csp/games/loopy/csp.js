@@ -11,30 +11,43 @@ class CSP extends CSPBase{
     `There must be exactly one loop`,
   ];
 
-  check(line, addInfo=0){
-    // assert(line.isLine);
-    if(!line.isLine) return 1;
-
+  check(tile, addInfo=0){
     const {grid} = this;
-    const {val} = line;
+    const {val} = tile;
     if(val === null) return 1;
 
-    for(const d of line.iterAdjS2()){
+    if(tile.isSquare){
+      const [cntMin, cntMax] = tile.getLinesCntBounds();
+
+      if(val < cntMin || val > cntMax){
+        if(addInfo)
+          this.setErr(2, [tile]);
+
+        return 0;
+      }
+
+      return 1;
+    }
+
+    assert(tile.isLine);
+
+    for(const d of tile.iterAdjS2()){
       if(d === null) continue;
 
       const {val} = d;
       if(val === null) continue;
 
       const [cntMin, cntMax] = d.getLinesCntBounds();
-      if(val >= cntMin && val <= cntMax) continue;
 
-      if(addInfo)
-        this.setErr(2, [d]);
+      if(val < cntMin || val > cntMax){
+        if(addInfo)
+          this.setErr(2, [d]);
 
-      return 0;
+        return 0;
+      }
     }
 
-    const danglingLines = line.getDangling();
+    const danglingLines = tile.getDangling();
 
     if(danglingLines !== null){
       if(addInfo)
@@ -44,7 +57,7 @@ class CSP extends CSPBase{
     }
 
     if(val === 1){
-      const branchingLines = line.getBranching();
+      const branchingLines = tile.getBranching();
 
       if(branchingLines !== null){
         if(addInfo)
@@ -53,15 +66,15 @@ class CSP extends CSPBase{
         return 0;
       }
 
-      if(line.isClosed()){
-        const {pathLines} = line;
+      if(tile.isClosed()){
+        const {pathLines} = tile;
 
-        for(const line1 of grid.iterLines()){
-          if(!line1.full) continue;
-          if(pathLines.has(line1)) continue;
+        for(const line of grid.iterLines()){
+          if(!line.full) continue;
+          if(pathLines.has(line)) continue;
 
           if(addInfo)
-            this.setErr(3, [line1]);
+            this.setErr(3, [line]);
 
           return 0;
         }
@@ -79,13 +92,13 @@ class CSP extends CSPBase{
           return 0;
         }
       }else{
-        for(const line1 of grid.iterLines()){
-          if(line1 === line) continue;
-          if(!line1.full) continue;
+        for(const line of grid.iterLines()){
+          if(line === tile) continue;
+          if(!line.full) continue;
 
-          if(line1.isClosed()){
+          if(line.isClosed()){
             if(addInfo)
-              this.setErr(3, [line]);
+              this.setErr(3, [tile]);
 
             return 0;
           }
