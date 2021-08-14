@@ -1,9 +1,11 @@
 'use strict';
 
+const game = ['sudoku', 'loopy'][1];
+
 const assert = require('assert');
-const CSP = require('./games/sudoku/csp');
-const Grid = require('./games/sudoku/grid');
-const Tiles = require('./games/sudoku/tiles');
+const CSP = await require(`./games/${game}/csp`);
+const Grid = await require(`./games/${game}/grid`);
+const Tiles = await require(`./games/${game}/tiles`);
 const flags = require('./flags');
 
 const {abs, floor, ceil, round} = Math;
@@ -24,10 +26,12 @@ O.ael('keydown', evt => {
   }
 });
 
-// const n = 2;
-const size = 5//n ** 2;
+const size = 2;
 const w = size;
 const h = size;
+
+const nMin = 0;
+const nMax = 4;
 
 const tileSize = 50;
 const fontSize = tileSize * .6;
@@ -49,49 +53,51 @@ const main = async () => {
   grid = new Grid(w, h);
   csp = new CSP(grid);
 
-  grid.csp = csp;
-
-  grid.iter((x, y, d, h, v) => {
-    /*if(d !== null){
-      const n = a[y][x + 1] | 0;
-
-      if(n !== 0)
-        d.val = n;
-    }*/
-
-    /*if(h !== null)
-      h.val = y % n === 0 ? 1 : 0;
-
-    if(v !== null)
-      v.val = x % n === 0 ? 1 : 0;*/
-  });
-
   aels();
   onResize();
 
-  /*csp.generate();
+  window.render=render;
+  // csp.generate();
 
-  const div = O.ceDiv(O.body);
-  div.style.margin = '8px';
+  if(0){
+    csp.generate();
 
-  const givenTiles = new Map();
+    const div = O.ceDiv(O.body);
+    div.style.margin = '8px';
 
-  for(const tile of grid.tiles)
-    givenTiles.set(tile, tile.val);
+    const givenTiles = new Map();
 
-  const blankTiles = new Set();
-  let i = 0;
+    for(const tile of grid.tiles)
+      givenTiles.set(tile, tile.val);
 
-  for(const tile of O.shuffle([...grid.tiles].filter(a => 1))){
-    const percent = round(
-      (i + 1) /
-      (grid.tiles.size + 1) * 100);
+    const blankTiles = new Set();
+    let i = 0;
 
-    div.innerText = `${percent}%`;
-    // render();
-    await new Promise(res => setTimeout(res, 30));
+    for(const tile of O.shuffle([...grid.tiles].filter(a => 1))){
+      const percent = round(
+        (i + 1) /
+        (grid.tiles.size + 1) * 100);
 
-    i++;
+      div.innerText = `${percent}%`;
+      // render();
+      await new Promise(res => setTimeout(res, 30));
+
+      i++;
+
+      for(const tile of blankTiles)
+        tile.setVal(null);
+
+      for(const [tile, val] of givenTiles)
+        tile.setVal(val);
+
+      const {val} = tile;
+      tile.val = null;
+
+      if(csp.solve() === 1){
+        givenTiles.delete(tile);
+        blankTiles.add(tile);
+      }
+    }
 
     for(const tile of blankTiles)
       tile.setVal(null);
@@ -99,22 +105,8 @@ const main = async () => {
     for(const [tile, val] of givenTiles)
       tile.setVal(val);
 
-    const {val} = tile;
-    tile.val = null;
-
-    if(csp.solve() === 1){
-      givenTiles.delete(tile);
-      blankTiles.add(tile);
-    }
+    div.remove();
   }
-
-  for(const tile of blankTiles)
-    tile.setVal(null);
-
-  for(const [tile, val] of givenTiles)
-    tile.setVal(val);
-
-  div.remove();*/
 
   render();
 };
@@ -147,18 +139,28 @@ const onKeyDown = evt => {
       return;
     }
 
+    if(code === 'Delete'){
+      if(grid.err !== null) return;
+
+      const d = getSquare();
+      if(d === null) return;
+
+      setVal(d, null);
+      return;
+    }
+
     const digitMatch = code.match(/^(?:Digit|Numpad)(\d)$/);
 
     if(digitMatch !== null){
       if(grid.err !== null) return;
 
       const n = digitMatch[1] | 0;
-      if(n > size) return;
+      if(n < nMin || n > nMax) return;
 
       const d = getSquare();
       if(d === null) return;
 
-      setVal(d, n !== 0 ? n : null);
+      setVal(d, n);
       return;
     }
 

@@ -16,8 +16,8 @@ class CSP{
   gen = 0;
 
   constructor(grid){
-    const {tiles} = grid;
     this.grid = grid;
+    grid.csp = this;
   }
 
   check(tile, addInfo=0){ O.virtual('check'); }

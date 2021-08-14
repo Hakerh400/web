@@ -5,8 +5,7 @@ const Tile = require('../../tile');
 
 class Square extends Tile.NumberSquare{
   initVals(){
-    const {grid} = this;
-    return new Set(O.ca(grid.size, i => i + 1));
+    return new Set(O.ca(2, i => i));
   }
 }
 

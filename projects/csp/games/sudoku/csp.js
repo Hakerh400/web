@@ -16,100 +16,7 @@ class CSP extends CSPBase{
     `There must be no dangling lines`,
   ];
 
-  #shapeSize;
-  #isShapeComplete;
-
-  constructor(grid){
-    super(grid);
-    this.size = grid.size;
-  }
-
-  *getRowTiles(tile){
-    const {grid, size} = this;
-    const {x, y} = tile;
-
-    for(let i = 0; i !== size; i++){
-      if(i === x) continue;
-      yield grid.getSquare(i, y);
-    }
-  }
-
-  *getColTiles(tile){
-    const {grid, size} = this;
-    const {x, y} = tile;
-
-    for(let i = 0; i !== size; i++){
-      if(i === y) continue;
-      yield grid.getSquare(x, i);
-    }
-  }
-
-  *getShapeTiles(tile){
-    this.#isShapeComplete = 1;
-
-    const {grid} = this;
-    const stack = [tile];
-    const seen = new Set(stack);
-
-    let first = 1;
-
-    while(stack.length !== 0){
-      const tile = stack.pop();
-      const {x, y} = tile;
-
-      if(first){
-        first = 0;
-      }else{
-        yield tile;
-      }
-
-      for(let dir = 0; dir !== 4; dir++){
-        let x1 = x;
-        let y1 = y;
-
-        const line =
-          dir === 0 ? grid.getHLine(x1, y1--) :
-          dir === 1 ? grid.getVLine(++x1, y1) :
-          dir === 2 ? grid.getHLine(x1, ++y1) :
-                      grid.getVLine(x1--, y1);
-
-        assert(line !== null);
-
-        const {val} = line;
-
-        if(val === null){
-          this.#isShapeComplete = 0;
-          continue;
-        }
-
-        if(val === 1) continue;
-
-        const tile = grid.getSquare(x1, y1);
-        if(tile === null || seen.has(tile)) continue;
-
-        seen.add(tile);
-        stack.push(tile);
-      }
-    }
-
-    this.#shapeSize = seen.size;
-  }
-
-  *getRelTileIters(tile){
-    yield this.getRowTiles(tile);
-    yield this.getColTiles(tile);
-    yield this.getShapeTiles(tile);
-  }
-
-  *getRelTilesRaw(tile){
-    for(const iter of this.getRelTileIters(tile))
-      yield* iter;
-  }
-
-  getRelTiles(tile){
-    const iter = this.getRelTilesRaw(tile);
-    return O.undupeIter(iter);
-  }
+  get size(){ return this.grid.size; }
 
   check(tile, addInfo=0){
     const {grid, size} = this
@@ -123,11 +30,11 @@ class CSP extends CSPBase{
       if(val !== null){
         let i = -1;
 
-        for(const iter of this.getRelTileIters(tile)){
+        for(const iter of tile.getRelIters()){
           i++;
 
           for(const d of iter){
-            assert(d !== tile);
+            if(d === tile) continue;
 
             if(d.val === val){
               if(addInfo)
@@ -141,22 +48,22 @@ class CSP extends CSPBase{
 
       let i = -1;
 
-      for(const iter of this.getRelTileIters(tile)){
+      for(const iter of tile.getRelIters()){
         i++;
 
         const allVals = new Set(vals);
 
         for(const d of iter){
-          assert(d !== tile);
+          if(d === tile) continue;
 
           for(const val of d.vals)
             allVals.add(val);
         }
 
         if(i === 2){
-          assert(this.#shapeSize <= size);
+          assert(tile.shapeSize <= size);
 
-          if(!(this.#shapeSize === size || this.#isShapeComplete))
+          if(!(tile.shapeSize === size || tile.isShapeComplete))
             continue;
         }
 
@@ -174,7 +81,7 @@ class CSP extends CSPBase{
     if(tile.isLine){
       assert(val !== null);
 
-      const tiles = tile.getAdjSquares();
+      const tiles = [...tile.iterAdjS2()];
       const [d1, d2] = tiles;
 
       if(val === 1){
@@ -184,8 +91,8 @@ class CSP extends CSPBase{
 
           const allVals = new Set(d.vals);
 
-          for(const d3 of this.getShapeTiles(d)){
-            assert(d3 !== d);
+          for(const d3 of d.iterShape()){
+            if(d3 === d) continue;
 
             if(i === 0 && d3 === d2){
               if(addInfo)
@@ -198,12 +105,12 @@ class CSP extends CSPBase{
               allVals.add(val);
           }
 
-          assert(this.#shapeSize <= size);
+          assert(d.shapeSize <= size);
 
-          if(!(this.#shapeSize === size || this.#isShapeComplete))
+          if(!(d.shapeSize === size || d.isShapeComplete))
             continue;
 
-          if(this.#shapeSize !== size){
+          if(d.shapeSize !== size){
             if(addInfo)
               this.setErr(2, [tile]);
 
@@ -229,11 +136,11 @@ class CSP extends CSPBase{
           return 0;
         }
 
-        const danglingLine = tile.getDangling();
+        const danglingLines = tile.getDangling();
 
-        if(danglingLine !== null){
+        if(danglingLines !== null){
           if(addInfo)
-            this.setErr(4, [danglingLine]);
+            this.setErr(4, danglingLines);
 
           return 0;
         }
@@ -247,8 +154,8 @@ class CSP extends CSPBase{
         if(dVal !== null)
           vals.set(dVal, d);
 
-        for(const d1 of this.getShapeTiles(d)){
-          assert(d1 !== d);
+        for(const d1 of d.iterShape()){
+          if(d1 === d) continue;
 
           const vals1 = d1.vals;
 
@@ -268,16 +175,16 @@ class CSP extends CSPBase{
           vals.set(val, d1);
         }
 
-        if(this.#shapeSize > size){
+        if(d.shapeSize > size){
           if(addInfo)
             this.setErr(2);
 
           return 0;
         }
 
-        if(!this.#isShapeComplete) return 1;
+        if(!d.isShapeComplete) return 1;
 
-        if(this.#shapeSize !== size){
+        if(d.shapeSize !== size){
           if(addInfo)
             this.setErr(2);
 
