@@ -1,8 +1,8 @@
 'use strict';
 
 const assert = require('assert');
-const fnum = require('./fnum');
 const flags = require('./flags');
+const fnum = require('./fnum');
 
 const STEP_BY_STEP = flags.debug;
 const SORT_VALS = STEP_BY_STEP;

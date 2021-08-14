@@ -3,10 +3,10 @@
 const game = ['sudoku', 'loopy'][1];
 
 const assert = require('assert');
+const flags = require('./flags');
 const CSP = await require(`./games/${game}/csp`);
 const Grid = await require(`./games/${game}/grid`);
 const Tiles = await require(`./games/${game}/tiles`);
-const flags = require('./flags');
 
 // https://localhost/web/?project=csp&seed=342170598
 
@@ -28,7 +28,7 @@ O.ael('keydown', evt => {
   }
 });
 
-const size = 4;
+const size = 5;
 const w = size;
 const h = size;
 
