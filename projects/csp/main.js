@@ -8,8 +8,6 @@ const CSP = await require(`./games/${game}/csp`);
 const Grid = await require(`./games/${game}/grid`);
 const Tiles = await require(`./games/${game}/tiles`);
 
-// https://localhost/web/?project=csp&seed=342170598
-
 const {abs, floor, ceil, round} = Math;
 
 await O.addStyle('style.css');

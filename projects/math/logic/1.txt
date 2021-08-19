@@ -6,8 +6,6 @@ type ( ⟹ ) 2 [infixr 25]
 type bool  0
 
 const True  :: bool
-
-
 const False :: bool
 
 const (∀)   [binder]    :: ('a  ⟹  bool)  ⟹  bool
@@ -41,12 +39,12 @@ lemma eq_tran: ∀a c b. a = b  ⟶  b = c  ⟶  a = c
   - eq_com 1*
   - sub[λx. x = b] 1 2 %
 
-lemma rsub: ∀P a b. b = a  ⟶  P a  ⟶  P b
+lemma subr: ∀P a b. b = a  ⟶  P a  ⟶  P b
   - eq_com 1*
   - sub 1 2 %
 
-lemma prsub: ∀P Q. Q = P  ⟶  P  ⟶  Q
-  - rsub[λx. x] 1 2 %
+lemma psubr: ∀P Q. Q = P  ⟶  P  ⟶  Q
+  - subr[λx. x] 1 2 %
 
 lemma fun_cong: ∀f g a. f = g  ⟶  f a = g a
   - sub[λx. a c = x c] 1 refl %
@@ -112,7 +110,7 @@ lemma bool_exh: ∀a P. (a = True  ⟶  P)  ⟶  (a = False  ⟶  P)  ⟶  P
   - bool_ind[λx. a = x  ⟶  b] 1 2 refl %
 
 lemma eq_truE: ∀P. P = True  ⟶  P
-  - prsub 1 true %
+  - psubr 1 true %
 
 lemma eq_falE: ∀P. P = False  ⟶  ¬P
   - psub 1
@@ -129,7 +127,7 @@ lemma notE: ∀P. ¬¬P  ⟶  P
   - falE2 2 1 %
 
 lemma conjI: ∀P Q. P  ⟶  Q  ⟶  P ∧ Q
-  - prsub conj_def %
+  - psubr conj_def %
   - notI %
   - 3 1
   - falI 1 2 %
@@ -182,11 +180,11 @@ lemma conj_com: ∀P Q. P ∧ Q  ⟶  Q ∧ P
   - conjI 2 1 %
 
 lemma disjI1: ∀P Q. P  ⟶  P ∨ Q
-  - prsub disj_def %
+  - psubr disj_def %
   - falE2 1 2 %
 
 lemma disjI2: ∀P Q. P  ⟶  Q ∨ P
-  - prsub disj_def %
+  - psubr disj_def %
   - 1 %
 
 lemma imp_tran: ∀P R Q. (P  ⟶  Q)  ⟶  (Q  ⟶  R)  ⟶  P  ⟶  R
@@ -256,8 +254,8 @@ lemma not2_eq: ∀P. ¬¬P = P
   - notI2 1 %
   - 1 %
   - eq_falI 1
-  - rsub[λx. ¬¬x = x] 1 %
-  - rsub[λx. ¬x = False] nfal_eq_tru %
+  - subr[λx. ¬¬x = x] 1 %
+  - subr[λx. ¬x = False] nfal_eq_tru %
   - ntru_eq_fal %
 
 lemma eq_notE: ∀P Q. ¬P = ¬Q  ⟶  P = Q
@@ -299,7 +297,7 @@ lemma iffE1: ∀P Q. P = Q  ⟶  P  ⟶  Q
   - psub 1 2 %
 
 lemma iffE2: ∀P Q. Q = P  ⟶  P  ⟶  Q
-  - prsub 1 2 %
+  - psubr 1 2 %
 
 lemma conj_assoc: ∀P Q R. ((P ∧ Q) ∧ R) = (P ∧ (Q ∧ R))
   - iffI %
@@ -341,7 +339,7 @@ lemma not_P_eq_not_P: ∀P. ¬(P = ¬P)
   - split[a] %
   - psub 1 2+
   - falI 1 2 %
-  - prsub 1* 2+
+  - psubr 1* 2+
   - falI 1 2 %
 
 lemma eq_com_eq: ∀P Q. (P = Q) = (Q = P)
@@ -376,7 +374,7 @@ lemma eq_assoc: ∀P Q R. ((P = Q) = R) = (P = (Q = R))
   - iffE1 1 2 %
   - iffE2 1* 3
   - iffE1 1 2 %
-  - rsub[λx. (a = b) = x] 2 1
+  - subr[λx. (a = b) = x] 2 1
   - eq_PQQ_P 1 %
   - iffI %
   - sub[λx. a = x, b = c, c = b] eq_com_eq 1*
@@ -429,24 +427,24 @@ lemma dmrg_nc: ∀P Q. ¬(P ∧ Q)  ⟶  ¬P ∨ ¬Q
 
 lemma dmrg_pd: ∀P Q. P ∨ Q  ⟶  ¬(¬P ∧ ¬Q)
   - cpos_pn dmrg_pc %
-  - rsub[λx. x ∨ ¬¬b] not2_eq %
-  - rsub[λx. a ∨ x] not2_eq 1 %
+  - subr[λx. x ∨ ¬¬b] not2_eq %
+  - subr[λx. a ∨ x] not2_eq 1 %
 
 lemma dmrg_nd: ∀P Q. ¬(P ∨ Q)  ⟶  ¬P ∧ ¬Q
   - cpos_np dmrg_nc %
-  - rsub[λx. ¬(x ∨ ¬¬b)] not2_eq %
-  - rsub[λx. ¬(a ∨ x)] not2_eq 1 %
+  - subr[λx. ¬(x ∨ ¬¬b)] not2_eq %
+  - subr[λx. ¬(a ∨ x)] not2_eq 1 %
 
 lemma dmrg_pu: ∀P. (∀a. P a)  ⟶  ¬∃a. ¬P a
   - imp_swap cpos_pn[∀b. a b] {1}1 %
   - psub exi_def[λx. ¬a x] 1
   - imp_swap cpos_pp 1 %
   - 1 [b]
-  - prsub not2_eq 1 %
+  - psubr not2_eq 1 %
 
 lemma dmrg_nu: ∀P. ¬(∀) P  ⟶  ∃a. ¬P a
-  - rsub[λx. ¬(∀) x] eta 1
-  - prsub exi_def [λx. ¬a x] %
+  - subr[λx. ¬(∀) x] eta 1
+  - psubr exi_def [λx. ¬a x] %
   - imp_swap cpos_pp 1 %
   - 1 [b]
   - psub not2_eq 1 %
@@ -458,7 +456,7 @@ lemma dmrg_ne: ∀P. ¬(∃) P  ⟶  ∀a. ¬P a
   - imp_swap cpos_pp 1 %
   show [a = λx. a x]
   sub 2
-  - prsub exi_def %
+  - psubr exi_def %
   - notI %
   - falI 1 2 %
   - ext %
@@ -473,7 +471,7 @@ lemma eta1: ∀P f. P f = (λx y. y) ((∀) P) P (λx. f x)
   - refl %
 
 lemma exiI: ∀a P. P a  ⟶  (∃) P
-  - prsub eta1 %
+  - psubr eta1 %
   - notE2 %
   - dmrg_ne 2
   - falI 1 2 %
@@ -486,7 +484,7 @@ lemma exiE: ∀P Q. (∃) P  ⟶  (∀b. P b  ⟶  Q)  ⟶  Q
   - 1 2 %
 
 lemma inj_comb_K: inj (λa b. a)
-  - prsub inj_def1 %
+  - psubr inj_def1 %
   - fun_cong 1 %
 
 lemma inj_not_impl_inj2: ∃f. inj f ∧ ∃a. ¬inj (f a)
@@ -521,7 +519,7 @@ lemma fgaa_eq_ffab: ∀f g. (∀a. f a = g a)  ⟶  (∀a b. a = b  ⟶  f a  �
 
 lemma fgab_imp_eq_fg: ∀f g. (∀a b. a = b  ⟶  f a = g b) = (f = g)
   - iffI %
-  - prsub Paa_eq_Pab [λx y. a x = b y] {2}1
+  - psubr Paa_eq_Pab [λx y. a x = b y] {2}1
   - ext {1}1 %
   - cong 1 2 %
 
@@ -532,7 +530,7 @@ lemma uni_exi: ∀P. (∀) P  ⟶  (∃) P
 
 lemma exi_uni: ∀P. (∀a b. P a = P b)  ⟶  (∃) P  ⟶  (∀) P
   - exiE 2 %
-  - prsub eta1 %
+  - psubr eta1 %
   - psub 1 2 %
 
 def ∃! [binder]: λP. (∃a. P a) ∧ (∀a b. P a  ⟶  P b  ⟶  a = b)
@@ -546,8 +544,8 @@ lemma uniq_def: ∀P. (∃!a. P a) = ((∃a. P a) ∧ (∀a b. P a  ⟶  P b  �
 
 lemma uniqI: ∀P. (∃) P  ⟶  (∀a b. P a  ⟶  P b  ⟶  a = b)  ⟶  (∃!) P
   - psub eta1 1*
-  - prsub eta1 %
-  - prsub uniq_def %
+  - psubr eta1 %
+  - psubr uniq_def %
   - conjI 1 {2}2 %
 
 lemma uniqE': ∀P a. P a  ⟶  (∀c d. P c  ⟶  P d  ⟶  c = d)  ⟶  P = λx. a = x
@@ -569,10 +567,10 @@ lemma uniqE: ∀P. (∃!) P  ⟶  P ((THE) P)
   - conjE2 1
   - exiE 1 %
   - uniqE' 2+ {2}1+
-  - rsub[λx. x ((THE) x), λx. b = x, a] %
+  - subr[λx. x ((THE) x), λx. b = x, a] %
   - 3 %
   - eq_com %
-  - rsub[λx. (THE y. x b y) = b] eq_equiv_com %
+  - subr[λx. (THE y. x b y) = b] eq_equiv_com %
   - the %
 
 type nat 0
@@ -604,7 +602,7 @@ lemma lte_def: ∀a b. (a <= b) = (a < b ∨ a = b)
 
 lemma lt_simp1: ∀a. 0 < Suc a
   - nat_ind[#..a] %
-  - prsub lt_def %
+  - psubr lt_def %
   - exiI[Suc] %
   - conjI %
   - conjI %
@@ -613,7 +611,7 @@ lemma lt_simp1: ∀a. 0 < Suc a
   - exiI[0] %
   - refl %
   - psub lt_def 1
-  - prsub lt_def %
+  - psubr lt_def %
   - exiE 1 %
   - exiI[a] %
   - conjE1 1+
@@ -636,7 +634,7 @@ lemma id_def1: ∀a. id a = a
 
 lemma not2_equiv_id: (λx. ¬¬x) = id
   - ext %
-  - rsub[λx. x = id a] not2_eq %
+  - subr[λx. x = id a] not2_eq %
   - eq_com id_def1 %
 
 lemma dmrg_pu1: ∀P. (∀a. ¬P a)  ⟶  ¬(∃a. P a)
@@ -645,7 +643,7 @@ lemma dmrg_pu1: ∀P. (∀a. ¬P a)  ⟶  ¬(∃a. P a)
   - imp_swap cpos_pp 1 %
   - exiE[λx. a x] 1 %
   - exiI[b] %
-  - prsub id_def1 %
+  - psubr id_def1 %
   - 1 %
 
 lemma lt_simp2: ∀a. ¬(a < 0)
@@ -699,7 +697,7 @@ lemma inj_def_eq: ∀f. inj f = (∀a b. (f a = f b) = (a = b))
   - iffI %
   - 1 2 %
   - arg_cong 2 %
-  - prsub inj_def1 %
+  - psubr inj_def1 %
   - psub 1 2 %
 
 lemma the1: ∀a. (THE b. a = b) = a
@@ -722,7 +720,7 @@ lemma the_inj1: ∀f. inj f  ⟶  ∀a. (THE b. f a = f b) = a
   - the_inj 1 %
 
 lemma suc_inj1: inj Suc
-  - prsub inj_def1 %
+  - psubr inj_def1 %
   - Suc_inj 1 %
 
 lemma pred_suc: ∀a. pred (Suc a) = a
@@ -733,7 +731,7 @@ lemma suc_pred: ∀a. ¬(a = 0)  ⟶  Suc (pred a) = a
   - nat_exh[a] %
   - falE2 2 1 %
   - exiE[#2.10.b] 2 %
-  - rsub[#..a] 2 %
+  - subr[#..a] 2 %
   - arg_cong %
   - eq_tran1 pred_suc refl %
 
@@ -744,12 +742,12 @@ lemma neq_0_exi_suc: ∀a. ¬(a = 0) = (∃b. a = Suc b)
   - 2 %
   - exiE[#1.10.b] 1 %
   - imp_swap cpos_pn 1 %
-  - rsub[#..a] 1 nat_dif %
+  - subr[#..a] 1 nat_dif %
 
 lemma lt_simp3: ∀a b. (Suc a < Suc b) = (a < b)
   - iffI %
   - psub lt_def 1
-  - prsub lt_def %
+  - psubr lt_def %
   - exiE[#1.10.c] 1 %
   - conjE1 1+
   - conjE1 2+
@@ -759,9 +757,9 @@ lemma lt_simp3: ∀a b. (Suc a < Suc b) = (a < b)
   - exiI[λx. pred (c x)] %
   - conjI %
   - conjI %
-  - rsub[λx. pred x = Suc a] 1 %
+  - subr[λx. pred x = Suc a] 1 %
   - eq_tran pred_suc refl %
-  - rsub[λx. pred x = Suc (pred (c e))] 2+ %
+  - subr[λx. pred x = Suc (pred (c e))] 2+ %
   - eq_tran pred_suc %
   show [∀x. ¬(c x = 0)]
   - suc_pred 4
@@ -779,10 +777,10 @@ lemma lt_simp3: ∀a b. (Suc a < Suc b) = (a < b)
   - eq_tran 4 2
   - falI 3 nat_dif %
   - exiI[d] %
-  - rsub[λx. pred x = b] 3 %
+  - subr[λx. pred x = b] 3 %
   - pred_suc %
   - psub lt_def 1
-  - prsub lt_def %
+  - psubr lt_def %
   - exiE 1 %
   - conjE1 1+
   - conjE1 2+
@@ -806,7 +804,7 @@ lemma not_lt_refl: ∀a. ¬(a < a)
 lemma lt_suc: ∀a. a < Suc a
   - nat_ind[#..a] %
   - lt_simp1 %
-  - prsub lt_simp3 1 %
+  - psubr lt_simp3 1 %
 
 lemma nat_inf: ∀a. ∃b. a < b
   - exiI[Suc a] %
@@ -825,7 +823,7 @@ lemma lt_tran_prop_def1: ∀a. lt_tran_prop a = ∀b c. a < b  ⟶  b < c  ⟶  
 lemma neq_0_imp_gt_0: ∀a. ¬(a = 0)  ⟶  0 < a
   - psub neq_0_exi_suc 1
   - exiE[#1.10.b] 1 %
-  - rsub[#..a] 1 %
+  - subr[#..a] 1 %
   - lt_simp1 %
 
 lemma lt_tran: ∀a b c. a < b  ⟶  b < c  ⟶  a < c
@@ -833,12 +831,12 @@ lemma lt_tran: ∀a b c. a < b  ⟶  b < c  ⟶  a < c
   - nat_ind 3 {1}4
   - psub eta1 3
   - psub lt_tran_prop_def1 3 1 2 %
-  - prsub lt_tran_prop_def1 %
+  - psubr lt_tran_prop_def1 %
   show [¬(e = 0)]
   - neq_0_imp_gt_0 5 %
   - gt_imp_neq_0 4 %
   - psub lt_tran_prop_def1 4
-  - prsub lt_tran_prop_def1 %
+  - psubr lt_tran_prop_def1 %
   - gt_imp_neq_0 5+
   - gt_imp_neq_0 6+
   - psub neq_0_exi_suc 7*
@@ -848,10 +846,10 @@ lemma lt_tran: ∀a b c. a < b  ⟶  b < c  ⟶  a < c
   - sub[#5..e] 7+ 5*
   - sub[#6..e] 7 6*
   - sub[#6..f] 7+ 6*
-  - rsub[#..f] 7 %
+  - subr[#..f] 7 %
   - psub lt_simp3 5*
   - psub lt_simp3 6*
-  - prsub lt_simp3 %
+  - psubr lt_simp3 %
   - 4 5 6 %
 
 lemma gt_0_neq_0: ∀a. (0 < a) = ¬(a = 0)
@@ -867,7 +865,7 @@ lemma gt_neq_0_eq: ∀a. (∃b. b < a) = ¬(a = 0)
   - gt_imp_neq_0 1 %
   - psub neq_0_exi_suc 1
   - exiE[#1.10.b] 1 %
-  - rsub[#..a] 1 %
+  - subr[#..a] 1 %
   - exiI[0] %
   - lt_simp1 %
 
@@ -889,12 +887,12 @@ lemma lt_suc_ab: ∀a b. a = b  ⟶  a < Suc b
 lemma lt_lt_suc: ∀a b. a < b  ⟶  a < Suc b
   - nat_ind[λa. ∀b. a < b  ⟶  a < Suc b] %
   - lt_simp1 %
-  - prsub lt_simp3 %
+  - psubr lt_simp3 %
   - gt_neq_0 3+
   - psub neq_0_exi_suc 4
   - exiE[#4.10.f] 4 %
   - sub[#3..d] 4+ 3*
-  - rsub[#..d] 4 %
+  - subr[#..d] 4 %
   - psub lt_simp3 3
   - 2 3 %
   - 1 %
@@ -905,17 +903,17 @@ lemma gt_exi_suc: ∀a b. a < b  ⟶  ∃c. b = Suc c
 
 lemma suc_lt_lt: ∀a b. Suc a < b  ⟶  a < b
   - nat_exh[a] %
-  - rsub[#..a] 2 %
+  - subr[#..a] 2 %
   - gt_neq_0 1
   - psub neq_0_exi_suc 1
   - exiE 1 %
-  - rsub[#..b] 1 %
+  - subr[#..b] 1 %
   - lt_simp1 %
   - exiE[#2.10.c] 2 %
   - gt_exi_suc 1+
   - exiE[#3.10.d] 3 %
   - sub[#1..b] 3+ 1*
-  - rsub[#..b] 3 %
+  - subr[#..b] 3 %
   - psub lt_simp3 1*
   - lt_lt_suc 1 %
 
@@ -934,30 +932,30 @@ lemma lt_exh: ∀a b. (a < b) = (¬(b = 0) ∧ (a = 0 ∨ pred a < pred b))
   show [pred a = c, pred b = d]
   show [pred a < pred b]
   - disjI2 7 %
-  - rsub[#4..c] 5 4*
-  - rsub[#4..d] 5 4 %
-  - rsub[#..a] 2 %
+  - subr[#4..c] 5 4*
+  - subr[#4..d] 5 4 %
+  - subr[#..a] 2 %
   - pred_suc %
-  - rsub[#..b] 3 %
+  - subr[#..b] 3 %
   - pred_suc %
   - conjE1 1+
   - conjE2 1
   - psub neq_0_exi_suc 1*
   - exiE[#1.10.c] 1 %
   - sub[#1..b] 2+ 1*
-  - rsub[#..b] 2 %
+  - subr[#..b] 2 %
   - sub[λx. a = 0 ∨ pred a < x] pred_suc 1
   - disjE 1 %
-  - rsub[#..a] 1 %
+  - subr[#..a] 1 %
   - lt_simp1 %
   - nat_exh[a] %
-  - rsub[#..a] 2 %
+  - subr[#..a] 2 %
   - lt_simp1 %
   - exiE 2 %
   - sub[#1..a] 2+ 1*
-  - rsub[#..a] 2 %
+  - subr[#..a] 2 %
   - sub[λx. x < c] pred_suc 1
-  - prsub lt_simp3 1 %
+  - psubr lt_simp3 1 %
 
 lemma suc_inj_eq: ∀a b. (Suc a = Suc b) = (a = b)
   - iffI %
@@ -985,13 +983,13 @@ lemma suc_eq: ∀a b. (Suc a = Suc b) = (a = b)
   - arg_cong 1 %
 
 lemma lt_suc_lte: ∀a b. a < b  ⟶  Suc a <= b
-  - prsub lte_def %
+  - psubr lte_def %
   - gt_exi_suc 1+
   - exiE[#2.10.c] 2 %
   - sub[#1..b] 2+ 1*
-  - rsub[#..b] 2 %
-  - rsub[λx. x ∨ Suc a = Suc c] lt_simp3 %
-  - rsub[λx. a < c ∨ x] suc_eq %
+  - subr[#..b] 2 %
+  - subr[λx. x ∨ Suc a = Suc c] lt_simp3 %
+  - subr[λx. a < c ∨ x] suc_eq %
   - nat_ind[λa. ∀c. a < Suc c  ⟶  a < c ∨ a = c] %
   - nat_exh[b] %
   - eq_com 3
@@ -999,15 +997,15 @@ lemma lt_suc_lte: ∀a b. a < b  ⟶  Suc a <= b
   - exiE 3 %
   show [0 < b]
   - disjI1 4 %
-  - rsub[#..b] 3 %
+  - subr[#..b] 3 %
   - lt_simp1 %
   - psub lt_simp3 3
   - gt_exi_suc 3+
   - exiE 4 %
   - sub[#3..d] 4+ 3*
-  - rsub[#..d] 4 %
-  - rsub[λx. x ∨ Suc b = Suc e] lt_simp3 %
-  - rsub[λx. b < e ∨ x] suc_eq %
+  - subr[#..d] 4 %
+  - subr[λx. x ∨ Suc b = Suc e] lt_simp3 %
+  - subr[λx. b < e ∨ x] suc_eq %
   - 2 3 %
   - 1 %
 
@@ -1026,25 +1024,25 @@ lemma lt_imp_not_gt: ∀a b. a < b  ⟶  ¬(b < a)
   - falI 1 lt_not_refl %
 
 lemma gte_0: ∀a. 0 <= a
-  - prsub lte_def %
+  - psubr lte_def %
   - nat_exh[a] %
   - eq_com 1
   - disjI2 1 %
   - exiE[#1.10.b] 1 %
-  - rsub[#..a] 1 %
+  - subr[#..a] 1 %
   - disjI1 lt_simp1 %
 
 lemma lt_exh_suc: ∀a b. (a < b) = (¬(b = 0) ∧ (a = 0 ∨ Suc a < Suc b))
   - iffI %
   - conjI %
   - gt_neq_0 1 %
-  - prsub lt_simp3 1
+  - psubr lt_simp3 1
   - disjI2 1 %
   - conjE1 1+
   - conjE2 1
   - sub[λx. a = 0 ∨ x] lt_simp3 2
   - disjE 2 %
-  - prsub lt_exh %
+  - psubr lt_exh %
   - conjI %
   - 1 %
   - disjI1 2 %
@@ -1065,12 +1063,12 @@ lemma nlt_ngt_imp_eq: ∀a b. ¬(a < b)  ⟶  ¬(b < a)  ⟶  a = b
   - falE2 lt_simp1 3 %
   - exiE 4 %
   - sub[#2..d] 4+ 2*
-  - prsub lt_simp3
+  - psubr lt_simp3
   - cpos_pp 5+ 2*
   - sub[#3..d] 4+ 3*
   - cpos_pp 5 3*
   - 1* 2 3
-  - rsub[#..d] 2 %
+  - subr[#..d] 2 %
   - arg_cong 1 %
   - 1 %
   - 2 %
@@ -1086,7 +1084,7 @@ lemma disj_imp: ∀P Q. (P ∨ Q) = (¬P  ⟶  Q)
   - disjI2 1 %
 
 lemma lt_or_gt_or_eq: ∀a b. a < b ∨ b < a ∨ a = b
-  - prsub disj_imp %
+  - psubr disj_imp %
   - dmrg_nd 1
   - conjE1 1+
   - conjE2 1
@@ -1120,7 +1118,7 @@ lemma lt_gt_fal: ∀a b. a < b  ⟶  b < a  ⟶  False
   - falI 2 1 %
 
 lemma lt_trich: ∀a b. (a < b ∧ ¬(b < a) ∧ ¬(a = b)) ∨ (¬(a < b) ∧ b < a ∧ ¬(a = b)) ∨ (¬(a < b) ∧ ¬(b < a) ∧ a = b)
-  - prsub disj_imp %
+  - psubr disj_imp %
   - dmrg_nd 1
   - conjE1 1+
   - conjE2 1
@@ -1205,7 +1203,7 @@ lemma Pair_inj: ∀a b c d. Pair a b = Pair c d  ⟶  a = c ∧ b = d
 lemma fst_simp: ∀a b. fst (Pair a b) = a
   show [∃!F. ∀a b. F (Pair a b) = a]
   - uniqE[#1.10.c] 1
-  - rsub[#..fst] fst_def %
+  - subr[#..fst] fst_def %
   - 1 %
   - uniqI %
   - exiI[λp. THE a. ∃b. (λx y. y) (a = b) (p = Pair a b)] %
@@ -1224,7 +1222,7 @@ lemma fst_simp: ∀a b. fst (Pair a b) = a
 lemma snd_simp: ∀a b. snd (Pair a b) = b
   show [∃!F. ∀a b. F (Pair a b) = b]
   - uniqE[#1.10.c] 1
-  - rsub[#..snd] snd_def %
+  - subr[#..snd] snd_def %
   - 1 %
   - uniqI %
   - exiI[λp. THE y. ∃x. (λx y. y) (x = y) (p = Pair x y)] %
@@ -1265,7 +1263,7 @@ lemma not_the_imp_p: ¬(∀P a. (THE a. P a) = a  ⟶  P a)
 lemma if_simps: ∀a b. if True a b = a ∧ if False a b = b
   show [∃!F. ∀a b. F True a b = a ∧ F False a b = b]
   - uniqE[#1.10.c] 1
-  - rsub[#..if] if_def %
+  - subr[#..if] if_def %
   - conjI %
   - conjE1 1 %
   - conjE2 1 %
@@ -1290,11 +1288,11 @@ lemma if_simps: ∀a b. if True a b = a ∧ if False a b = b
   - 1*[d, e]
   - 2*[d, e]
   - bool_exh[c] %
-  - rsub[#..c] 3 %
+  - subr[#..c] 3 %
   - conjE1 1*
   - conjE1 2*
   - eq_tran1 1 2 %
-  - rsub[#..c] 3 %
+  - subr[#..c] 3 %
   - conjE2 1*
   - conjE2 2*
   - eq_tran1 1 2 %
@@ -1311,7 +1309,7 @@ lemma uni_eq_fun_true: (∀) = (=) (λx. True)
   - ext %
   - iffI %
   - eta[a]
-  - rsub[#1..a] 2 1
+  - subr[#1..a] 2 1
   - eq_com %
   - ext %
   - eq_truI 1 %
@@ -1342,8 +1340,8 @@ lemma uniq2fun: ∀P. (∀a. (∃!) (P a))  ⟶  ∃!f. ∀a b. (f a = b) = (P a
   - 2*[d]
   - 3*[d]
   - uniqE[#1.10.e] 1*
-  - prsub 2* 1+
-  - prsub 3* 1
+  - psubr 2* 1+
+  - psubr 3* 1
   - eq_tran1 1 2 %
   del 1
   - arg_cong %
@@ -1353,7 +1351,7 @@ lemma uniq2fun: ∀P. (∀a. (∃!) (P a))  ⟶  ∃!f. ∀a b. (f a = b) = (P a
   - refl %
 
 lemma lte_refl: ∀a. a <= a
-  - prsub lte_def %
+  - psubr lte_def %
   - disjI2 refl %
 
 lemma lte_0_eq_0: ∀a. (a <= 0) = (a = 0)
@@ -1362,7 +1360,7 @@ lemma lte_0_eq_0: ∀a. (a <= 0) = (a = 0)
   - disjE 1 %
   - falE2 1 lt_simp2 %
   - 1 %
-  - rsub[#..a] 1 lte_refl %
+  - subr[#..a] 1 lte_refl %
 
 lemma lte_uniq_fun: ∀P. (∀N. ∃!F. ∀n. n <= N  ⟶  P (F n))  ⟶  ∃!F. ∀n. (λx y. y) (n <= n) (P (F n))
   - uniqI[#.10.e] %
@@ -1379,7 +1377,7 @@ lemma lte_uniq_fun: ∀P. (∀N. ∃!F. ∀n. n <= N  ⟶  P (F n))  ⟶  ∃!F.
   - 3 %
 
 lemma lt_imp_lte: ∀a b. a < b  ⟶  a <= b
-  - prsub lte_def %
+  - psubr lte_def %
   - disjI1 1 %
 
 lemma eq_imp_lte: ∀a b. a = b  ⟶  a <= b
@@ -1395,7 +1393,7 @@ lemma lte_suc2: ∀a b. (Suc a <= Suc b) = (a <= b)
   - eq_imp_lte 1 %
   - psub lte_def 1
   - disjE 1 %
-  - prsub lt_simp3 1
+  - psubr lt_simp3 1
   - lt_imp_lte 1 %
   - arg_cong 1 [Suc]
   - eq_imp_lte 1 %
@@ -1410,14 +1408,14 @@ lemma nat_ind_lte: ∀P. P 0  ⟶  (∀N. (∀n. n <= N  ⟶  P n)  ⟶  P (Suc 
   - nat_ind[λN. ∀n. n <= N  ⟶  a n] [d, d] %
   del 3
   - psub lte_0_eq_0 3
-  - rsub 3 1 %
+  - subr 3 1 %
   del 3
   - 2+ {1}3+
   - psub lte_def 4*
   - disjE 4 %
   - lt_suc_lte1 5
   - 3 5 %
-  - rsub 5 4 %
+  - subr 5 4 %
   - lte_refl %
 
 lemma not_suc_lt: ∀a. ¬(Suc a < a)
@@ -1528,12 +1526,12 @@ lemma suc_lte_neq_0: ∀a b. Suc a <= b  ⟶  ¬(b = 0)
 lemma if_tru_r: ∀P Q R. P  ⟶  Q  ⟶  if P Q R
   - eq_truI 1*
   sub 1
-  - prsub if_simp1 1 %
+  - psubr if_simp1 1 %
 
 lemma if_fal_r: ∀P Q R. ¬P  ⟶  R  ⟶  if P Q R
   - eq_falI 1*
   sub 1
-  - prsub if_simp2 1 %
+  - psubr if_simp2 1 %
 
 lemma if_tru_t: ∀P a b. P  ⟶  if P a b = a
   - eq_truI 1
@@ -1576,7 +1574,7 @@ lemma emp_def: ∅ = λa. False
   - ∅_def %
 
 lemma emp_def1: ∀a. ∅ a = False
-  - rsub[#..∅] emp_def refl %
+  - subr[#..∅] emp_def refl %
 
 lemma not_in_emp: ∀a. ¬(a ∈ ∅)
   - notI %
@@ -1586,7 +1584,7 @@ lemma not_in_emp: ∀a. ¬(a ∈ ∅)
 def univ: λa. True
 
 lemma univ_def1: ∀a. univ a = True
-  - rsub[#..univ] univ_def refl %
+  - subr[#..univ] univ_def refl %
 
 lemma emp_neq_univ: ¬(∅ = univ)
   - notI %
@@ -1597,8 +1595,8 @@ lemma emp_neq_univ: ¬(∅ = univ)
   - bool_dif 1 %
 
 lemma all_in_univ: ∀a. a ∈ univ
-  - prsub in_def %
-  - prsub univ_def1 true %
+  - psubr in_def %
+  - psubr univ_def1 true %
 
 lemma emp_in_univ: ∅ ∈ univ
   - all_in_univ %
@@ -1615,7 +1613,7 @@ lemma nemp_exi_in: ∀S. ¬(S = ∅) = (∃a. a ∈ S)
   - 1[b]
   - eq_falI %
   - imp_swap cpos_pp 1 %
-  - prsub in_def 1 %
+  - psubr in_def 1 %
   - notI %
   sub 2
   - exiE 1 %
@@ -1781,7 +1779,7 @@ lemma lt_imp_not_gte: ∀a b. a < b  ⟶  ¬(b <= a)
 lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f (nat_fold z f n)
   let C: λF. ∀z f n. F z f 0 = z ∧ F z f (Suc n) = f (F z f n)
   - sub[λP. P nat_fold] 1+ %
-  - rsub nat_fold_def %
+  - subr nat_fold_def %
   - sub[λF. C ((THE) F)] 1+ %
   - uniqE %
   let K: λF z f n. if (n = 0) z (f (F z f (pred n)))
@@ -1818,7 +1816,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - if_tru_r1 lte_refl %
   - if_tru_r1 refl refl %
   ren a N
-  - rsub[λx. FF (Suc N) z f (Suc N) = if (Suc N = 0) z (f (FF x z f x))] pred_suc %
+  - subr[λx. FF (Suc N) z f (Suc N) = if (Suc N = 0) z (f (FF x z f x))] pred_suc %
   - eq_com %
   - if_fal_r2 suc_neq_0 %
   show [∀N z f. FF (Suc N) z f N = FF N z f N]
@@ -1830,7 +1828,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - if_tru_r1 lte_refl %
   - if_fal_r1 suc_neq_0 %
   - arg_cong %
-  - rsub[λx. FF (Suc N) z f x = FF N z f N] pred_suc 8 %
+  - subr[λx. FF (Suc N) z f x = FF N z f N] pred_suc 8 %
   del 8
   ren a N
   ren b z
@@ -1838,7 +1836,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - 5 lte_suc %
   - 
   let F₀: λz f n. FF n z f n
-  - rsub 11+ 10
+  - subr 11+ 10
   ren a F₁
   - iffI %
   - 
@@ -1874,7 +1872,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - if_tru_r1 11+ %
   - if_fal_r2 suc_neq_0 %
   - arg_cong %
-  - rsub[λx. F₁ z f x = FF N z f x] pred_suc %
+  - subr[λx. F₁ z f x = FF N z f x] pred_suc %
   - lte_lte_suc 11
   - psub lte_suc2 11
   - 10 11 %
@@ -1895,7 +1893,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   sub 9
   ren a N
   - arg_cong %
-  - rsub[λx. FF (Suc N) z f x = FF x z f x] pred_suc %
+  - subr[λx. FF (Suc N) z f x = FF x z f x] pred_suc %
   - 4 lte_suc %
   - 
   ren a N
@@ -1930,7 +1928,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - if_tru_r1 lte_refl %
   - if_fal_r1 suc_neq_0 %
   - arg_cong %
-  - rsub[λx. FF (Suc n) z f x = FF N z f x] pred_suc %
+  - subr[λx. FF (Suc n) z f x = FF N z f x] pred_suc %
   - suc_lte_neq_0 6+
   - psub neq_0_exi_suc 7
   - exiE 7 %
@@ -2022,7 +2020,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   ren a n
   - eq_com %
   - if_fal_r2 %
-  - rsub[λx. ¬(x = Suc N)] pred_suc %
+  - subr[λx. ¬(x = Suc N)] pred_suc %
   - suc_lt_lt 6+
   - lt_imp_neq 11 %
   - refl %
@@ -2044,9 +2042,9 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - if_fal_r1 suc_neq_0 %
   - arg_cong %
   - if_fal_r2 %
-  - rsub[λx. ¬(x = Suc N)] pred_suc %
+  - subr[λx. ¬(x = Suc N)] pred_suc %
   - neq_suc %
-  - rsub[λx. F₀ z f N = F₀ z f x] pred_suc refl %
+  - subr[λx. F₀ z f N = F₀ z f x] pred_suc refl %
   - 
   ren a F₂
   - iffI %
@@ -2082,7 +2080,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   del 11
   - arg_cong %
   - eq_com %
-  - rsub[λx. F₂ z f x = F₁ z f x] pred_suc %
+  - subr[λx. F₂ z f x = F₁ z f x] pred_suc %
   - 9 %
   - refl %
   sub 10
@@ -2113,7 +2111,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   sub 1
   - if_fal_r1 suc_neq_0 %
   - arg_cong %
-  - rsub[λx. F z f x = F z f n] pred_suc  refl %
+  - subr[λx. F z f x = F z f n] pred_suc  refl %
   - 
   ren a z
   ren b f
@@ -2126,7 +2124,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   sub 1
   - if_fal_r1 suc_neq_0 %
   - arg_cong %
-  - rsub[λx. F z f x = F z f n] pred_suc refl %
+  - subr[λx. F z f x = F z f n] pred_suc refl %
 
 lemma nat_fold_simp1: ∀z f. nat_fold z f 0 = z
   - conjE1 nat_fold_simps %
@@ -2201,7 +2199,7 @@ lemma add_com: ∀a b. a + b = b + a
   - arg_cong 1 %
 
 lemma injI: ∀f. (∀a b. f a = f b  ⟶  a = b)  ⟶  inj f
-  - prsub inj_def1 {2}1 %
+  - psubr inj_def1 {2}1 %
 
 lemma injE: ∀f a b. inj f  ⟶  f a = f b  ⟶  a = b
   - psub inj_def1 1 2 %
@@ -2235,14 +2233,14 @@ lemma add_assoc: ∀a b c. (a + b) + c = a + (b + c)
   ren e b
   ren f c
   - tranr1 add_simp2 %
-  - rsub[λx. b + x = Suc (b + c + a)] add_simp2 %
+  - subr[λx. b + x = Suc (b + c + a)] add_simp2 %
   - tranr1 add_simp2 %
   - arg_cong 1 %
 
 lemma lte_add: ∀a b. a <= a + b
   - nat_ind[λb. ∀a. a <= a + b] %
-  - rsub add0 lte_refl %
-  - rsub add_simp2 %
+  - subr add0 lte_refl %
+  - subr add_simp2 %
   - lte_lte_suc 1 %
 
 lemma uniqE1: ∀P Q. (∃!) P  ⟶  (∀a. P a  ⟶  (∀b. P b = (b = a))  ⟶  Q)  ⟶  Q
@@ -2306,10 +2304,10 @@ lemma lte_uniq_add: ∀a b. (a <= b) = (∃!c. b = a + c)
   ren c b
   - nat_ind[λb. (∀c. (a + b = a + c) = (c = b))  ⟶  a <= a + b] %
   del 1
-  - rsub add0 lte_refl %
+  - subr add0 lte_refl %
   del 1
   ren c b
-  - rsub add_simp2 %
+  - subr add_simp2 %
   - lte_lte_suc lte_add %
   - 1 %
 
@@ -2337,14 +2335,14 @@ lemma nnul_def1: ∀a. nnul a = ¬(a = Nil)
   - psub 2 1
   - cposr_nn 1 %
   sub 1
-  - prsub nul_def1 refl %
+  - psubr nul_def1 refl %
   - fun_cong nnul_def
-  - prsub 2 %
-  - rsub nul_def1 1 %
+  - psubr 2 %
+  - subr nul_def1 1 %
 
 lemma nul_simp1: nul Nil = True
   - eq_truI %
-  - prsub nul_def1 refl %
+  - psubr nul_def1 refl %
 
 lemma nul_simp2: ∀a b. nul (Cons a b) = False
   - eq_falI %
@@ -2355,12 +2353,12 @@ lemma nul_simp2: ∀a b. nul (Cons a b) = False
 
 lemma nnul_simp1: nnul Nil = False
   - eq_falI %
-  - rsub nnul_def1 %
+  - subr nnul_def1 %
   - notI2 refl %
 
 lemma nnul_simp2: ∀a b. nnul (Cons a b) = True
   - eq_truI %
-  - prsub nnul_def1 %
+  - psubr nnul_def1 %
   - neq_com list_dif %
 
 lemma nnul_exi_cons: ∀a. nnul a = (∃b c. a = Cons b c)
@@ -2413,7 +2411,7 @@ lemma nnul_imp_uniq_cons: ∀a. nnul a = (∃!b c. a = Cons b c)
   - uniqE 1
   - uniqE 1
   sub 1
-  - prsub nnul_simp2 true %
+  - psubr nnul_simp2 true %
 
 lemma nul_simp1p: nul Nil
   - eq_truE %
@@ -2483,7 +2481,7 @@ lemma sub_simps: ∀a b. sub a 0 = a ∧ sub (Suc a) (Suc b) = sub a b
   - fun_cong2 sub_def
   - psub lte_uniq_add
   - theE 1+
-  - rsub[#..sub] sub_def %
+  - subr[#..sub] sub_def %
   - conjI %
   - 2+[0, a] gte_0
   - uniqE 4
@@ -2527,7 +2525,7 @@ lemma muI: ∀P n. P n  ⟶  (∀k. k < n  ⟶  ¬P k)  ⟶  (μ) P = n
   - 5 %
 
 lemma muE1: ∀Q P n. Q ((μ) P)  ⟶  P n  ⟶  (∀k. k < n  ⟶  ¬P k)  ⟶  Q n
-  - imp_swap prsub 1 %
+  - imp_swap psubr 1 %
   - arg_cong %
   - com %
   - muI 1 {1}2 %
@@ -2632,7 +2630,7 @@ lemma exi_least: ∀P. (∃) P  ⟶  (∃n. P n ∧ (∀k. k < n  ⟶  ¬P k))
   - notI2 4
   - disjE1 2* 4
   - dmrg_nu 2*
-  - imp_swap rsub 2 %
+  - imp_swap subr 2 %
   - ext %
   - iffI %
   - conjE 3 %
@@ -2678,8 +2676,8 @@ lemma muE: ∀P n. (μ) P = n  ⟶  (∃) P  ⟶  P n ∧ (∀k. k < n  ⟶  ¬P
   let N: THE a. P a ∧ (∀b. b < a  ⟶  ¬P b)
   - uniqE 2+
   - conjE 4 %
-  - rsub 3+ 4*
-  - rsub[λx. ∀a. a < x  ⟶  ¬P a] 3+ {1}5
+  - subr 3+ 4*
+  - subr[λx. ∀a. a < x  ⟶  ¬P a] 3+ {1}5
   show [(μ) P = N]
   - eq_tran2 1+ 6+
   sub 7
@@ -2761,22 +2759,22 @@ lemma nexi_gte_all: ¬∃a. ∀b. b <= a
   - psub lt_not_gte 2
   - falI 1 2 %
 
-const list_fold :: 'b  ⟹  ('a  ⟹  'b  ⟹  'b)  ⟹  list 'a  ⟹  'b
+const fold :: 'b  ⟹  ('a  ⟹  'b  ⟹  'b)  ⟹  list 'a  ⟹  'b
 
-axiom list_fold_simp1: ∀z f. list_fold z f Nil = z
-axiom list_fold_simp2: ∀z f a b. list_fold z f (Cons a b) = f a (list_fold z f b)
+axiom fold_simp1: ∀z f. fold z f Nil = z
+axiom fold_simp2: ∀z f a b. fold z f (Cons a b) = f a (fold z f b)
 
-def length: list_fold 0 (λa b. Suc b)
+def length: fold 0 (λa b. Suc b)
 
-lemma length_def1: ∀a. length a = list_fold 0 (λa b. Suc b) a
+lemma length_def1: ∀a. length a = fold 0 (λa b. Suc b) a
   - fun_cong length_def %
 
 lemma length_simps: ∀a b. length Nil = 0 ∧ length (Cons a b) = Suc (length b)
   - conjI %
   - tranr length_def1 %
-  - tranr list_fold_simp1 refl %
+  - tranr fold_simp1 refl %
   - tranr length_def1 %
-  - tranr list_fold_simp2 %
+  - tranr fold_simp2 %
   - arg_cong %
   - com length_def1 %
 
@@ -2801,7 +2799,7 @@ lemma not_all_all: ¬((∀) (∀))
   - etaI 1
   - 1[∅]
   - etaI 1
-  - prsub in_def 1
+  - psubr in_def 1
   - falI 1 not_in_emp %
 
 lemma all_eq_unit: ∀a. a = Unit
@@ -2872,11 +2870,20 @@ lemma fix_pred₁_eq_0: (FIX) pred₁ = 0
   - eq_tran2 pred_suc 1
   - falI 1 neq_suc %
 
-lemma zfc_ax_ext: ∀a b. (∀c. c ∈ a = c ∈ b)  ⟶  a = b
+lemma set_eq': ∀a b. (∀c. c ∈ a = c ∈ b)  ⟶  a = b
   - ext %
   - 1[c]
   - tran1 in_def 1
   - tran1 in_def 1 %
+
+lemma set_eq: ∀a b. (a = b) = ((∀c. c ∈ a = c ∈ b) ∧ (∀c. a ∈ c = b ∈ c))
+  - iffI %
+  sub 1
+  - conjI %
+  - refl %
+  - refl %
+  - conjE1 1
+  - set_eq' {1}1 %
 
 def (⋂) [infixl 55]: λa b c. c ∈ a ∧ c ∈ b
 def (⋃) [infixl 55]: λa b c. c ∈ a ∨ c ∈ b
@@ -2887,8 +2894,115 @@ lemma cap_def: ∀a b. a ⋂ b = λc. c ∈ a ∧ c ∈ b
 lemma cup_def: ∀a b. a ⋃ b = λc. c ∈ a ∨ c ∈ b
   - fun_cong2 ⋃_def %
 
-lemma zfc_ax_reg: ∀a. ¬(a = ∅)  ⟶  ∃b. b ∈ a ∧ b ⋂ a = ∅
+lemma lem_z3_5438: ∀x y. (∀Q. x ∈ Q  ⟶  y ∈ Q)  ⟶  x = y
+  ren a x
+  ren b y
+  - 1[λz. z = x]
+  - psubr in_def
+  - imp_tran 2 1 refl
+  - psub in_def 1
+  - com 1 %
+
+def map: λf. fold Nil (λx. Cons (f x))
+
+lemma map_def1: ∀f xs. map f xs = fold Nil (λx. Cons (f x)) xs
+  - fun_cong2 map_def %
+
+lemma map_simp1: ∀f. map f Nil = Nil
+  - tranr map_def1 %
+  - tranr fold_simp1 refl %
+
+lemma map_simp2: ∀f x xs. map f (Cons x xs) = Cons (f x) (map f xs)
+  - tranr map_def1 %
+  - tranr fold_simp2 %
+  - arg_cong %
+  - tran map_def1 refl %
+
+lemma fsub: ∀a b c f. a = b  ⟶  f a = c  ⟶  f b = c
+  sub 1
+  - 1 %
+
+lemma fsubr: ∀a b c f. a = b  ⟶  f b = c  ⟶  f a = c
+  sub 1
+  - 1 %
+
+lemma map_prsv_len: ∀xs f. length (map f xs) = length xs
+  ren a xs
+  ren b f
+  - list_ind[#..xs] %
+  - arg_cong map_simp1 %
+  - fsubr map_simp2 %
+  - tranr1 length_simp2 %
+  - tranr1 length_simp2 %
+  - arg_cong 1 %
+
+def last: λxs. snd (fold (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs)
+
+lemma last_def1: ∀xs. last xs = snd (fold (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs)
+  - fun_cong last_def %
+
+lemma if_subr_tru: ∀P a b c. a  ⟶  P b  ⟶  P (if a b c)
+  - imp_swap sub 2 %
+  - com %
+  - if_tru_r1 1 refl %
+
+lemma if_subr_fal: ∀P a b c. ¬a  ⟶  P c  ⟶  P (if a b c)
+  - imp_swap sub 2 %
+  - com %
+  - if_fal_r1 1  refl %
+
+lemma last_simp1: ∀x. last (Cons x Nil) = x
+  ren a x
+  - tranr last_def1 %
+  - imp_swap fsubr snd_simp
+  show [∀a. a = Pair True x  ⟶  snd a = x]
+  del 1
+  - 1 %
+  - tranr fold_simp2 %
+  - if_fal_r1 %
+  - notI %
+  - sub fold_simp1 1
+  - psub fst_simp 1 %
+  - refl %
+  sub 2
+  - snd_simp %
+
+lemma last_simp2: ∀x y ys. last (Cons x (Cons y ys)) = last (Cons y ys)
+  ren a x
+  ren b y
+  ren c ys
+  - list_ind[λys. ∀x y. last (Cons x (Cons y ys)) = last (Cons y ys)] %
+  ren a x
+  ren b y
+  - com %
+  - tranr1 last_simp1 %
+  - tranr last_def1 %
+  - imp_swap fsubr snd_simp
+  show [∀a. a = Pair True y  ⟶  snd a = y]
+  del 1
+  - 1 %
+  - tranr fold_simp2 %
+  - if_tru_r1 %
+  - subr fold_simp2 %
+  - if_subr_fal %
+  - notI %
+  - sub fold_simp1 1
+  - psub fst_simp 1 %
+  - psubr fst_simp true %
+  - tranr fold_simp2 %
+  - if_fal_r1 %
+  - notI %
+  - sub fold_simp1 1
+  - psub fst_simp 1 %
+  - refl %
+  - 1 2 %
+  ren a z
+  ren b zs
+  ren c x
+  ren d y
   - 
 
 lemma length_least_fold_tail: ∀a. length a = μn. nat_fold a tail n = Nil
+  ren a xs
+  - com %
   - 
