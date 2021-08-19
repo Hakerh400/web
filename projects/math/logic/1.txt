@@ -3125,9 +3125,42 @@ lemma map_const_f: ∀f. const_f f  ⟶  ∃g. ∀xs. map f xs = g (length xs)
   - tranr 2 1
   - com 1
   - subr[λa. map f xs = replicate a (length xs)] 1+ %
-  - 
+  - list_ind[#..xs] %
+  - tranr1 map_simp1 %
+  - tr2 replicate_simp1 refl length_simp1 %
+  ren b x
+  ren c xs
+  - tranr1 map_simp2 %
+  - subr[λb. replicate a b = Cons (f x) (map f xs)] length_simp2 %
+  - tranr replicate_simp2 %
+  - cong %
+  - com %
+  - arg_cong 1 %
+  - com 2 %
 
-.lemma length_least_fold_tail: ∀a. length a = μn. nat_fold a tail n = Nil
+lemma fold_const_f: ∀z f. const_f f  ⟶  ∃g. ∀xs. fold z f xs = g (length xs)
+  ren a z
+  ren b f
+  - exiI[nat_fold z (f undefined)] %
+  ren a xs
+  - psub const_f_def1 1
+  let a: f undefined
+  - tranr 2 1
+  - com 1
+  - subr[λa. fold z f xs = nat_fold z a (length xs)] 1+ %
+  - list_ind[#..xs] %
+  - tranr1 fold_simp1 %
+  - tr3 nat_fold_simp1 refl refl length_simp1 %
+  ren b x
+  ren c xs
+  - tranr1 fold_simp2 %
+  - subr[λb. nat_fold z a b = f x (fold z f xs)] length_simp2 %
+  - tranr nat_fold_simp2 %
+  - cong %
+  - com 1 %
+  - com 2 %
+
+lemma length_least_fold_tail: ∀xs. length xs = μn. nat_fold xs tail n = Nil
   ren a xs
   - com %
   - muI %
@@ -3135,6 +3168,4 @@ lemma map_const_f: ∀f. const_f f  ⟶  ∃g. ∀xs. map f xs = g (length xs)
   - tr3 nat_fold_simp1 refl refl length_simp1 %
   ren a x
   ren b xs
-  - subr[λa. nat_fold (Cons x xs) tail a = Nil] length_simp2 %
-  - tranr nat_fold_simp2 %
   - 
