@@ -2926,6 +2926,12 @@ lemma fsubr: ∀a b c f. a = b  ⟶  f b = c  ⟶  f a = c
   sub 1
   - 1 %
 
+lemma fsub1: ∀a b c f. f a = c  ⟶  a = b  ⟶  f b = c
+  - fsub 2 1 %
+
+lemma fsubr1: ∀a b c f. f b = c  ⟶  a = b  ⟶  f a = c
+  - fsubr 2 1 %
+
 lemma map_prsv_len: ∀xs f. length (map f xs) = length xs
   ren a xs
   ren b f
@@ -2936,20 +2942,100 @@ lemma map_prsv_len: ∀xs f. length (map f xs) = length xs
   - tranr1 length_simp2 %
   - arg_cong 1 %
 
-def last: λxs. snd (fold (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs)
+def last': λxs. fold (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs
+def last: λxs. snd (last' xs)
 
-lemma last_def1: ∀xs. last xs = snd (fold (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs)
+lemma last'_def1: ∀xs. last' xs = fold (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs
+  - fun_cong last'_def %
+
+lemma last_last': ∀xs. last xs = snd (last' xs)
   - fun_cong last_def %
 
-lemma if_subr_tru: ∀P a b c. a  ⟶  P b  ⟶  P (if a b c)
-  - imp_swap sub 2 %
+lemma last_def1: ∀xs. last xs = snd (fold (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs)
+  - tranr last_last' %
+  - arg_cong last'_def1 %
+
+lemma if_tru_subr: ∀P a b c. a  ⟶  P b  ⟶  P (if a b c)
+  - sub1 2 %
   - com %
   - if_tru_r1 1 refl %
 
-lemma if_subr_fal: ∀P a b c. ¬a  ⟶  P c  ⟶  P (if a b c)
-  - imp_swap sub 2 %
+lemma if_fal_subr: ∀P a b c. ¬a  ⟶  P c  ⟶  P (if a b c)
+  - sub1 2 %
   - com %
   - if_fal_r1 1  refl %
+
+lemma if_tru_fsubr: ∀a b c d f. a  ⟶  f b = d  ⟶  f (if a b c) = d
+  - fsub1 2 %
+  - com %
+  - if_tru_r1 1 refl %
+
+lemma if_fal_fsubr: ∀a b c d f. ¬a  ⟶  f c = d  ⟶  f (if a b c) = d
+  - fsub1 2 %
+  - com %
+  - if_fal_r1 1 refl %
+
+lemma last'_cons_tru: ∀x xs. fst (last' (Cons x xs))
+  ren a x
+  ren b xs
+  - list_ind[λxs. ∀x. fst (last' (Cons x xs))] %
+  ren a x
+  - subr last'_def1 %
+  - subr fold_simp2 %
+  - if_fal_subr %
+  - notI %
+  - sub fold_simp1 1
+  - psub fst_simp 1 %
+  - psubr fst_simp true %
+  ren a y
+  ren b ys
+  ren c x
+  - subr last'_def1 %
+  - subr fold_simp2 %
+  - if_tru_subr %
+  - sub last'_def1 1 %
+  - sub last'_def1 1 %
+
+lemma last'_simp1: ∀x. last' (Cons x Nil) = Pair True x
+  ren a x
+  - tranr last'_def1 %
+  - tranr fold_simp2 %
+  - if_fal_r1 %
+  - notI %
+  - sub fold_simp1 1
+  - psub fst_simp 1 %
+  - refl %
+
+lemma last'_simp2: ∀x y ys. last' (Cons x (Cons y ys)) = last' (Cons y ys)
+  ren a x
+  ren b y
+  ren c ys
+  - list_ind[λys. ∀x y. last' (Cons x (Cons y ys)) = last' (Cons y ys)] %
+  ren a x
+  ren b y
+  - tranr last'_def1 %
+  - tranr fold_simp2 %
+  - if_tru_r1 %
+  - subr fold_simp2 %
+  - if_fal_subr %
+  - notI %
+  - sub fold_simp1 1
+  - psub fst_simp 1 %
+  - psubr fst_simp true %
+  - tran last'_def1 refl %
+  ren a z
+  ren b zs
+  ren c x
+  ren d y
+  - tranr last'_def1 %
+  - tranr fold_simp2 %
+  - if_tru_r1 %
+  - sub last'_def1 last'_cons_tru %
+  - tranr fold_simp2 %
+  - if_tru_r1 %
+  - sub last'_def1 last'_cons_tru %
+  - tran last'_def1 %
+  - com 1 %
 
 lemma last_simp1: ∀x. last (Cons x Nil) = x
   ren a x
@@ -2971,38 +3057,84 @@ lemma last_simp2: ∀x y ys. last (Cons x (Cons y ys)) = last (Cons y ys)
   ren a x
   ren b y
   ren c ys
-  - list_ind[λys. ∀x y. last (Cons x (Cons y ys)) = last (Cons y ys)] %
-  ren a x
-  ren b y
-  - com %
-  - tranr1 last_simp1 %
-  - tranr last_def1 %
-  - imp_swap fsubr snd_simp
-  show [∀a. a = Pair True y  ⟶  snd a = y]
-  del 1
+  - tranr1 last_last' %
+  - tranr1 last_last' %
+  - arg_cong last'_simp2 %
+
+lemma tr1: ∀a₁ b₁ f x. f a₁ = x  ⟶  b₁ = a₁  ⟶  f b₁ = x
+  sub 2
   - 1 %
-  - tranr fold_simp2 %
-  - if_tru_r1 %
-  - subr fold_simp2 %
-  - if_subr_fal %
-  - notI %
-  - sub fold_simp1 1
-  - psub fst_simp 1 %
-  - psubr fst_simp true %
-  - tranr fold_simp2 %
-  - if_fal_r1 %
-  - notI %
-  - sub fold_simp1 1
-  - psub fst_simp 1 %
-  - refl %
-  - 1 2 %
-  ren a z
-  ren b zs
-  ren c x
-  ren d y
+
+lemma tr2: ∀a₁ a₂ b₁ b₂ f x. f a₁ a₂ = x  ⟶  b₁ = a₁  ⟶  b₂ = a₂  ⟶  f b₁ b₂ = x
+  sub 2
+  sub 2
+  - 1 %
+
+lemma tr3: ∀a₁ a₂ a₃ b₁ b₂ b₃ f x. f a₁ a₂ a₃ = x  ⟶  b₁ = a₁  ⟶  b₂ = a₂  ⟶  b₃ = a₃  ⟶  f b₁ b₂ b₃ = x
+  sub 2
+  sub 2
+  sub 2
+  - 1 %
+
+def const: λa b. a
+
+lemma const_def1: ∀a b. const a b = a
+  - fun_cong2 const_def %
+
+def const_f: λf. ∀x y. f x = f y
+
+lemma const_f_def1: ∀f. const_f f = (∀x y. f x = f y)
+  - fun_cong const_f_def %
+
+lemma conf_f_const: ∀a. const_f (const a)
+  - psubr const_f_def1 %
+  - tranr1 const_def1 %
+  - tranr1 const_def1 refl %
+
+def replicate: λa. nat_fold Nil (Cons a)
+
+lemma replicate_def1: ∀a n. replicate a n = nat_fold Nil (Cons a) n
+  - fun_cong2 replicate_def %
+
+lemma replicate_simp1: ∀a. replicate a 0 = Nil
+  - tranr replicate_def1 %
+  - nat_fold_simp1 %
+
+lemma replicate_simp2: ∀a n. replicate a (Suc n) = Cons a (replicate a n)
+  ren a n
+  ren b a
+  - tranr replicate_def1 %
+  - tranr nat_fold_simp2 %
+  - arg_cong %
+  - com replicate_def1 %
+
+lemma len_replicate: ∀a n. length (replicate a n) = n
+  ren b n
+  - nat_ind[#..n] %
+  - tr1 length_simp1 replicate_simp1 %
+  - fsubr replicate_simp2 %
+  - tranr length_simp2 %
+  - arg_cong 1 %
+
+lemma map_const_f: ∀f. const_f f  ⟶  ∃g. ∀xs. map f xs = g (length xs)
+  ren a f
+  - exiI[replicate (f undefined)] %
+  ren a xs
+  - psub const_f_def1 1
+  let a: f undefined
+  - tranr 2 1
+  - com 1
+  - subr[λa. map f xs = replicate a (length xs)] 1+ %
   - 
 
-lemma length_least_fold_tail: ∀a. length a = μn. nat_fold a tail n = Nil
+.lemma length_least_fold_tail: ∀a. length a = μn. nat_fold a tail n = Nil
   ren a xs
   - com %
+  - muI %
+  - list_ind[#..xs] %
+  - tr3 nat_fold_simp1 refl refl length_simp1 %
+  ren a x
+  ren b xs
+  - subr[λa. nat_fold (Cons x xs) tail a = Nil] length_simp2 %
+  - tranr nat_fold_simp2 %
   - 

@@ -10,6 +10,7 @@ const {min, max} = Math;
 class Editor{
   selected = 0;
   editable = 1;
+  wrap = 0;
 
   lines = [];
   cx = 0;
@@ -19,9 +20,15 @@ class Editor{
   scrollX = 0;
   scrollY = 0;
 
+  w = 1;
+  h = 1;
+
   markedLine = null;
 
   render(g, w, h){
+    this.w = w;
+    this.h = h;
+
     const {lines, scrollX, scrollY, markedLine} = this;
     const linesNum = lines.length;
 
@@ -333,7 +340,38 @@ class Editor{
   setText(str){
     if(this.locked) return;
 
-    this.lines = O.sanl(str);
+    let lines = O.sanl(str);
+
+    if(this.wrap){
+      const {w, h} = this;
+
+      lines = O.sanl(lines.map(line => {
+        if(line.length < w) return line;
+
+        const words = line.split(' ');
+        const lines = [];
+        let lineCur = '';
+
+        for(const word of words){
+          if(lineCur.length !== 0)
+            lineCur += ' ';
+
+          if(lineCur.length + word.length >= w){
+            lines.push(lineCur);
+            lineCur = ' '.repeat(2);
+          }
+
+          lineCur += word;
+        }
+
+        if(lineCur.length !== 0)
+          lines.push(lineCur);
+
+        return lines.join('\n');
+      }).join('\n'));
+    }
+
+    this.lines = lines;
     this.updateLine(0);
   }
 

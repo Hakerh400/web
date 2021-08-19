@@ -46,6 +46,7 @@ const logicStr = loadLogic ? await O.rfs(logicFile, 1) : null;
 
 const main = () => {
   mainEditor.selected = 1;
+  outputEditor.wrap = 1;
 
   load();
 
