@@ -3181,30 +3181,103 @@ lemma nat_exh: ∀P. P 0  ⟶  (∀n. P n)  ⟶  (∀) P
   - 1 %
   - 2 %
 
-lemma replicate_fold_tail: ∀a n. nat_fold (replicate a n) tail n = Nil
+lemma nat_fold_simp_it: ∀z f n. nat_fold z f (Suc n) = nat_fold (f z) f n
+  ren a z
+  ren b f
+  ren c n
+  - nat_ind[λn. ∀z f. nat_fold z f (Suc n) = nat_fold (f z) f n] %
+  ren a z
+  ren b f
+  - tranr nat_fold_simp2 %
+  - fsubr nat_fold_simp1 %
+  - com nat_fold_simp1 %
+  ren a n
+  ren b z
+  ren c f
+  - tranr1 nat_fold_simp2 %
+  - tranr1 nat_fold_simp2 %
+  - arg_cong 1 %
+
+lemma nat_fold_replicate_tail: ∀a n. nat_fold (replicate a n) tail n = Nil
   ren b n
   - nat_ind[#..n] %
   - tranr nat_fold_simp1 %
   - replicate_simp1 %
   ren b n
-  - tranr nat_fold_simp2 %
-  - subr[λx. tail x = Nil, Cons a Nil] %
-  - nat_exh1[n] %
-  sub 2
-  - tranr nat_fold_simp1 %
-  - tranr replicate_simp2 %
-  - arg_cong replicate_simp1 %
-  - exiE 2 %
-  sub 2
-  - tranr nat_fold_simp2 %
-  - 
+  - subr[λx. nat_fold x tail (Suc n) = Nil] replicate_simp2 %
+  - tranr nat_fold_simp_it %
+  - tr3 1 tail_simp refl refl %
+
+lemma nat_fold_tail_len: ∀xs. nat_fold xs tail (length xs) = Nil
+  ren a xs
+  - list_ind[#..xs] %
+  - tr3 nat_fold_simp1 refl refl length_simp1 %
+  ren a x
+  ren b xs
+  - subr[λa. nat_fold (Cons x xs) tail a = Nil] length_simp2 %
+  - tranr nat_fold_simp_it %
+  - tr3 1 tail_simp refl refl %
+
+lemma nnul_cons: ∀x xs. nnul (Cons x xs)
+  ren a x
+  ren b xs
+  - eq_truE nnul_simp2 %
+lemma not_nnul_imp_nul: ∀xs. ¬(nnul xs)  ⟶  nul xs
+  ren a xs
+  - sub nnul_def1 1
+  - notE 1
+  sub 1
+  - psubr nul_def1 refl %
+
+lemma nat_fold_tail_lt_len: ∀xs n. n < length xs  ⟶  nnul (nat_fold xs tail n)
+  ren a xs
+  ren b n
+  - nat_ind[λn. ∀xs. n < length xs  ⟶  nnul (nat_fold xs tail n)] %
+  del 1
+  ren a xs
+  - list_exh[λxs. 0 < length xs  ⟶  nnul (nat_fold xs tail 0)] %
+  del 1
+  - sub[λa. 0 < a] length_simp1 1
+  - falE2 1 not_lt_refl %
+  del 1
+  ren a x
+  ren b xs
+  - subr nat_fold_simp1 %
+  - nnul_cons %
+  - 1 %
+  del 1
+  ren a n
+  ren b xs
+  - subr nat_fold_simp_it %
+  show [∃y ys. xs = Cons y ys]
+  - exiE 3 %
+  - exiE 3 %
+  sub 3
+  ren a x
+  ren b xs
+  - subr[λa. nnul (nat_fold a tail n)] tail_simp %
+  - sub[λa. Suc n < a] length_simp2 2
+  - psub lt_simp3 2
+  - 1 2 %
+  show [nnul xs]
+  - psub nnul_exi_cons 3 %
+  - notE2 %
+  - not_nnul_imp_nul 3
+  - psub nul_def1 3
+  sub 3
+  - sub[λa. Suc n < a] length_simp1 2
+  - falE2 2 not_lt_0 %
+  - 1 %
+
+lemma nnul_imp_neq_nil: ∀xs. nnul xs  ⟶  ¬(xs = Nil)
+  ren a xs
+  - psub nnul_def1 1 %
 
 lemma length_least_fold_tail: ∀xs. length xs = μn. nat_fold xs tail n = Nil
   ren a xs
   - com %
   - muI %
-  - list_ind[#..xs] %
-  - tr3 nat_fold_simp1 refl refl length_simp1 %
-  ren a x
-  ren b xs
-  - 
+  - nat_fold_tail_len %
+  ren a n
+  - nat_fold_tail_lt_len 1
+  - nnul_imp_neq_nil 1 %
