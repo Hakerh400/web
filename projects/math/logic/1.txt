@@ -669,7 +669,7 @@ def pred: λa. THE b. a = Suc b
 lemma pred_def1: ∀a. pred a = THE b. a = Suc b
   - fun_cong pred_def %
 
-lemma nat_exh: ∀a P. (a = 0  ⟶  P)  ⟶  ((∃b. a = Suc b)  ⟶  P)  ⟶  P
+lemma nat_exh1: ∀a P. (a = 0  ⟶  P)  ⟶  ((∃b. a = Suc b)  ⟶  P)  ⟶  P
   - nat_ind[λa. (a = 0  ⟶  b)  ⟶  ((∃b. a = Suc b)  ⟶  b)  ⟶  b, a] %
   - 3 refl %
   - 5 %
@@ -728,7 +728,7 @@ lemma pred_suc: ∀a. pred (Suc a) = a
   - the_inj1 suc_inj1 %
 
 lemma suc_pred: ∀a. ¬(a = 0)  ⟶  Suc (pred a) = a
-  - nat_exh[a] %
+  - nat_exh1[a] %
   - falE2 2 1 %
   - exiE[#2.10.b] 2 %
   - subr[#..a] 2 %
@@ -737,7 +737,7 @@ lemma suc_pred: ∀a. ¬(a = 0)  ⟶  Suc (pred a) = a
 
 lemma neq_0_exi_suc: ∀a. ¬(a = 0) = (∃b. a = Suc b)
   - iffI %
-  - nat_exh[a] %
+  - nat_exh1[a] %
   - falE2 2 1 %
   - 2 %
   - exiE[#1.10.b] 1 %
@@ -764,7 +764,7 @@ lemma lt_simp3: ∀a b. (Suc a < Suc b) = (a < b)
   show [∀x. ¬(c x = 0)]
   - suc_pred 4
   - eq_com 4 %
-  - nat_exh[f] %
+  - nat_exh1[f] %
   - arg_cong[c] 4
   - notI %
   - eq_tran2 5 4
@@ -902,7 +902,7 @@ lemma gt_exi_suc: ∀a b. a < b  ⟶  ∃c. b = Suc c
   - psub neq_0_exi_suc 1 %
 
 lemma suc_lt_lt: ∀a b. Suc a < b  ⟶  a < b
-  - nat_exh[a] %
+  - nat_exh1[a] %
   - subr[#..a] 2 %
   - gt_neq_0 1
   - psub neq_0_exi_suc 1
@@ -921,7 +921,7 @@ lemma lt_exh: ∀a b. (a < b) = (¬(b = 0) ∧ (a = 0 ∨ pred a < pred b))
   - iffI %
   - conjI %
   - gt_neq_0 1 %
-  - nat_exh[a] %
+  - nat_exh1[a] %
   - disjI1 2 %
   - gt_exi_suc 1+
   - exiE[#2.10.c] 2 %
@@ -948,7 +948,7 @@ lemma lt_exh: ∀a b. (a < b) = (¬(b = 0) ∧ (a = 0 ∨ pred a < pred b))
   - disjE 1 %
   - subr[#..a] 1 %
   - lt_simp1 %
-  - nat_exh[a] %
+  - nat_exh1[a] %
   - subr[#..a] 2 %
   - lt_simp1 %
   - exiE 2 %
@@ -991,7 +991,7 @@ lemma lt_suc_lte: ∀a b. a < b  ⟶  Suc a <= b
   - subr[λx. x ∨ Suc a = Suc c] lt_simp3 %
   - subr[λx. a < c ∨ x] suc_eq %
   - nat_ind[λa. ∀c. a < Suc c  ⟶  a < c ∨ a = c] %
-  - nat_exh[b] %
+  - nat_exh1[b] %
   - eq_com 3
   - disjI2 3 %
   - exiE 3 %
@@ -1025,7 +1025,7 @@ lemma lt_imp_not_gt: ∀a b. a < b  ⟶  ¬(b < a)
 
 lemma gte_0: ∀a. 0 <= a
   - psubr lte_def %
-  - nat_exh[a] %
+  - nat_exh1[a] %
   - eq_com 1
   - disjI2 1 %
   - exiE[#1.10.b] 1 %
@@ -1058,7 +1058,7 @@ lemma nlt_ngt_imp_eq: ∀a b. ¬(a < b)  ⟶  ¬(b < a)  ⟶  a = b
   - sub[#1..c] 2 1
   - falI lt_simp1 1 %
   del 1 2
-  - nat_exh[d] %
+  - nat_exh1[d] %
   - sub[#3..d] 4 3
   - falE2 lt_simp1 3 %
   - exiE 4 %
@@ -3159,6 +3159,45 @@ lemma fold_const_f: ∀z f. const_f f  ⟶  ∃g. ∀xs. fold z f xs = g (length
   - cong %
   - com 1 %
   - com 2 %
+
+lemma eta2: ∀P f. P (λa. f a)  ⟶  P f
+  - imp_swap sub 1 %
+  - ext %
+  - refl %
+
+lemma list_exh: ∀P. P Nil  ⟶  (∀x xs. P (Cons x xs))  ⟶  (∀) P
+  ren a P
+  - eta2 %
+  ren a xs
+  - list_ind[#..xs] %
+  - 1 %
+  - 2 %
+
+lemma nat_exh: ∀P. P 0  ⟶  (∀n. P n)  ⟶  (∀) P
+  ren a P
+  - eta2 %
+  ren a n
+  - nat_ind[#..n] %
+  - 1 %
+  - 2 %
+
+lemma replicate_fold_tail: ∀a n. nat_fold (replicate a n) tail n = Nil
+  ren b n
+  - nat_ind[#..n] %
+  - tranr nat_fold_simp1 %
+  - replicate_simp1 %
+  ren b n
+  - tranr nat_fold_simp2 %
+  - subr[λx. tail x = Nil, Cons a Nil] %
+  - nat_exh1[n] %
+  sub 2
+  - tranr nat_fold_simp1 %
+  - tranr replicate_simp2 %
+  - arg_cong replicate_simp1 %
+  - exiE 2 %
+  sub 2
+  - tranr nat_fold_simp2 %
+  - 
 
 lemma length_least_fold_tail: ∀xs. length xs = μn. nat_fold xs tail n = Nil
   ren a xs
