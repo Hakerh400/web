@@ -1788,23 +1788,23 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   sub 4
   del 1
   let P': λN F. ∀z f n. F z f n = if (n <= N) (K F z f n) undefined
-  - 
+  -
   let FF: λN. (THE) (P' N)
   show [∀N. (∃!) (P' N)]
   show [∀N. P' N (FF N)]
   show[∀N z f n. n <= N  ⟶  FF N z f n = FF n z f n]
-  - 
+  -
   - psub uniq_def1 5+
   - conjE1 8+
   - conjE2 8
-  - 
+  -
   - uniqI1[λz f n. FF n z f n] %
-  - 
+  -
   sub 2
   ren a z
   ren b f
   ren c N
-  - 
+  -
   sub 1
   - nat_ind[#..N] %
   - eq_com %
@@ -1834,19 +1834,19 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   ren b z
   ren c f
   - 5 lte_suc %
-  - 
+  -
   let F₀: λz f n. FF n z f n
   - subr 11+ 10
   ren a F₁
   - iffI %
-  - 
+  -
   - ext %
   - ext %
   - ext %
   ren a z
   ren b f
   ren c N
-  - 
+  -
   - nat_ind[λn. ∀N z f. n <= N  ⟶  F₁ z f n = FF N z f n] %
   del 11
   sub 2
@@ -1858,7 +1858,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - if_tru_r1 gte_0 %
   - if_tru_r2 refl %
   - if_tru_r1 refl refl %
-  - 
+  -
   ren a n
   ren b N
   ren c z
@@ -1877,7 +1877,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - psub lte_suc2 11
   - 10 11 %
   - lte_refl %
-  - 
+  -
   sub 12
   sub 2
   ren a z
@@ -1895,7 +1895,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - arg_cong %
   - subr[λx. FF (Suc N) z f x = FF x z f x] pred_suc %
   - 4 lte_suc %
-  - 
+  -
   ren a N
   ren b z
   ren c f
@@ -1940,15 +1940,15 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - 5+ 6 [z, f]
   - eq_tran1 6 7 %
   - 7 %
-  - 
+  -
   ren a N
   - 5[N]
   - fun_cong 4* [N]
   - theE 4 5 %
-  - 
+  -
   ren a N
   - nat_ind[#..N] %
-  - 
+  -
   - uniqI1[λz f n. if (n = 0) z undefined] %
   sub 3
   ren a z
@@ -1965,7 +1965,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   ren a n
   - if_fal_r2 suc_neq_0 %
   - if_fal_r1 suc_not_lte_0 refl %
-  - 
+  -
   ren a F
   - iffI %
   - ext %
@@ -1988,20 +1988,20 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - refl %
   sub 6
   - 5 %
-  - 
+  -
   ren a N
   let F₀: (THE) (P' N)
   - theE 6+ 5+
   let F₁: λz f n. if (n = Suc N) (f (F₀ z f N)) (F₀ z f n)
-  - 
+  -
   - uniqI1[F₁] %
-  - 
+  -
   sub 3
   ren a z
   ren b f
   ren c n
   sub 7
-  - 
+  -
   - cmp[n, Suc N] %
   - lt_imp_neq 7+
   - if_fal_r2 8+ %
@@ -2045,19 +2045,19 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - subr[λx. ¬(x = Suc N)] pred_suc %
   - neq_suc %
   - subr[λx. F₀ z f N = F₀ z f x] pred_suc refl %
-  - 
+  -
   ren a F₂
   - iffI %
-  - 
+  -
   - ext %
   - ext %
   - ext %
   ren a z
   ren b f
   ren c n
-  - 
+  -
   - nat_ind[#..n] %
-  - 
+  -
   sub 3
   - eq_tran 9+ %
   - if_tru_r2 gte_0 %
@@ -2067,7 +2067,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - if_eq_if %
   - refl %
   - falE2 refl 9 %
-  - 
+  -
   ren a n
   sub 3
   - eq_tran 9+ %
@@ -2085,13 +2085,13 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - refl %
   sub 10
   - 9 %
-  - 
+  -
   - ext %
   ren a F
   sub 1
   sub 2
   - iffI %
-  - 
+  -
   ren a z
   ren b f
   ren c n
@@ -2112,7 +2112,7 @@ lemma nat_fold_simps: ∀z f n. nat_fold z f 0 = z ∧ nat_fold z f (Suc n) = f 
   - if_fal_r1 suc_neq_0 %
   - arg_cong %
   - subr[λx. F z f x = F z f n] pred_suc  refl %
-  - 
+  -
   ren a z
   ren b f
   ren c n
@@ -2759,22 +2759,22 @@ lemma nexi_gte_all: ¬∃a. ∀b. b <= a
   - psub lt_not_gte 2
   - falI 1 2 %
 
-const fold :: 'b  ⟹  ('a  ⟹  'b  ⟹  'b)  ⟹  list 'a  ⟹  'b
+const foldr :: 'b  ⟹  ('a  ⟹  'b  ⟹  'b)  ⟹  list 'a  ⟹  'b
 
-axiom fold_simp1: ∀z f. fold z f Nil = z
-axiom fold_simp2: ∀z f a b. fold z f (Cons a b) = f a (fold z f b)
+axiom foldr_simp1: ∀z f. foldr z f Nil = z
+axiom foldr_simp2: ∀z f a b. foldr z f (Cons a b) = f a (foldr z f b)
 
-def length: fold 0 (λa b. Suc b)
+def length: foldr 0 (λa b. Suc b)
 
-lemma length_def1: ∀a. length a = fold 0 (λa b. Suc b) a
+lemma length_def1: ∀a. length a = foldr 0 (λa b. Suc b) a
   - fun_cong length_def %
 
 lemma length_simps: ∀a b. length Nil = 0 ∧ length (Cons a b) = Suc (length b)
   - conjI %
   - tranr length_def1 %
-  - tranr fold_simp1 refl %
+  - tranr foldr_simp1 refl %
   - tranr length_def1 %
-  - tranr fold_simp2 %
+  - tranr foldr_simp2 %
   - arg_cong %
   - com length_def1 %
 
@@ -2903,18 +2903,18 @@ lemma lem_z3_5438: ∀x y. (∀Q. x ∈ Q  ⟶  y ∈ Q)  ⟶  x = y
   - psub in_def 1
   - com 1 %
 
-def map: λf. fold Nil (λx. Cons (f x))
+def map: λf. foldr Nil (λx. Cons (f x))
 
-lemma map_def1: ∀f xs. map f xs = fold Nil (λx. Cons (f x)) xs
+lemma map_def1: ∀f xs. map f xs = foldr Nil (λx. Cons (f x)) xs
   - fun_cong2 map_def %
 
 lemma map_simp1: ∀f. map f Nil = Nil
   - tranr map_def1 %
-  - tranr fold_simp1 refl %
+  - tranr foldr_simp1 refl %
 
 lemma map_simp2: ∀f x xs. map f (Cons x xs) = Cons (f x) (map f xs)
   - tranr map_def1 %
-  - tranr fold_simp2 %
+  - tranr foldr_simp2 %
   - arg_cong %
   - tran map_def1 refl %
 
@@ -2942,16 +2942,16 @@ lemma map_prsv_len: ∀xs f. length (map f xs) = length xs
   - tranr1 length_simp2 %
   - arg_cong 1 %
 
-def last': λxs. fold (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs
+def last': λxs. foldr (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs
 def last: λxs. snd (last' xs)
 
-lemma last'_def1: ∀xs. last' xs = fold (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs
+lemma last'_def1: ∀xs. last' xs = foldr (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs
   - fun_cong last'_def %
 
 lemma last_last': ∀xs. last xs = snd (last' xs)
   - fun_cong last_def %
 
-lemma last_def1: ∀xs. last xs = snd (fold (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs)
+lemma last_def1: ∀xs. last xs = snd (foldr (Pair False undefined) (λx p. if (fst p) p (Pair True x)) xs)
   - tranr last_last' %
   - arg_cong last'_def1 %
 
@@ -2981,17 +2981,17 @@ lemma last'_cons_tru: ∀x xs. fst (last' (Cons x xs))
   - list_ind[λxs. ∀x. fst (last' (Cons x xs))] %
   ren a x
   - subr last'_def1 %
-  - subr fold_simp2 %
+  - subr foldr_simp2 %
   - if_fal_subr %
   - notI %
-  - sub fold_simp1 1
+  - sub foldr_simp1 1
   - psub fst_simp 1 %
   - psubr fst_simp true %
   ren a y
   ren b ys
   ren c x
   - subr last'_def1 %
-  - subr fold_simp2 %
+  - subr foldr_simp2 %
   - if_tru_subr %
   - sub last'_def1 1 %
   - sub last'_def1 1 %
@@ -2999,10 +2999,10 @@ lemma last'_cons_tru: ∀x xs. fst (last' (Cons x xs))
 lemma last'_simp1: ∀x. last' (Cons x Nil) = Pair True x
   ren a x
   - tranr last'_def1 %
-  - tranr fold_simp2 %
+  - tranr foldr_simp2 %
   - if_fal_r1 %
   - notI %
-  - sub fold_simp1 1
+  - sub foldr_simp1 1
   - psub fst_simp 1 %
   - refl %
 
@@ -3014,12 +3014,12 @@ lemma last'_simp2: ∀x y ys. last' (Cons x (Cons y ys)) = last' (Cons y ys)
   ren a x
   ren b y
   - tranr last'_def1 %
-  - tranr fold_simp2 %
+  - tranr foldr_simp2 %
   - if_tru_r1 %
-  - subr fold_simp2 %
+  - subr foldr_simp2 %
   - if_fal_subr %
   - notI %
-  - sub fold_simp1 1
+  - sub foldr_simp1 1
   - psub fst_simp 1 %
   - psubr fst_simp true %
   - tran last'_def1 refl %
@@ -3028,10 +3028,10 @@ lemma last'_simp2: ∀x y ys. last' (Cons x (Cons y ys)) = last' (Cons y ys)
   ren c x
   ren d y
   - tranr last'_def1 %
-  - tranr fold_simp2 %
+  - tranr foldr_simp2 %
   - if_tru_r1 %
   - sub last'_def1 last'_cons_tru %
-  - tranr fold_simp2 %
+  - tranr foldr_simp2 %
   - if_tru_r1 %
   - sub last'_def1 last'_cons_tru %
   - tran last'_def1 %
@@ -3044,10 +3044,10 @@ lemma last_simp1: ∀x. last (Cons x Nil) = x
   show [∀a. a = Pair True x  ⟶  snd a = x]
   del 1
   - 1 %
-  - tranr fold_simp2 %
+  - tranr foldr_simp2 %
   - if_fal_r1 %
   - notI %
-  - sub fold_simp1 1
+  - sub foldr_simp1 1
   - psub fst_simp 1 %
   - refl %
   sub 2
@@ -3061,20 +3061,20 @@ lemma last_simp2: ∀x y ys. last (Cons x (Cons y ys)) = last (Cons y ys)
   - tranr1 last_last' %
   - arg_cong last'_simp2 %
 
-lemma tr1: ∀a₁ b₁ f x. f a₁ = x  ⟶  b₁ = a₁  ⟶  f b₁ = x
+lemma tr1: ∀a₁ b₁ f x y. f a₁ = x  ⟶  b₁ = a₁  ⟶  x = y  ⟶  f b₁ = y
   sub 2
-  - 1 %
+  - tranr 1 2 %
 
-lemma tr2: ∀a₁ a₂ b₁ b₂ f x. f a₁ a₂ = x  ⟶  b₁ = a₁  ⟶  b₂ = a₂  ⟶  f b₁ b₂ = x
+lemma tr2: ∀a₁ a₂ b₁ b₂ f x y. f a₁ a₂ = x  ⟶  b₁ = a₁  ⟶  b₂ = a₂  ⟶  x = y  ⟶  f b₁ b₂ = y
   sub 2
   sub 2
-  - 1 %
+  - tranr 1 2 %
 
-lemma tr3: ∀a₁ a₂ a₃ b₁ b₂ b₃ f x. f a₁ a₂ a₃ = x  ⟶  b₁ = a₁  ⟶  b₂ = a₂  ⟶  b₃ = a₃  ⟶  f b₁ b₂ b₃ = x
+lemma tr3: ∀a₁ a₂ a₃ b₁ b₂ b₃ f x y. f a₁ a₂ a₃ = x  ⟶  b₁ = a₁  ⟶  b₂ = a₂  ⟶  b₃ = a₃  ⟶  x = y  ⟶  f b₁ b₂ b₃ = y
   sub 2
   sub 2
   sub 2
-  - 1 %
+  - tranr 1 2 %
 
 def const: λa b. a
 
@@ -3111,7 +3111,7 @@ lemma replicate_simp2: ∀a n. replicate a (Suc n) = Cons a (replicate a n)
 lemma len_replicate: ∀a n. length (replicate a n) = n
   ren b n
   - nat_ind[#..n] %
-  - tr1 length_simp1 replicate_simp1 %
+  - tr1 length_simp1 replicate_simp1 refl %
   - fsubr replicate_simp2 %
   - tranr length_simp2 %
   - arg_cong 1 %
@@ -3127,7 +3127,7 @@ lemma map_const_f: ∀f. const_f f  ⟶  ∃g. ∀xs. map f xs = g (length xs)
   - subr[λa. map f xs = replicate a (length xs)] 1+ %
   - list_ind[#..xs] %
   - tranr1 map_simp1 %
-  - tr2 replicate_simp1 refl length_simp1 %
+  - tr2 replicate_simp1 refl length_simp1 refl %
   ren b x
   ren c xs
   - tranr1 map_simp2 %
@@ -3138,7 +3138,7 @@ lemma map_const_f: ∀f. const_f f  ⟶  ∃g. ∀xs. map f xs = g (length xs)
   - arg_cong 1 %
   - com 2 %
 
-lemma fold_const_f: ∀z f. const_f f  ⟶  ∃g. ∀xs. fold z f xs = g (length xs)
+lemma foldr_const_f: ∀z f. const_f f  ⟶  ∃g. ∀xs. foldr z f xs = g (length xs)
   ren a z
   ren b f
   - exiI[nat_fold z (f undefined)] %
@@ -3147,14 +3147,14 @@ lemma fold_const_f: ∀z f. const_f f  ⟶  ∃g. ∀xs. fold z f xs = g (length
   let a: f undefined
   - tranr 2 1
   - com 1
-  - subr[λa. fold z f xs = nat_fold z a (length xs)] 1+ %
+  - subr[λa. foldr z f xs = nat_fold z a (length xs)] 1+ %
   - list_ind[#..xs] %
-  - tranr1 fold_simp1 %
-  - tr3 nat_fold_simp1 refl refl length_simp1 %
+  - tranr1 foldr_simp1 %
+  - tr3 nat_fold_simp1 refl refl length_simp1 refl %
   ren b x
   ren c xs
-  - tranr1 fold_simp2 %
-  - subr[λb. nat_fold z a b = f x (fold z f xs)] length_simp2 %
+  - tranr1 foldr_simp2 %
+  - subr[λb. nat_fold z a b = f x (foldr z f xs)] length_simp2 %
   - tranr nat_fold_simp2 %
   - cong %
   - com 1 %
@@ -3206,17 +3206,17 @@ lemma nat_fold_replicate_tail: ∀a n. nat_fold (replicate a n) tail n = Nil
   ren b n
   - subr[λx. nat_fold x tail (Suc n) = Nil] replicate_simp2 %
   - tranr nat_fold_simp_it %
-  - tr3 1 tail_simp refl refl %
+  - tr3 1 tail_simp refl refl refl %
 
 lemma nat_fold_tail_len: ∀xs. nat_fold xs tail (length xs) = Nil
   ren a xs
   - list_ind[#..xs] %
-  - tr3 nat_fold_simp1 refl refl length_simp1 %
+  - tr3 nat_fold_simp1 refl refl length_simp1 refl %
   ren a x
   ren b xs
   - subr[λa. nat_fold (Cons x xs) tail a = Nil] length_simp2 %
   - tranr nat_fold_simp_it %
-  - tr3 1 tail_simp refl refl %
+  - tr3 1 tail_simp refl refl refl %
 
 lemma nnul_cons: ∀x xs. nnul (Cons x xs)
   ren a x
@@ -3281,3 +3281,135 @@ lemma length_least_fold_tail: ∀xs. length xs = μn. nat_fold xs tail n = Nil
   ren a n
   - nat_fold_tail_lt_len 1
   - nnul_imp_neq_nil 1 %
+
+def (++) [infixl 55]: λxs ys. foldr ys Cons xs
+
+lemma append_def1: ∀xs ys. xs ++ ys = foldr ys Cons xs
+  - fun_cong2 ++_def %
+
+lemma map_id: ∀xs. map id xs = xs
+  ren a xs
+  - list_ind[#..xs] %
+  - map_simp1 %
+  ren a x
+  ren b xs
+  - tranr map_simp2 %
+  - tr2 refl id_def1 1 refl %
+
+lemma fold_cons: ∀xs. foldr Nil Cons xs = xs
+  ren a xs
+  - list_ind[#..xs] %
+  - foldr_simp1 %
+  ren a x
+  ren b xs
+  - tranr foldr_simp2 %
+  - arg_cong 1 %
+
+lemma append_simp1: ∀xs. Nil ++ xs = xs
+  ren a xs
+  - tranr append_def1 %
+  - foldr_simp1 %
+
+lemma append_nil: ∀xs. xs ++ Nil = xs
+  ren a xs
+  - tranr append_def1 fold_cons %
+
+lemma append_simp2: ∀x xs ys. Cons x xs ++ ys = Cons x (xs ++ ys)
+  ren a x
+  ren b xs
+  ren c ys
+  - tranr append_def1 %
+  - tranr foldr_simp2 %
+  - arg_cong %
+  - com append_def1 %
+
+lemma append_len: ∀xs ys. length (xs ++ ys) = length xs + length ys
+  ren a xs
+  ren b ys
+  - list_ind[#..xs] %
+  - fsubr append_simp1 %
+  - com %
+  - tr2 add0r length_simp1 refl refl %
+  ren a x
+  ren b xs
+  - fsubr append_simp2 %
+  - tranr1 length_simp2 %
+  - tr2 suc_add length_simp2 refl %
+  - arg_cong %
+  - com 1 %
+
+def reverse: foldr Nil (λx xs. xs ++ Cons x Nil)
+
+lemma reverse_def1: ∀xs. reverse xs = foldr Nil (λx xs. xs ++ Cons x Nil) xs
+  - fun_cong reverse_def %
+
+lemma reverse_simp1: reverse Nil = Nil
+  - tranr reverse_def1 %
+  - foldr_simp1 %
+
+lemma reverse_simp2: ∀x xs. reverse (Cons x xs) = reverse xs ++ Cons x Nil
+  ren a x
+  ren b xs
+  - tranr reverse_def1 %
+  - tranr foldr_simp2 %
+  - com reverse_def1
+  - tr2 refl 1 refl refl %
+
+lemma append_cons: ∀xs y ys. xs ++ (Cons y ys) = xs ++ (Cons y Nil) ++ ys
+  ren a xs
+  ren b y
+  ren c ys
+  - list_ind[#..xs] %
+  - tranr1 append_simp1 %
+  - tr2 append_simp2 append_simp1 refl %
+  - arg_cong append_simp1 %
+  ren a x
+  ren b xs
+  - tranr1 append_simp2 %
+  - tr2 append_simp2 append_simp2 refl %
+  - arg_cong %
+  - com 1 %
+
+lemma append_assoc: ∀xs ys zs. xs ++ ys ++ zs = xs ++ (ys ++ zs)
+  ren a xs
+  ren b ys
+  ren c zs
+  - list_ind[#..xs] %
+  - tr2 refl append_simp1 refl %
+  - com %
+  - append_simp1 %
+  ren a x
+  ren b xs
+  - com %
+  - tranr1 append_simp2 %
+  - tr2 append_simp2 append_simp2 refl %
+  - arg_cong 1 %
+
+lemma reverse_append: ∀xs ys. reverse (xs ++ ys) = reverse ys ++ reverse xs
+  ren a xs
+  ren b ys
+  - list_ind[#..xs] %
+  - fsubr append_simp1 %
+  - com %
+  - tr2 append_nil refl reverse_simp1 refl %
+  ren a x
+  ren b xs
+  - fsubr append_simp2 %
+  - tranr reverse_simp2 %
+  - tr2 refl 1 refl %
+  - com %
+  - tr2 refl refl reverse_simp2 %
+  - com append_assoc %
+
+lemma reverse_len: ∀xs. length (reverse xs) = length xs
+  ren a xs
+  - list_ind[#..xs] %
+  - tr1 length_simp1 reverse_simp1 %
+  - com length_simp1 %
+  ren a x
+  ren b xs
+  - com %
+  - tranr1 length_simp2 %
+  - fsubr reverse_simp2 %
+  - fsubr append_cons %
+  - 

@@ -391,7 +391,7 @@ const processLine = function*(lineIndex, ctx){
 
     if(!line.startsWith(c1) || end === -1)
       throw `Invalid parenthesis near ${O.sf(line.trim())}`;
-    
+
     let str = line.slice(1, end);
     line = line.slice(end + 1);
     trimLine(trim);
