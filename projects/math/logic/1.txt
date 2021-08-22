@@ -3401,7 +3401,22 @@ lemma reverse_append: ∀xs ys. reverse (xs ++ ys) = reverse ys ++ reverse xs
   - tr2 refl refl reverse_simp2 %
   - com append_assoc %
 
-lemma reverse_len: ∀xs. length (reverse xs) = length xs
+lemma length_append: ∀xs ys. length (xs ++ ys) = length xs + length ys
+  ren a xs
+  ren b ys
+  - list_ind[#..xs] %
+  - fsubr append_simp1 %
+  - com %
+  - tr2 add0r length_simp1 refl refl %
+  ren a x
+  ren b xs
+  - fsubr append_simp2 %
+  - tranr1 length_simp2 %
+  - tr2 suc_add length_simp2 refl %
+  - arg_cong %
+  - com 1 %
+
+lemma length_reverse: ∀xs. length (reverse xs) = length xs
   ren a xs
   - list_ind[#..xs] %
   - tr1 length_simp1 reverse_simp1 %
@@ -3411,5 +3426,7 @@ lemma reverse_len: ∀xs. length (reverse xs) = length xs
   - com %
   - tranr1 length_simp2 %
   - fsubr reverse_simp2 %
-  - fsubr append_cons %
-  - 
+  - tranr length_append %
+  - tr2 add_simp2 1 length_simp2 %
+  - arg_cong %
+  - tr2 add_simp1 refl length_simp1 refl %
