@@ -3459,10 +3459,53 @@ lemma foldl_simp1: ∀z f. foldl z f Nil = z
   - tranr foldl_def1 %
   - tr3 foldr_simp1 refl refl reverse_simp1 refl %
 
-lemma fold_simp2: ∀z f x xs. foldl z f (Cons x xs) = foldl (f z x) f xs
+lemma append_reverse: ∀xs ys. xs ++ ys = reverse (reverse ys ++ reverse xs)
+  - arg_cong[reverse] reverse_append
+  - tran reverse2 1 %
+
+lemma append_reverse_single: ∀x xs. reverse xs ++ (Cons x Nil) = reverse (Cons x xs)
+  ren a x
+  ren b xs
+  - com %
+  - tranr reverse_simp2 refl %
+
+lemma foldr_append_single: ∀z f x xs. foldr z f (xs ++ Cons x Nil) = foldr (f x z) f xs
   ren a z
   ren b f
   ren c x
   ren d xs
-  - tranr foldl_def1 %
-  - tr3 foldr_simp2 refl refl reverse_single
+  - list_ind[#..xs] %
+  - tr3 foldr_simp2 refl refl append_simp1 %
+  - com %
+  - tranr1 foldr_simp1 %
+  - arg_cong foldr_simp1 %
+  ren a y
+  ren b ys
+  - tr3 foldr_simp2 refl refl append_simp2 %
+  - tr2 refl refl 1 %
+  - com %
+  - tranr foldr_simp2 refl %
+
+lemma foldl_simp2: ∀z f x xs. foldl z f (Cons x xs) = foldl (f z x) f xs
+  ren a z
+  ren b f
+  ren c x
+  ren d xs
+  - tranr1 foldl_def1 %
+  - tranr1 foldl_def1 %
+  let g: λa b. f b a
+  - com 1+
+  - fun_cong2 2+
+  - tr3 refl refl 2+ refl %
+  - com %
+  - tr3 refl 3 2 refl %
+  - com %
+  del 1
+  let ys: reverse xs
+  - tr3 refl refl refl reverse_simp2 %
+  - sub[λa. foldr z g (a ++ Cons x Nil) = foldr (g x z) g a] 1 %
+  - foldr_append_single %
+
+lemma fun_cong3: ∀f g a b c. f = g  ⟶  f a b c = g a b c
+  - fun_cong2 1
+  - fun_cong 1 %
