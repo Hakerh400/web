@@ -3430,3 +3430,39 @@ lemma length_reverse: ∀xs. length (reverse xs) = length xs
   - tr2 add_simp2 1 length_simp2 %
   - arg_cong %
   - tr2 add_simp1 refl length_simp1 refl %
+
+lemma reverse_single: ∀x. reverse (Cons x Nil) = Cons x Nil
+  ren a x
+  - tranr reverse_simp2 %
+  - tr2 append_simp1 reverse_simp1 refl refl %
+
+lemma reverse2: ∀xs. reverse (reverse xs) = xs
+  ren a xs
+  - list_ind[#..xs] %
+  - tr1 reverse_simp1 reverse_simp1 refl %
+  ren a x
+  ren b xs
+  - fsubr reverse_simp2 %
+  - tranr reverse_append %
+  - tr2 append_simp2 reverse_single 1 %
+  - arg_cong append_simp1 %
+
+def foldl: λz f xs. foldr z (λx xs. f xs x) (reverse xs)
+
+lemma foldl_def1: ∀z f xs. foldl z f xs = foldr z (λx xs. f xs x) (reverse xs)
+  - fun_cong2 foldl_def
+  - fun_cong 1 %
+
+lemma foldl_simp1: ∀z f. foldl z f Nil = z
+  ren a z
+  ren b f
+  - tranr foldl_def1 %
+  - tr3 foldr_simp1 refl refl reverse_simp1 refl %
+
+lemma fold_simp2: ∀z f x xs. foldl z f (Cons x xs) = foldl (f z x) f xs
+  ren a z
+  ren b f
+  ren c x
+  ren d xs
+  - tranr foldl_def1 %
+  - tr3 foldr_simp2 refl refl reverse_single
