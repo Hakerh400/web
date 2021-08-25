@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
+const electron = require('electron');
 const parser = require('./parser');
 const Expr = require('./expr');
 const Context = require('./context');
@@ -12,6 +13,9 @@ const LineData = require('./line-data');
 const specialChars = require('./special-chars');
 const util = require('./util');
 const su = require('./str-util');
+
+if(electron === null)
+  return O.error(`This project requires Electron`);
 
 const {min, max, floor, ceil, round} = Math;
 const {project} = O;
@@ -1459,7 +1463,7 @@ const save = () => {
   });
 };
 
-// const str1 = await \u0072equire('./logic/1.txt');
+// const str1 = await require('./logic/1.txt');
 const load = () => {
   if(!O.has(localStorage, project)){
     if(!loadLogic) return;

@@ -10,7 +10,7 @@ const {pi2} = O;
 
 const {Move, Grow, Explode} = Animation;
 
-const SMALL_ITEMS_PER_MOVE = 70;
+const SMALL_ITEMS_PER_MOVE = 3;
 
 const RADIUS_BIG = .35;
 const RADIUS_SMALL = .1;
