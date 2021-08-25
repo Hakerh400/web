@@ -1,7 +1,7 @@
 'use strict';
 
 const assert = require('assert');
-const modal = require('../modal');
+const Scoreboard = require('../scoreboard');
 const Trajectory = require('./trajectory');
 const Ball = require('./ball');
 const Projectile = require('./projectile');
@@ -44,11 +44,10 @@ const projSpeed = 20;
 const explDur = .25;
 
 const explsize = 2;
-const initBallIndex = 1.5e3;
+const initBallIndex = .5e3;
 const fontFamily = 'arial';
 const fontSize = 32;
 const textOffset = 10;
-const scoreboardSize = 10;
 
 const ballCols = [
   [30, 131, 242],
@@ -60,6 +59,8 @@ const ballCols = [
 ].map(a => O.Color.from(a).toString());
 
 assert(ballCols.length === ballTypes);
+
+const scoreboard = new Scoreboard();
 
 await O.addStyle('style.css');
 
@@ -105,15 +106,7 @@ let points = 0;
 let playerBall = null;
 let gameOver = 0;
 
-const scoreTable = [];
-
-let newScoreboard = null;
-let newScoreIndex = null;
-let newScoreEntry = null;
-
 const main = () => {
-  initModalDiv();
-
   traj = createTrajectory();
 
   playerX = wh + w * .05;
@@ -144,52 +137,6 @@ const main = () => {
   onResize();
 
   frame();
-};
-
-const initModalDiv = () => {
-  const {div} = modal;
-
-  const table = O.ce(div, 'table');
-  table.classList.add('scoreboard');
-  table.cellSpacing = 0;
-
-  const mkCell = (parent, str='', isHeader=0) => {
-    const tag = isHeader ? 'th' : 'td';
-    const cell = O.ce(parent, tag);
-    cell.innerText = str;
-
-    if(!isHeader)
-      O.last(scoreTable).push(cell);
-
-    return cell;
-  };
-
-  const mkCells = (parent, strs, isHeader=0) => {
-    if(!isHeader)
-      scoreTable.push([]);
-
-    for(let i = 0; i !== strs.length; i++){
-      const str = strs[i];
-      const cell = mkCell(parent, str, isHeader);
-
-      if(i === 1)
-        cell.classList.add('name-cell');
-    }
-  };
-
-  const thead = O.ce(table, 'thead');
-
-  const tr = O.ce(thead, 'tr');
-  mkCells(tr, ['#', 'Name', 'Points'], 1);
-
-  // tr.children[1].classList.add('name-col');
-
-  const tbody = O.ce(table, 'tbody');
-
-  for(let i = 0; i !== scoreboardSize; i++){
-    const tr = O.ce(tbody, 'tr');
-    mkCells(tr, [i + 1, '', 0]);
-  }
 };
 
 const createTrajectory = () => {
@@ -267,28 +214,8 @@ const onKeyDown = evt => {
   const flags = (ctrlKey << 2) | (shiftKey << 1) | altKey;
 
   if(flags === 0){
-    if(gameOver){
-      if(code === 'Escape' || code === 'Enter' || code === 'NumpadEnter'){
-        modal.close();
-        gameOver = 0;
-
-        if(newScoreboard !== null){
-          const name = newScoreEntry.innerText.trim().slice(0, 100);
-
-          newScoreEntry.contentEditable = 'false';
-          newScoreboard[newScoreIndex][0] = name;
-          saveScoreboard(newScoreboard);
-
-          newScoreboard = null;
-          newScoreIndex = null;
-          newScoreEntry = null;
-        }
-
-        restart();
-      }
-
+    if(gameOver)
       return;
-    }
 
     if(code === 'KeyR'){
       restart();
@@ -763,42 +690,11 @@ const endGame = () => {
   if(gameOver) return;
 
   gameOver = 1;
-  modal.open();
 
-  const scoreboard = loadScoreboard();
-
-  const index = O.bisect(i => {
-    if(i >= scoreboardSize) return 1;
-    return points > scoreboard[i][1];
+  scoreboard.open(points, () => {
+    gameOver = 0;
+    restart();
   });
-
-  const updateScoreTable = () => {
-    for(let i = 0; i !== scoreboardSize; i++){
-      const [name, points] = scoreboard[i];
-      const row = scoreTable[i];
-
-      row[1].innerText = name;
-      row[2].innerText = points;
-    }
-  };
-
-  if(index === scoreboardSize)
-    return updateScoreTable();
-
-  scoreboard.splice(index, 0, ['', points]);
-  scoreboard.length = scoreboardSize;
-
-  const row = scoreTable[index];
-  const cell = row[1];
-
-  cell.contentEditable = 'true';
-  cell.focus();
-
-  newScoreboard = scoreboard;
-  newScoreIndex = index;
-  newScoreEntry = cell;
-
-  updateScoreTable();
 };
 
 const restart = () => {
@@ -808,25 +704,6 @@ const restart = () => {
 
   points = 0;
   newPlayerBall();
-};
-
-const initScoreboard = () => {
-  return O.ca(scoreboardSize, () => ['', 0]);
-};
-
-const loadScoreboard = () => {
-  if(!O.has(localStorage, project)){
-    const scoreboard = initScoreboard();
-    saveScoreboard(scoreboard);
-
-    return scoreboard;
-  }
-
-  return JSON.parse(localStorage[project]);
-};
-
-const saveScoreboard = scoreboard => {
-  localStorage[project] = JSON.stringify(scoreboard);
 };
 
 main();

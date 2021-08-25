@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const Scoreboard = require('../scoreboard');
 const Animation = require('./animation');
 const Tile = require('./tile');
 
@@ -9,7 +10,7 @@ const {pi2} = O;
 
 const {Move, Grow, Explode} = Animation;
 
-const SMALL_ITEMS_PER_MOVE = 3;
+const SMALL_ITEMS_PER_MOVE = 70;
 
 const RADIUS_BIG = .35;
 const RADIUS_SMALL = .1;
@@ -21,6 +22,10 @@ const ITEM_EXPLODE_SPEED = .08;
 const tileSize = 60;
 const w = O.urlParam('w', 9) | 0;
 const h = O.urlParam('h', 9) | 0;
+
+const fontFamily = 'arial';
+const fontSize = 32;
+const textOffset = 10;
 
 const {g} = O.ceCanvas(1);
 
@@ -41,16 +46,25 @@ const cols = O.rec(formatCols, {
 
 const itemsNum = cols.items.length;
 
+const scoreboard = new Scoreboard();
+
 let time = O.now;
 
 const grid = createGrid();
 const anims = [];
+
+let points;
+let gameOver = 0;
 
 let selected;
 let persistInfo;
 let growthStage;
 
 const main = () => {
+  g.textBaseline = 'top';
+  g.textAlign = 'left';
+  g.font(fontSize);
+
   newGame();
   resize();
   aels();
@@ -58,6 +72,7 @@ const main = () => {
 };
 
 const newGame = () => {
+  points = 0;
   anims.length = 0;
 
   selected = null;
@@ -94,6 +109,8 @@ const aels = () => {
   };
 
   O.ael('keydown', evt => {
+    if(gameOver) return;
+
     (async () => {
       const {code} = evt;
 
@@ -113,6 +130,8 @@ const aels = () => {
   });
 
   O.ael('mousedown', evt => {
+    if(gameOver) return;
+
     (async () => {
       await O.await(() => !hasAnims(), 16);
 
@@ -186,6 +205,9 @@ const render = () => {
   g.resetTransform();
   g.fillStyle = cols.bg;
   g.fillRect(0, 0, iw, ih);
+
+  g.fillStyle = 'black';
+  g.fillText(`Points: ${points}`, textOffset, textOffset);
 
   g.translate(iwh - 1, ihh - 1);
   g.scale(tileSize);
@@ -378,7 +400,7 @@ const render = () => {
     checkGrowthStage: if(growthStage !== 0){
       if(growthStage === 1){
         growthStage = 2;
-        
+
         if(checkMatches())
           break checkGrowthStage;
       }
@@ -460,7 +482,7 @@ const checkMatches = () => {
 
     const followDir = (dx, dy) => {
       const m = new Set([d]);
-      
+
       let x1 = x + dx;
       let y1 = y + dy;
 
@@ -492,8 +514,10 @@ const checkMatches = () => {
   if(matched.size === 0)
     return 0;
 
-  for(const d of matched)
+  for(const d of matched){
     addAnim(new Explode(time, d));
+    points++;
+  }
 
   return 1;
 };
@@ -508,16 +532,31 @@ const grow = () => {
 };
 
 const putSmallItems = () => {
-  for(let i = 0; i !== SMALL_ITEMS_PER_MOVE; i++)
-    putSmallItem();
+  let cnt = 0;
+
+  for(let i = 0; i !== SMALL_ITEMS_PER_MOVE; i++){
+    if(!putSmallItem()) break;
+    cnt++;
+  }
+
+  if(cnt === 0){
+    gameOver = 1;
+
+    scoreboard.open(points, () => {
+      gameOver = 0;
+      newGame();
+    });
+  }
 };
 
 const putSmallItem = () => {
   const d = getRandEmptyTile();
-  if(d === null) return;
+  if(d === null) return 0;
 
   d.item = O.rand(itemsNum);
   d.big = 0;
+
+  return 1;
 };
 
 const getRandEmptyTile = () => {

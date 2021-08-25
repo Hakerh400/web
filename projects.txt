@@ -60,3 +60,4 @@ ladybug
 vectors-angle
 modal
 csp
+scoreboard

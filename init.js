@@ -24,9 +24,14 @@
 
         if(!ok) return err();
 
+        var electronReq = null;
+
+        if(typeof require != "undefined")
+          electronReq = require;
+
         O.rf('/omikron/src/omikron/omikron.js?_=1', function(status, script){
           if(status != 200) return O.fatalError('Cannot load framework script. Try disabling extensions.');
-          new Function(script)();
+          new Function('electronReq', script)(electronReq);
         });
       },
 
