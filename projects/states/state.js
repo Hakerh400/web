@@ -5,10 +5,9 @@ const assert = require('assert');
 class State{
   static emptyCol = null;
 
-  tiles = new Set();
-
   constructor(col){
     this.col = col;
+    this.tiles = new Set();
   }
 
   addTile(tile){

@@ -28,10 +28,17 @@ let iwh, ihh;
 let w = 5;
 let h = 5;
 
+let wh = w / 2;
+let hh = h / 2;
+
 let grid;
 
 const states = [];
-let curState = null;
+
+let stateIndex = null;
+
+let cx = 0;
+let cy = 0;
 
 const main = () => {
   State.emptyCol = cols.emptyState;
@@ -69,9 +76,14 @@ const onResize = evt => {
   render();
 };
 
+const updateCur = evt => {
+  cx = (evt.clientX - iwh) / tileSize + wh;
+  cy = (evt.clientY - ihh) / tileSize + hh;
+};
+
 const render = () => {
-  const wh = w / 2;
-  const hh = h / 2;
+  const curState = stateIndex !== null ?
+    states[stateIndex] : null;
 
   g.resetTransform();
   g.clearCanvas(cols.bg);

@@ -10,6 +10,8 @@ class Tile{
     this.y = y;
     this.state = state;
     this.val = val;
+
+    this.actions = [];
   }
 
   setState(stateNew){
@@ -38,6 +40,11 @@ class Tile{
 
   render(g){
     const {grid, x, y, state, val} = this;
+
+    if(O.z === this){
+      g.fillStyle = 'white';
+      g.fillRect(.1, .1, .8, .8);
+    }
 
     if(state === null){
       g.fillStyle = State.emptyCol;
