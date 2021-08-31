@@ -401,7 +401,7 @@ class Line extends Tile{
           assert(next === null);
           next = line;
         }
-        
+
         if(next === null) break;
 
         if(next === this){
