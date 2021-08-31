@@ -7,9 +7,17 @@ const State = require('./state');
 const tileSize = 60;
 const fontSize = tileSize * .5;
 
+// State queue
+const stqDiam = .5;
+const stqOffsetY = .5;
+const stqSpacing = .3;
+const stqRad = stqDiam / 2;
+const stqW = stqDiam + stqSpacing;
+
 const cols = {
-  bg: 'darkgray',
-  emptyState: 'darkgray',
+  bg: '#a9a9a9',
+  emptyState: '#c0c0c0',
+  curState: '#ffffff',
 };
 
 const {g} = O.ceCanvas(1);
@@ -22,7 +30,8 @@ let h = 5;
 
 let grid;
 
-const states = new Set();
+const states = [];
+let curState = null;
 
 const main = () => {
   State.emptyCol = cols.emptyState;
@@ -61,12 +70,15 @@ const onResize = evt => {
 };
 
 const render = () => {
+  const wh = w / 2;
+  const hh = h / 2;
+
   g.resetTransform();
   g.clearCanvas(cols.bg);
 
   g.translate(iwh, ihh);
   g.scale(tileSize);
-  g.translate(-w / 2, -h / 2);
+  g.translate(-wh, -hh);
 
   grid.iter((x, y, d) => {
     g.save();
@@ -84,15 +96,38 @@ const render = () => {
     g.restore();
   });
 
-  for(const state of states){
-    g.fillStyle = 'white';
-    state.render(g);
+  const statesNum = states.length;
+  const wTot = statesNum * stqW - stqSpacing;
+  const xStart = wh - wTot / 2 + stqRad;
+  const y = h + stqOffsetY + stqRad;
+
+  g.lineWidth = 3;
+
+  for(let i = 0; i !== statesNum; i++){
+    const state = states[i];
+    const {col} = state;
+
+    if(state === curState)
+      g.strokeStyle = cols.curState;
+
+    g.fillStyle = col;
+    O.drawCirc(g, xStart + i * stqW, y, stqRad);
+
+    if(state === curState)
+      g.strokeStyle = 'black';
+  }
+
+  g.lineWidth = 1;
+
+  if(curState !== null){
+    g.fillStyle = cols.curState;
+    curState.render(g);
   }
 };
 
 const createState = col => {
   const state = new State(col);
-  states.add(state);
+  states.push(state);
   return state;
 };
 
