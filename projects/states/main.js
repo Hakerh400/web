@@ -4,8 +4,13 @@ const assert = require('assert');
 const Tile = require('./tile');
 const State = require('./state');
 
+const {floor} = Math;
+
 const tileSize = 60;
 const fontSize = tileSize * .5;
+
+// Tile mass threshold
+const massTh = 10;
 
 // State queue
 const stqDiam = .5;
@@ -35,10 +40,15 @@ let grid;
 
 const states = [];
 
-let stateIndex = null;
+let curStateIndex = null;
+let curState = null;
 
 let cx = 0;
 let cy = 0;
+
+let curTile = null;
+let curTile1 = null;
+let curTileDir = null;
 
 const main = () => {
   State.emptyCol = cols.emptyState;
@@ -55,12 +65,89 @@ const main = () => {
   grid.get(0, 1).set(state1, 2);
   grid.get(3, 0).set(state2, 7);
 
+  curStateIndex = 0;
+  curState = states[0];
+
   aels();
   onResize();
 };
 
 const aels = () => {
+  O.ael('mousedown', onMouseDown);
+  O.ael('mouseup', onMouseUp);
+  O.ael('contextmenu', onContextMenu);
   O.ael('resize', onResize);
+};
+
+const onMouseDown = evt => {
+  const {button} = evt;
+
+  updateCur(evt);
+
+  if(button === 0){
+    curTile = getCurTile();
+    curTile1 = null;
+    return;
+  }
+
+  if(button === 2){
+    curTile = null;
+    curTile1 = null;
+    return;
+  }
+};
+
+const onMouseUp = evt => {
+  const {button} = evt;
+
+  updateCur(evt);
+
+  if(button === 0){
+    if(curTile === null) return;
+    if(curTile1 !== null) return;
+
+    curTile1 = getCurTile();
+
+    if(curTile1 === null){
+      curTile1 = null;
+      curTileDir = null;
+      return;
+    }
+
+    if(curTile1 === curTile){
+      const {mass} = curTile;
+
+      if(mass === massTh){
+        curTile = null;
+        curTile1 = null;
+        setErr(`Cannot increase the tile mass beyond the mass threshold`);
+        return;
+      }
+
+      curTile.addAction(curState, 1);
+      curTile = null;
+      curTile1 = null;
+      nextState();
+
+      return;
+    }
+
+    curTileDir = curTile.adj2dir(curTile1);
+
+    if(curTileDir === null){
+      curTile1 = null;
+      curTileDir = null;
+      return;
+    }
+
+    render();
+
+    return;
+  }
+};
+
+const onContextMenu = evt => {
+  O.pd(evt);
 };
 
 const onResize = evt => {
@@ -77,14 +164,40 @@ const onResize = evt => {
 };
 
 const updateCur = evt => {
-  cx = (evt.clientX - iwh) / tileSize + wh;
-  cy = (evt.clientY - ihh) / tileSize + hh;
+  cx = floor((evt.clientX - iwh) / tileSize + wh);
+  cy = floor((evt.clientY - ihh) / tileSize + hh);
+};
+
+const getCurTile = () => {
+  const d = grid.get(cx, cy);
+
+  if(d === null || d.state !== curState)
+    return null;
+
+  return d;
+};
+
+const nextState = () => {
+  const statesNum = states.length;
+
+  if(curStateIndex === statesNum - 1){
+    curStateIndex = 0;
+    execActions();
+  }else{
+    curStateIndex++;
+  }
+
+  curState = states[curStateIndex];
+  render();
+};
+
+const execActions = () => {
+  grid.iter((x, y, d) => {
+    d.execActions();
+  });
 };
 
 const render = () => {
-  const curState = stateIndex !== null ?
-    states[stateIndex] : null;
-
   g.resetTransform();
   g.clearCanvas(cols.bg);
 
