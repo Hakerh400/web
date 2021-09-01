@@ -66,6 +66,32 @@ class Tile{
       this.setMass(map.get(state));
       return;
     }
+
+    const getMax = () => {
+      let state = null;
+      let mass = null;
+
+      for(const [s, m] of map){
+        if(state === null || m > mass){
+          mass = m;
+          state = s;
+        }
+      }
+
+      map.delete(state);
+
+      return [state, mass];
+    };
+
+    const [state1, mass1] = getMax();
+    const [state2, mass2] = getMax();
+
+    if(mass1 === mass2){
+      this.setMass(0);
+      return;
+    }
+
+    this.set(state1, mass1 - mass2);
   }
 
   adj2dir(d){
@@ -99,12 +125,14 @@ class Tile{
     g.fillText(mass, .5, .5);
   }
 
-  renderLines(g){
+  renderLines(g, thinLines=1){
     const {grid, x, y, state, mass} = this;
 
-    g.beginPath();
-    g.rect(0, 0, 1, 1);
-    g.stroke();
+    if(thinLines){
+      g.beginPath();
+      g.rect(0, 0, 1, 1);
+      g.stroke();
+    }
 
     grid.adj(x, y, (x, y, d, dir) => {
       if(d === null || d.state !== state)

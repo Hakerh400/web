@@ -25,6 +25,7 @@ const cols = {
   bg: '#a9a9a9',
   emptyState: '#c0c0c0',
   curState: '#ffffff',
+  err: '#000000',
 };
 
 const {g} = O.ceCanvas(1);
@@ -82,11 +83,47 @@ const main = () => {
 };
 
 const aels = () => {
+  O.ael('keydown', onKeyDown);
   O.ael('mousedown', onMouseDown);
   O.ael('mouseup', onMouseUp);
   O.ael('contextmenu', onContextMenu);
   O.ael('resize', onResize);
 };
+
+const onKeyDown = evt => {
+  const {ctrlKey, shiftKey, altKey, code} = evt;
+  const flags = (ctrlKey << 2) | (shiftKey << 1) | altKey;
+
+  if(flags === 0){
+    const isEnter = code === 'Enter';
+    const digitMatch = code.match(/^(?:Digit|Numpad)(\d)$/);
+
+    if(isEnter || digitMatch !== null){
+      if(curTile1 === null) return;
+
+      const mass = curTile.mass;
+      const mass1 = curTile1.mass;
+      const n = isEnter ? mass : digitMatch[1] | 0;
+
+      if(n === 0)
+        return setErr(`Cannot move mass 0`);
+
+      if(n > mass)
+        return setErr(`Not enough mass`);
+
+      if(curTile1.state === curState && mass1 + n > massTh)
+        return setErr(`Mass exceeds the threshold`);
+
+      curTile.addAction(curState, -n);
+      curTile1.addAction(curState, n);
+      nextState();
+
+      return;
+    }
+
+    return;
+  }
+}
 
 const onMouseDown = evt => {
   const {button} = evt;
@@ -96,7 +133,7 @@ const onMouseDown = evt => {
   if(button === 0){
     if(curState === null) return;
 
-    curTile = getCurTile();
+    curTile = getCurTile(1);
     curTile1 = null;
     clearErr();
 
@@ -143,8 +180,6 @@ const onMouseUp = evt => {
       }
 
       curTile.addAction(curState, 1);
-      curTile = null;
-      curTile1 = null;
       nextState();
 
       return;
@@ -186,10 +221,11 @@ const updateCur = evt => {
   cy = floor((evt.clientY - ihh) / tileSize + hh);
 };
 
-const getCurTile = () => {
+const getCurTile = (fromCurState=0) => {
   const d = grid.get(cx, cy);
+  if(d === null) return null;
 
-  if(d === null || d.state !== curState)
+  if(fromCurState && d.state !== curState)
     return null;
 
   return d;
@@ -206,6 +242,10 @@ const nextState = () => {
   }
 
   curState = states[curStateIndex];
+
+  curTile = null;
+  curTile1 = null;
+
   render();
 };
 
@@ -245,16 +285,58 @@ const render = () => {
   }
 
   if(curTile !== null && curTile1 !== null){
-    g.save(1);
-    g.translate(curTile.x, curTile.y);
-    g.rotate(.5, .5, -pih * curTileDir);
+    g.fillStyle = 'black';
 
-    g.lineWidth = 3;
-    g.beginPath();
-    g.moveTo(.5, .5);
-    g.lineTo(.5, -.5);
-    g.stroke();
-    g.lineWidth = 1;
+    g.save();
+    g.translate(curTile.x, curTile.y);
+
+    const {gs} = g;
+
+    if((curTileDir & 1) === 0){
+      if(curTileDir === 0){
+        g.fillRect(.5 - gs, -.2, gs * 2, .4);
+
+        g.beginPath();
+        g.moveTo(.5, -.2);
+        g.lineTo(.6, -.1);
+        g.lineTo(.4, -.1);
+        g.closePath();
+        g.fill();
+        g.stroke();
+      }else{
+        g.fillRect(.5 - gs, .8, gs * 2, .4);
+
+        g.beginPath();
+        g.moveTo(.5, 1.2);
+        g.lineTo(.6, 1.1);
+        g.lineTo(.4, 1.1);
+        g.closePath();
+        g.fill();
+        g.stroke();
+      }
+    }else{
+      if(curTileDir === 1){
+        g.fillRect(.8, .5 - gs, .4, gs * 2);
+
+        g.beginPath();
+        g.moveTo(1.2, .5);
+        g.lineTo(1.1, .6);
+        g.lineTo(1.1, .4);
+        g.closePath();
+        g.fill();
+        g.stroke();
+      }else{
+        g.fillRect(-.2, .5 - gs, .4, gs * 2);
+
+        g.beginPath();
+        g.moveTo(-.2, .5);
+        g.lineTo(-.1, .6);
+        g.lineTo(-.1, .4);
+        g.closePath();
+        g.fill();
+        g.stroke();
+      }
+    }
 
     g.restore();
   }
@@ -286,7 +368,7 @@ const render = () => {
 
   if(errMsg !== null){
     g.font(errFontSize);
-    g.fillStyle = '#800';
+    g.fillStyle = cols.err;
     g.fillText(errMsg, wh, -.5);
     g.font(tileFontSize);
   }

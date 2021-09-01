@@ -24,7 +24,7 @@ class State{
 
       g.save();
       g.translate(x, y);
-      d.renderLines(g);
+      d.renderLines(g, 0);
       g.restore();
     }
   }
