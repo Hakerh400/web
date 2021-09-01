@@ -5,9 +5,11 @@ const Tile = require('./tile');
 const State = require('./state');
 
 const {floor} = Math;
+const {pi, pih, pi2} = O;
 
 const tileSize = 60;
-const fontSize = tileSize * .5;
+const tileFontSize = tileSize * .5;
+const errFontSize = tileSize * .25;
 
 // Tile mass threshold
 const massTh = 10;
@@ -50,6 +52,8 @@ let curTile = null;
 let curTile1 = null;
 let curTileDir = null;
 
+let errMsg = null;
+
 const main = () => {
   State.emptyCol = cols.emptyState;
 
@@ -61,9 +65,14 @@ const main = () => {
     return d;
   });
 
-  grid.get(0, 0).set(state1, 5);
-  grid.get(0, 1).set(state1, 2);
-  grid.get(3, 0).set(state2, 7);
+  for(let y = 0; y !== 3; y++){
+    for(let x = 0; x !== 3; x++){
+      grid.get(x, y).set(state1, 0);
+    }
+  }
+
+  grid.get(3, 0).set(state2, 10);
+  grid.get(4, 0).set(state2, 0);
 
   curStateIndex = 0;
   curState = states[0];
@@ -85,14 +94,22 @@ const onMouseDown = evt => {
   updateCur(evt);
 
   if(button === 0){
+    if(curState === null) return;
+
     curTile = getCurTile();
     curTile1 = null;
+    clearErr();
+
     return;
   }
 
   if(button === 2){
+    if(curState === null) return;
+
     curTile = null;
     curTile1 = null;
+    clearErr();
+
     return;
   }
 };
@@ -103,6 +120,7 @@ const onMouseUp = evt => {
   updateCur(evt);
 
   if(button === 0){
+    if(curState === null) return;
     if(curTile === null) return;
     if(curTile1 !== null) return;
 
@@ -158,7 +176,7 @@ const onResize = evt => {
 
   g.resize(iw, ih);
   g.lineCap = 'square';
-  g.font(fontSize);
+  g.font(tileFontSize);
 
   render();
 };
@@ -221,32 +239,56 @@ const render = () => {
     g.restore();
   });
 
-  const statesNum = states.length;
-  const wTot = statesNum * stqW - stqSpacing;
-  const xStart = wh - wTot / 2 + stqRad;
-  const y = h + stqOffsetY + stqRad;
-
-  g.lineWidth = 3;
-
-  for(let i = 0; i !== statesNum; i++){
-    const state = states[i];
-    const {col} = state;
-
-    if(state === curState)
-      g.strokeStyle = cols.curState;
-
-    g.fillStyle = col;
-    O.drawCirc(g, xStart + i * stqW, y, stqRad);
-
-    if(state === curState)
-      g.strokeStyle = 'black';
-  }
-
-  g.lineWidth = 1;
-
   if(curState !== null){
     g.fillStyle = cols.curState;
     curState.render(g);
+  }
+
+  if(curTile !== null && curTile1 !== null){
+    g.save(1);
+    g.translate(curTile.x, curTile.y);
+    g.rotate(.5, .5, -pih * curTileDir);
+
+    g.lineWidth = 3;
+    g.beginPath();
+    g.moveTo(.5, .5);
+    g.lineTo(.5, -.5);
+    g.stroke();
+    g.lineWidth = 1;
+
+    g.restore();
+  }
+
+  drawStateQueue: {
+    const statesNum = states.length;
+    const wTot = statesNum * stqW - stqSpacing;
+    const xStart = wh - wTot / 2 + stqRad;
+    const y = h + stqOffsetY + stqRad;
+
+    g.lineWidth = 3;
+
+    for(let i = 0; i !== statesNum; i++){
+      const state = states[i];
+      const {col} = state;
+
+      if(state === curState)
+        g.strokeStyle = cols.curState;
+
+      g.fillStyle = col;
+      O.drawCirc(g, xStart + i * stqW, y, stqRad);
+
+      if(state === curState)
+        g.strokeStyle = 'black';
+    }
+
+    g.lineWidth = 1;
+  }
+
+  if(errMsg !== null){
+    g.font(errFontSize);
+    g.fillStyle = '#800';
+    g.fillText(errMsg, wh, -.5);
+    g.font(tileFontSize);
   }
 };
 
@@ -254,6 +296,15 @@ const createState = col => {
   const state = new State(col);
   states.push(state);
   return state;
+};
+
+const setErr = (msg, ren=1) => {
+  errMsg = msg;
+  if(ren) render();
+};
+
+const clearErr = ren => {
+  setErr(null, ren);
 };
 
 main();
