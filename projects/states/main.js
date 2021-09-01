@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const colors = require('../colors');
 const Tile = require('./tile');
 const State = require('./state');
 
