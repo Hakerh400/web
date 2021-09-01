@@ -1,6 +1,7 @@
 'use strict';
 
 const assert = require('assert');
+const colors = require('../colors');
 const Scoreboard = require('../scoreboard');
 const Animation = require('./animation');
 const Tile = require('./tile');
@@ -29,22 +30,15 @@ const textOffset = 10;
 
 const {g} = O.ceCanvas(1);
 
+const itemsNum = 8;
+
 const cols = O.rec(formatCols, {
   bg: [169, 169, 169],
-  tileBg: [64, 64, 64],
-  selected: [128, 128, 128],
-
-  items: [
-    [90, 244, 38],
-    [255, 48, 33],
-    [230, 104, 240],
-    [53, 249, 239],
-    [228, 247, 4],
-    [30, 131, 242],
-  ],
+  tileBg: [128, 128, 128],
+  selected: [200, 200, 200],
 });
 
-const itemsNum = cols.items.length;
+cols.items = colors.get(itemsNum);
 
 const scoreboard = new Scoreboard();
 

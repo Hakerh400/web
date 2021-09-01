@@ -61,3 +61,4 @@ modal
 csp
 scoreboard
 states
+colors
