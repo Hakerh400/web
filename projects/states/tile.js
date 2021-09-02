@@ -1,9 +1,10 @@
 'use strict';
 
 const assert = require('assert');
-const State = require('./state');
 
 class Tile{
+  static massTh = null;
+
   constructor(grid, x, y, state=null, mass=0){
     this.grid = grid;
     this.x = x;
@@ -40,6 +41,23 @@ class Tile{
 
   addAction(state, mass){
     this.actions.push([state, mass]);
+  }
+
+  incMass(){
+    const {state} = this;
+
+    this.addAction(state, 1);
+  }
+
+  moveMass(tile, mass){
+    const {state} = this;
+
+    this.addAction(state, -mass);
+    tile.addAction(state, mass);
+  }
+
+  unprivatize(){
+    this.set(null, 0);
   }
 
   execActions(){
@@ -166,3 +184,5 @@ const drawLine = (g, dir) => {
 };
 
 module.exports = Tile;
+
+const State = require('./state');

@@ -8,6 +8,20 @@ const State = require('./state');
 const {floor} = Math;
 const {pi, pih, pi2} = O;
 
+const seed = O.urlParam('seed', O.rand(1e9)) | 0;
+window.seed = seed;
+O.enhanceRNG();
+O.randSeed(seed);
+O.ael('keydown', evt => {
+  if(evt.code === 'ArrowRight')
+    location.href = location.href.replace(/&seed=.*|$/, `&seed=${seed + 1}`);
+
+  if(evt.code === 'ArrowLeft'){
+    if(seed === 0) return;
+    location.href = location.href.replace(/&seed=.*|$/, `&seed=${seed - 1}`);
+  }
+});
+
 const tileSize = 60;
 const tileFontSize = tileSize * .5;
 const errFontSize = tileSize * .25;
@@ -58,8 +72,9 @@ let errMsg = null;
 
 const main = () => {
   State.emptyCol = cols.emptyState;
+  Tile.massTh = massTh;
 
-  const state1 = createState('#f00');
+  const state1 = createState('#f00', 1);
   const state2 = createState('#0f0');
 
   grid = new O.Grid(w, h, (x, y, grid) => {
@@ -73,8 +88,10 @@ const main = () => {
     }
   }
 
-  grid.get(3, 0).set(state2, 10);
-  grid.get(4, 0).set(state2, 0);
+  grid.get(3, 0).set(state2, 5);
+  grid.get(4, 0).set(state2, 5);
+  grid.get(3, 1).set(state2, 5);
+  grid.get(4, 1).set(state2, 5);
 
   curStateIndex = 0;
   curState = states[0];
@@ -115,8 +132,8 @@ const onKeyDown = evt => {
       if(curTile1.state === curState && mass1 + n > massTh)
         return setErr(`Mass exceeds the threshold`);
 
-      curTile.addAction(curState, -n);
-      curTile1.addAction(curState, n);
+      curState.setBaseTile(curTile);
+      curTile.moveMass(curTile1, n)
       nextState();
 
       return;
@@ -180,7 +197,8 @@ const onMouseUp = evt => {
         return;
       }
 
-      curTile.addAction(curState, 1);
+      curState.setBaseTile(curTile);
+      curTile.incMass();
       nextState();
 
       return;
@@ -235,22 +253,30 @@ const getCurTile = (fromCurState=0) => {
 const nextState = () => {
   const statesNum = states.length;
 
-  if(curStateIndex === statesNum - 1){
-    curStateIndex = 0;
-    execActions();
-  }else{
-    curStateIndex++;
+  while(1){
+    if(curStateIndex === statesNum - 1){
+      curStateIndex = 0;
+      execActions();
+    }else{
+      curStateIndex++;
+    }
+
+    curState = states[curStateIndex];
+    curTile = null;
+    curTile1 = null;
+
+    if(curState.player) break;
+
+    curState.randMove();
   }
-
-  curState = states[curStateIndex];
-
-  curTile = null;
-  curTile1 = null;
 
   render();
 };
 
 const execActions = () => {
+  for(const state of states)
+    state.retainTiles();
+
   grid.iter((x, y, d) => {
     d.execActions();
   });
@@ -375,8 +401,8 @@ const render = () => {
   }
 };
 
-const createState = col => {
-  const state = new State(col);
+const createState = (...args) => {
+  const state = new State(...args);
   states.push(state);
   return state;
 };
