@@ -1,6 +1,6 @@
 'use strict';
 
-const assert = require('assert');;
+const assert = require('assert');
 const colors = require('../colors');
 const Scoreboard = require('../scoreboard');
 const Animation = require('./animation');
