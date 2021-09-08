@@ -149,10 +149,12 @@ function addEventListeners(){
       return;
     }
 
-    var x1 = Math.round((clientX - g.tx) / g.s);
-    var y1 = Math.round((clientY - g.ty) / g.s);
-    var x2 = Math.round((evt.clientX - g.tx) / g.s);
-    var y2 = Math.round((evt.clientY - g.ty) / g.s);
+    const scale = g.sx;
+
+    var x1 = Math.round((clientX - g.tx) / scale);
+    var y1 = Math.round((clientY - g.ty) / scale);
+    var x2 = Math.round((evt.clientX - g.tx) / scale);
+    var y2 = Math.round((evt.clientY - g.ty) / scale);
 
     var xs = x2 > x1 ? 1 : x2 < x1 ? -1 : 0;
     var ys = y2 > y1 ? 1 : y2 < y1 ? -1 : 0;
@@ -228,7 +230,7 @@ function addEventListeners(){
 
     var [x, y, dir] = coords;
     cdir(x, y, dir);
-    
+
     drawGrid();
   }
 
@@ -254,12 +256,13 @@ function addEventListeners(){
   }
 
   function setOrRemoveObjects(evt, type, mode){
-    var g = grid.g;
+    const {g} = grid;
+    const scale = g.sx;
 
-    var x1 = Math.floor((clientX - g.tx) / g.s);
-    var y1 = Math.floor((clientY - g.ty) / g.s);
-    var x2 = Math.floor((evt.clientX - g.tx) / g.s);
-    var y2 = Math.floor((evt.clientY - g.ty) / g.s);
+    var x1 = Math.floor((clientX - g.tx) / scale);
+    var y1 = Math.floor((clientY - g.ty) / scale);
+    var x2 = Math.floor((evt.clientX - g.tx) / scale);
+    var y2 = Math.floor((evt.clientY - g.ty) / scale);
 
     var xs = x2 > x1 ? 1 : x2 < x1 ? -1 : 0;
     var ys = y2 > y1 ? 1 : y2 < y1 ? -1 : 0;
@@ -295,10 +298,11 @@ function addEventListeners(){
       clientY = evt.clientY;
     }
 
-    var g = grid.g;
+    const {g} = grid;
+    const scale = g.sx;
 
-    var cx = (clientX - g.tx) / g.s;
-    var cy = (clientY - g.ty) / g.s;
+    var cx = (clientX - g.tx) / scale;
+    var cy = (clientY - g.ty) / scale;
 
     var x = Math.floor(cx);
     var y = Math.floor(cy);
@@ -867,7 +871,7 @@ function applyAlgorithms(){
 function transformGrid(){
   findInternalCells();
   putExternalLines();
-  
+
   findInternalCells();
   findShapes();
 
