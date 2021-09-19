@@ -271,7 +271,7 @@ const onMouseDown = evt => {
   }
 
   clearInfo();
-  
+
   const isInspect = isCanvas && ctrl;
 
   const room = world.selectedRoom;

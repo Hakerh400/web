@@ -26,7 +26,7 @@ O.ael('keydown', evt => {
   }
 });
 
-const size = 5;
+const size = 7;
 const w = size;
 const h = size;
 
@@ -98,6 +98,8 @@ const main = async () => {
         givenTiles.delete(tile);
         blankTiles.add(tile);
       }
+
+      // render();
     }
 
     for(const tile of blankTiles)
