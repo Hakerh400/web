@@ -26,7 +26,7 @@ O.ael('keydown', evt => {
   }
 });
 
-const size = 7;
+const size = 8;
 const w = size;
 const h = size;
 
