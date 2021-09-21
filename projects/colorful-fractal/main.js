@@ -82,6 +82,8 @@ const main = async () => {
   };
 
   const on = (n, a, b) => {
+    if(a === b) return a;
+
     if(a > b){
       const t = a;
       a = b;
@@ -101,7 +103,7 @@ const main = async () => {
     const x = xx / s - wh;
     const y = yy / s - hh;
 
-    const f = O.dist(x, on(y, 0, 100), 0, 0) * O.dist(y, on(x, 0, 100), 0, 0)
+    const f = on(O.dist(x, on(y, 0, 100), 0, 0) * O.dist(y, on(x, 0, 100), 0, 0), x, y)
 
     return num2col(col, f);
   };
