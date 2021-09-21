@@ -100,10 +100,17 @@ const main = async () => {
   };
 
   const getCol = (xx, yy) => {
-    const x = xx / s - wh;
-    const y = yy / s - hh;
+    let x = xx / s - wh;
+    let y = yy / s - hh;
 
-    const f = on(O.dist(x, on(y, 0, 100), 0, 0) * O.dist(y, on(x, 0, 100), 0, 0), x, y)
+    const a = 2**7
+    x /= a;
+    y /= a;
+
+    x -= 1.7
+    y -= 0.71425
+
+    const f = (x ^ y) + O.dist(x % 1, y % 1, 0, 0)
 
     return num2col(col, f);
   };
@@ -153,6 +160,15 @@ const main = async () => {
   }
 
   d.put();
+
+  if(0){
+    g.beginPath();
+    g.moveTo((wh|0)+.5, 0);
+    g.lineTo((wh|0)+.5, h);
+    g.moveTo(0, (hh|0)+.5);
+    g.lineTo(w, (hh|0)+.5);
+    g.stroke();
+  }
 };
 
 const newCol = () => {
