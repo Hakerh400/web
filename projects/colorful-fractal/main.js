@@ -9,9 +9,14 @@ const {
 
 const {pi, pih, pi2} = O;
 
-const s = 2;
+const w = 1920;
+const h = 1080;
+
+const s = O.urlParam('s', 1) | 0;
+const percentOffset = 10;
 
 const {g} = O.ceCanvas();
+const {canvas} = g;
 
 const cols = [
   [255, 0, 255],
@@ -25,13 +30,21 @@ const cols = [
 const colsNum = cols.length;
 const colsNum1 = colsNum + 1;
 
-const main = () => {
-  const w = O.iw;
-  const h = O.ih;
+const main = async () => {
+  canvas.width = w;
+  canvas.height = h;
+
+  g.fillStyle = 'white';
+  g.fillRect(0, 0, w, h);
+
   const wh = w / 2;
   const hh = h / 2;
   const ws = w * s;
   const hs = h * s;
+
+  g.textBaseline = 'top';
+  g.textAlign = 'left';
+  g.font = '32px arial';
 
   const setDefaultCol = col => {
     col.fill(0);
@@ -84,45 +97,56 @@ const main = () => {
     return a + k * d;
   };
 
-  const d = new O.ImageData(g);
-
-  const grid = new O.Grid(ws, hs, (xx, yy) => {
+  const getCol = (xx, yy) => {
     const x = xx / s - wh;
     const y = yy / s - hh;
 
-    const f = on(x, x, y) + on(y, on(x, 100, 200), y);
+    const f = O.dist(x, on(y, 0, 100), 0, 0) * O.dist(y, on(x, 0, 100), 0, 0)
 
-    const col = newCol();
     return num2col(col, f);
-  });
+  };
 
-  const col = new Uint32Array(3);
+  const d = new O.ImageData(g);
+  const col = new Uint8Array(3);
+  const colAcc = new Uint32Array(3);
 
-  for(let xx = 1; xx !== w; xx++){
-    for(let yy = 0; yy !== h; yy++){
-      col.fill(0);
+  for(let y = 0; y !== h; y++){
+    if(s !== 1){
+      await O.rafd(() => {
+        const ofs = percentOffset;
 
-      const xs = xx * s;
-      const ys = yy * s;
+        g.fillStyle = 'white';
+        g.fillRect(0, 0, w, h);
+
+        g.fillStyle = 'black';
+        g.fillText(O.percent(y + 1, h), ofs, ofs);
+      });
+    }
+
+    for(let x = 0; x !== w; x++){
+      colAcc.fill(0);
+
+      const xs = x * s;
+      const ys = y * s;
       const x1 = max(xs - s + 1, 0);
       const y1 = max(ys - s + 1, 0);
       const x2 = min(xs + s - 1, ws - 1);
       const y2 = min(ys + s - 1, hs - 1);
       const n = (x2 - x1 + 1) * (y2 - y1 + 1);
 
-      for(let x = x1; x <= x2; x++){
-        for(let y = y1; y <= y2; y++){
-          const c = grid.get(x, y);
+      for(let yy = y1; yy <= y2; yy++){
+        for(let xx = x1; xx <= x2; xx++){
+          getCol(xx, yy);
 
           for(let i = 0; i !== 3; i++)
-            col[i] += c[i];
+            colAcc[i] += col[i];
         }
       }
 
       for(let i = 0; i !== 3; i++)
-        col[i] = round(col[i] / n);
+        colAcc[i] = round(colAcc[i] / n);
 
-      d.set(xx, yy, col);
+      d.set(x, y, colAcc);
     }
   }
 
