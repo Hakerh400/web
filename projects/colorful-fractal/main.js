@@ -12,8 +12,8 @@ const {pi, pih, pi2} = O;
 const w = 1920;
 const h = 1080;
 
-const s1 = O.urlParam('s', 1) | 0;
-const s2 = s1 * 2;
+const s = O.urlParam('s', 1) | 0;
+const s2 = s * 2;
 const percentOffset = 10;
 
 const {g} = O.ceCanvas();
@@ -121,7 +121,7 @@ const main = async () => {
   const colAcc = new Uint32Array(3);
 
   for(let y = 0; y !== h; y++){
-    if(s1 !== 1){
+    if(s !== 1){
       await O.rafd(() => {
         const ofs = percentOffset;
 
@@ -139,10 +139,10 @@ const main = async () => {
       const xs = x * s2;
       const ys = y * s2;
 
-      const x1 = max(xs - s1 + 1, 0);
-      const y1 = max(ys - s1 + 1, 0);
-      const x2 = min(xs + s1 - 1, ws - 1);
-      const y2 = min(ys + s1 - 1, hs - 1);
+      const x1 = max(xs - s + 1, 0);
+      const y1 = max(ys - s + 1, 0);
+      const x2 = min(xs + s - 1, ws - 1);
+      const y2 = min(ys + s - 1, hs - 1);
 
       const n = (x2 - x1 + 1) * (y2 - y1 + 1);
 
