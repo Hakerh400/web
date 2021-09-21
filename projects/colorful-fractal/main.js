@@ -9,6 +9,8 @@ const {
 
 const {pi, pih, pi2} = O;
 
+const s = 2;
+
 const {g} = O.ceCanvas();
 
 const cols = [
@@ -28,12 +30,12 @@ const main = () => {
   const h = O.ih;
   const wh = w / 2;
   const hh = h / 2;
-
-  const d = new O.ImageData(g);
-  const col = new Uint8ClampedArray(3);
+  const ws = w * s;
+  const hs = h * s;
 
   const setDefaultCol = col => {
     col.fill(0);
+    return col;
   };
 
   const num2col = (col, n) => {
@@ -49,10 +51,21 @@ const main = () => {
     while(n >= colsNum1) n /= colsNum1;
 
     const c = cols[n - 1 | 0];
-    const k = 1 - abs(n % 1 * 2 - 1) ** 3;
+    const k1 = 1 - n % 1;
+    const k2 = abs(k1 * 2 - 1)
+    const k3 = k2 ** 3;
 
-    for(let i = 0; i !== 3; i++)
-      col[i] = c[i] * k;
+    if(k1 < .5){
+      const k = k2 ** 20;
+
+      for(let i = 0; i !== 3; i++)
+        col[i] = (c[i] * (1 - k3) + 255 * k3) * (1 - k);
+    }else{
+      for(let i = 0; i !== 3; i++)
+        col[i] = c[i] * (1 - k3);
+    }
+
+    return col;
   };
 
   const on = (n, a, b) => {
@@ -71,19 +84,53 @@ const main = () => {
     return a + k * d;
   };
 
+  const d = new O.ImageData(g);
+
+  const grid = new O.Grid(ws, hs, (xx, yy) => {
+    const x = xx / s - wh;
+    const y = yy / s - hh;
+
+    const f = on(x, x, y) + on(y, on(x, 100, 200), y);
+
+    const col = newCol();
+    return num2col(col, f);
+  });
+
+  const col = new Uint32Array(3);
+
   for(let xx = 1; xx !== w; xx++){
     for(let yy = 0; yy !== h; yy++){
-      const x = xx - wh;
-      const y = yy - hh;
+      col.fill(0);
 
-      const f = on(x, x, y) + on(y, on(x, 100, 200), y)
+      const xs = xx * s;
+      const ys = yy * s;
+      const x1 = max(xs - s + 1, 0);
+      const y1 = max(ys - s + 1, 0);
+      const x2 = min(xs + s - 1, ws - 1);
+      const y2 = min(ys + s - 1, hs - 1);
+      const n = (x2 - x1 + 1) * (y2 - y1 + 1);
 
-      num2col(col, f);
+      for(let x = x1; x <= x2; x++){
+        for(let y = y1; y <= y2; y++){
+          const c = grid.get(x, y);
+
+          for(let i = 0; i !== 3; i++)
+            col[i] += c[i];
+        }
+      }
+
+      for(let i = 0; i !== 3; i++)
+        col[i] = round(col[i] / n);
+
       d.set(xx, yy, col);
     }
   }
 
   d.put();
+};
+
+const newCol = () => {
+  return new Uint8ClampedArray(3);
 };
 
 main();
