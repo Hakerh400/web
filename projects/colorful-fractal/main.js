@@ -104,14 +104,16 @@ const main = async () => {
     let x = xx / s2 - wh;
     let y = yy / s2 - hh;
 
-    const a = 2**7
-    x /= a;
-    y /= a;
+    const a = 2 ** 7
+    x /= a
+    y /= a
+    // x -= 1.7
+    // y -= 0.71425
 
-    x -= 1.7
-    y -= 0.71425
+    let t=x;x=y;y=t;
+    y = -y;
 
-    const f = (x ^ y) + O.dist(x % 1, y % 1, 0, 0)
+    const f = O.dist(on(x + y, x * y, y), on(x, on(x, y, x - y), x ** 2 + y), x + y * 3, x + on(y * x, x + y, x - y * 3))
 
     return num2col(col, f);
   };
