@@ -74,7 +74,7 @@ const main = async () => {
 
     let i = 0;
 
-    for(const tile of O.shuffleSet(grid.iterSquares())){
+    if(1) for(const tile of O.shuffleSet(grid.iterSquares())){
       const percent = round(
         (i + 1) /
         (tilesNum + 1) * 100);
