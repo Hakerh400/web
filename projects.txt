@@ -63,3 +63,4 @@ scoreboard
 states
 colors
 colorful-fractal
+video-search
